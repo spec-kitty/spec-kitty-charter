@@ -36,6 +36,8 @@ import ai.speckitty.charter.packs.infra.storage.markdown.MarkdownCodec;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -380,6 +382,13 @@ final class CompositionFactsBuilder {
     private static Set<String> ownStepLinkTargets(
             List<GraphDocument> documents, String packName, Map<Urn, List<String>> steps) {
         Set<String> own = new LinkedHashSet<>();
+        // Each type's step actions as their ids read, built once, so an edge costs no pass over its type's steps.
+        Map<Urn, Set<String>> stepActions = new HashMap<>();
+        steps.forEach((type, ids) -> {
+            Set<String> actions = new HashSet<>();
+            ids.forEach(id -> actions.add(type.id() + "/" + id));
+            stepActions.put(type, actions);
+        });
         for (GraphDocument document : documents) {
             for (GraphDocument.Edge edge : document.edges()) {
                 if (!RelationType.REQUIRES.token().equals(edge.relation())) {
@@ -396,9 +405,9 @@ final class CompositionFactsBuilder {
                             target.asUrn().filter(urn -> target.packName().isEmpty() && urn.kind() == NodeKind.ACTION);
                     if (type.isPresent()
                             && step.isPresent()
-                            && steps.getOrDefault(type.get(), List.of()).stream()
-                                    .anyMatch(id ->
-                                            step.get().id().equals(type.get().id() + "/" + id))) {
+                            && stepActions
+                                    .getOrDefault(type.get(), Set.of())
+                                    .contains(step.get().id())) {
                         own.add(edge.target());
                     }
                 } catch (IllegalArgumentException malformed) {

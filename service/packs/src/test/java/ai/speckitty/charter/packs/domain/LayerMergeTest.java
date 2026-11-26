@@ -16,6 +16,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -118,7 +119,7 @@ class LayerMergeTest {
                 String name = pack.configured().id().value();
                 facts.put(
                         name,
-                        new PackCompositionFacts(
+                        CompositionFacts.of(
                                 List.of(),
                                 pack.referableArtifacts(),
                                 List.of(),

@@ -201,7 +201,7 @@ Each level stays contiguous, and the order never depends on how the packs were l
 **C6 No dependency cycle.** The graph of `succ` on `C` (`depends_on` and `parent_pack` edges) is acyclic, else
 `pack_dependency_cycle`; a pack that depends on itself or names itself as its `parent_pack` is a cycle.
 A dependency or lineage cycle refuses the compose.
-*Source:* ADR-0048 d4; `PackCompositionResolver.dependenciesOf`, `PackGraph.leftoverCycles`. **Built.**
+*Source:* ADR-0048 d4; `PackCompositionResolver.dependenciesOf`, `PackGraph.leftoverCycles` (package-private). **Built.**
 
 **C7 Known dependency.** `∀p ∈ C, (q, ρ) ∈ deps(p): q ∈ P`, else `pack_dependency_unknown`.
 *Source:* ADR-0048 d4. **Built.**

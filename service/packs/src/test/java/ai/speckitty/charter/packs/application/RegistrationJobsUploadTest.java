@@ -16,7 +16,6 @@ import ai.speckitty.charter.packs.application.RegistrationJobs.State;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Status;
 import ai.speckitty.charter.packs.application.RegistrationJobsTest.ManualClock;
 import ai.speckitty.charter.packs.application.RegistrationJobsTest.RecordingAudit;
-import ai.speckitty.charter.packs.application.RegistrationJobsTest.TestGate;
 import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,7 +24,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
@@ -53,7 +51,6 @@ class RegistrationJobsUploadTest {
     Path host;
 
     private final ManualClock clock = new ManualClock();
-    private final TestGate gate = new TestGate();
     private final RecordingAudit audit = new RecordingAudit();
     private final List<Long> roomAsked = new CopyOnWriteArrayList<>();
     private final List<Long> runAsked = new CopyOnWriteArrayList<>();
@@ -64,7 +61,6 @@ class RegistrationJobsUploadTest {
 
     @BeforeEach
     void build() {
-        gate.holdBeforeRun();
         jobs = new RegistrationJobs(new RegistrationJobs.Dependencies(
                 clock,
                 mock(PackRegistrationService.class),
@@ -72,7 +68,6 @@ class RegistrationJobsUploadTest {
                     throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
                 },
                 audit,
-                gate,
                 new RegistrationJobs.StorageRoom() {
                     @Override
                     public void require() {
@@ -104,7 +99,6 @@ class RegistrationJobsUploadTest {
 
     @AfterEach
     void close() {
-        gate.releaseBeforeRun();
         jobs.close();
     }
 
@@ -278,15 +272,14 @@ class RegistrationJobsUploadTest {
     }
 
     @Test
-    void theJobChecksTheRoomForTheSizeThatWasSpooled() throws Exception {
-        gate.releaseBeforeRun();
+    void theJobChecksTheRoomForTheSizeThatWasSpooled() {
         RegistrationJobs.Upload upload = jobs.openUpload(1);
         Reservation reservation = jobs.reserve("acme", Preconditions.none(), ORIGIN, upload, 1234);
 
         reservation.start(directory -> {
             throw new CharterRefusal(RefusalCode.VALIDATION_FAILED, "the test ends the job at once");
         });
-        awaitEnd(reservation);
+        RegistrationJobsTest.awaitEnded(reservation);
 
         assertThat(runAsked)
                 .as("a spooled archive is on disk already: the job asks what is left to write, for that archive")
@@ -323,8 +316,7 @@ class RegistrationJobsUploadTest {
     }
 
     @Test
-    void startingAJobThatIsRunningIsStillAnError() throws Exception {
-        gate.releaseBeforeRun();
+    void startingAJobThatIsRunningIsStillAnError() {
         RegistrationJobs.Upload upload = jobs.openUpload(1);
         Reservation reservation = jobs.reserve("acme", Preconditions.none(), ORIGIN, upload, 1);
         reservation.start(directory -> {
@@ -347,17 +339,5 @@ class RegistrationJobsUploadTest {
 
     private static void assertThatCodeNothing(org.assertj.core.api.ThrowableAssert.ThrowingCallable call) {
         org.assertj.core.api.Assertions.assertThatCode(call).doesNotThrowAnyException();
-    }
-
-    private static void awaitEnd(Reservation reservation) throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-        while (System.nanoTime() < deadline) {
-            State state = reservation.status().state();
-            if (state == State.REFUSED || state == State.SUCCEEDED) {
-                return;
-            }
-            Thread.sleep(5);
-        }
-        throw new AssertionError("the job did not end");
     }
 }

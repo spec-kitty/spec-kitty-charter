@@ -470,7 +470,7 @@ class MissionTypeBindingTest {
             return Files.readAllBytes(file);
         };
 
-        FilesystemPackStore.PackRead read = new FilesystemPackStore(host, strategy, failing)
+        FilesystemPackStore.PackRead read = StoreSeams.readingPayloadsWith(host, strategy, failing)
                 .read(PACK_DIRECTORY, List.of(MissionTypeBinding.INSTANCE));
 
         assertThat(asked).as("the template is read through the seam, once").containsOnlyOnce(template);

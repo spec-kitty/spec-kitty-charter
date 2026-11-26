@@ -2,7 +2,7 @@
 title: Set up a Claude Code cloud session
 description: Prepare a Claude Code cloud environment for this repository — Java 25, allowed domains, per-session steps — and run several cloud sessions in parallel.
 doc_status: draft
-updated: 2026-11-01T00:00:00Z
+updated: 2026-11-25T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -223,7 +223,8 @@ python3 scripts/docs/check_docs.py all     # the docs checks
 ## Running several cloud sessions (cloud runners)
 
 An orchestrating session can hand Missions to several child cloud sessions ("cloud runners") at
-once. These lessons come from parallel runs on 2026-10-27 and 2026-10-28.
+once. These lessons come from parallel runs on 2026-10-27 and 2026-10-28, and from an operator
+ruling of 2026-11-25.
 
 ### What can go wrong
 
@@ -253,9 +254,15 @@ once. These lessons come from parallel runs on 2026-10-27 and 2026-10-28.
 
   The orchestrating session, which has the sibling repository attached, files the issues and
   replaces the placeholders before the PR merges.
+- **Reviews run in the runner's session, with subagents** (operator, 2026-11-25). No cloud session
+  is opened to review a Mission, for any review round. The runner runs its own adversarial review
+  with in-session subagents, folds every finding, confirms the fold and posts the review on the
+  pull request as a comment headed "Independent adversarial review (agent)". At least five review
+  sessions open on one open-packs Mission prompted this rule.
 - **Run a missing review skill by hand.** If a skill the brief names (for example
   `adversarial-squad`) is not installed, run the squad as parallel subagents, one per lens, each
-  with its profile loaded by `spec-kitty agent profile show <id>`.
+  with its profile loaded by `spec-kitty agent profile show <id>`. The runner's in-session review
+  (above) takes the same form.
 
 ### Setup-script addition for the CLI
 
@@ -284,6 +291,9 @@ spec-kitty --version
       `open-packs#TBD-<slug>`.
 - [ ] Pick the ADR number when the ADR is written, not when the session is dispatched (see below).
 - [ ] Name the fallback for any skill the brief relies on.
+- [ ] Tell the runner to run its adversarial review with in-session subagents, fold every finding,
+      confirm the fold and post the "Independent adversarial review (agent)" comment. Plan no
+      reviewer session.
 
 ### Troubleshooting parallel runs
 

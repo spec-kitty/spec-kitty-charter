@@ -74,12 +74,17 @@ class RetiredFilesTest {
                     .containsExactly("*/mission-steps/**/*");
             assertThat(TABLE.classify("built-in/missions/mission-steps/plan/specify/README.md"))
                     .isInstanceOf(PackFileKind.Retired.class);
-            // The one overlap: a README directly in the old built-in missions/mission-steps/ is read as one beside a
-            // mission type named mission-steps. Exclusions come first, so it is excluded: not held and, since #451, not
-            // refused either (it is an orientation note, not a stale mission-step file).
+            // The two exclusion overlaps. A README directly in the old built-in missions/mission-steps/ is read as one
+            // beside a mission type named mission-steps, and the old mission-steps/templates/ plan-field declaration as
+            // a template declaration. Exclusions come first, so both are excluded: not held and, since #451, not
+            // refused either (they are notes and declarations, not stale mission-step files).
             assertThat(TABLE.matchingRules("built-in/missions/mission-steps/README.md"))
                     .containsExactly("*/missions/*/README.md", "*/missions/mission-steps/**/*");
             assertThat(TABLE.classify("built-in/missions/mission-steps/README.md"))
+                    .isInstanceOf(PackFileKind.Excluded.class);
+            assertThat(TABLE.matchingRules("built-in/mission-steps/templates/plan-field-declaration.yaml"))
+                    .containsExactly("**/templates/plan-field-declaration.yaml", "*/mission-steps/**/*");
+            assertThat(TABLE.classify("built-in/mission-steps/templates/plan-field-declaration.yaml"))
                     .isInstanceOf(PackFileKind.Excluded.class);
         }
 

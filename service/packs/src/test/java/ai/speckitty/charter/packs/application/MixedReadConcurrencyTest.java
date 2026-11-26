@@ -92,6 +92,8 @@ class MixedReadConcurrencyTest {
     /** What the slow rename does inside the window where the live directory is missing; tests set it. */
     private volatile Runnable midSwap = () -> {};
 
+    private volatile Runnable midRead = () -> {};
+
     private final PackWriteGeneration generation = new PackWriteGeneration();
     private final ConcurrentLinkedQueue<String> failures = new ConcurrentLinkedQueue<>();
     private final AtomicInteger snapshots = new AtomicInteger();
@@ -400,10 +402,13 @@ class MixedReadConcurrencyTest {
         void snapshotInsideASwap(int run) throws Exception {
             CountDownLatch inSwap = new CountDownLatch(1);
             CountDownLatch release = new CountDownLatch(1);
+            CountDownLatch readBegun = new CountDownLatch(1);
             midSwap = () -> {
                 inSwap.countDown();
                 awaitQuietly(release);
             };
+            // The swap ends once the read began its load inside it, so the load straddles the swap's end.
+            midRead = readBegun::countDown;
             ExecutorService pool = Executors.newFixedThreadPool(2);
             try {
                 Future<?> writer = pool.submit(() -> writeVersion(VERSIONS.get(run % VERSIONS.size())));
@@ -417,7 +422,10 @@ class MixedReadConcurrencyTest {
                     failures.add("run " + run + ": the read never started");
                     return;
                 }
-                pause(15);
+                if (!readBegun.await(10, TimeUnit.SECONDS)) {
+                    failures.add("run " + run + ": the read never began its load");
+                    return;
+                }
                 release.countDown();
                 reader.get(10, TimeUnit.SECONDS);
                 writer.get(10, TimeUnit.SECONDS);
@@ -425,6 +433,7 @@ class MixedReadConcurrencyTest {
                 release.countDown();
                 pool.shutdownNow();
                 midSwap = () -> {};
+                midRead = () -> {};
             }
         }
 
@@ -462,7 +471,10 @@ class MixedReadConcurrencyTest {
             }
             afterCheck.run();
             try {
-                ConsistentRead.Verified<String> view = readMarkers(() -> pause(1));
+                ConsistentRead.Verified<String> view = readMarkers(() -> {
+                    midRead.run();
+                    pause(1);
+                });
                 versionsSeen.incrementAndGet();
                 String expected = markersOf.get(view.fingerprint());
                 if (expected == null) {

@@ -3,7 +3,9 @@ package ai.speckitty.charter.deployable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.speckitty.charter.packs.application.AuditLog;
+import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.infra.storage.ConfigRoot;
+import ai.speckitty.charter.testfixtures.Await;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,12 +22,14 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -50,6 +54,11 @@ class RegistrationAuditWiringTest {
     private static final int OVER_THE_LIMIT = 32 * 1024 * 1024 + 1;
     private static final List<AuditLog.Entry> ENTRIES = new CopyOnWriteArrayList<>();
     private static Path configRoot = Path.of("");
+
+    private static final Pattern REGISTRATION_ID = Pattern.compile("\"registrationId\"\\s*:\\s*\"([^\"]+)\"");
+
+    @Autowired
+    RegistrationJobs jobs;
 
     @LocalServerPort
     private int port;
@@ -148,12 +157,18 @@ class RegistrationAuditWiringTest {
         assertThat(oversized).isEqualTo("HTTP/1.1 413");
         assertThat(accepted.statusCode()).as(accepted.body()).isEqualTo(202);
         assertThat(refusedDelete.statusCode()).as(refusedDelete.body()).isEqualTo(404);
-        // The accepted registration is entered by its job when it ends.
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-        while (ENTRIES.size() < 4 && System.nanoTime() < deadline) {
-            Thread.sleep(50);
-        }
-        Thread.sleep(300); // a second entry for the same attempt would arrive in this time
+        // The accepted registration is entered by its job when it ends, under the lock that ends it: once its status
+        // reads ended, its entry is in, and an ended job enters nothing more. Every other attempt was entered before
+        // its answer was sent.
+        Matcher registration = REGISTRATION_ID.matcher(accepted.body());
+        assertThat(registration.find()).as(accepted.body()).isTrue();
+        String id = registration.group(1);
+        Await.until(
+                "the accepted registration to end",
+                () -> jobs.status(id)
+                        .map(status -> status.state() == RegistrationJobs.State.SUCCEEDED
+                                || status.state() == RegistrationJobs.State.REFUSED)
+                        .orElse(false));
         assertThat(ENTRIES)
                 .as("one entry for each of the four attempts")
                 .extracting(AuditLog.Entry::operation, AuditLog.Entry::outcome)

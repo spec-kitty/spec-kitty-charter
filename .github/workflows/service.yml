@@ -81,7 +81,8 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           # The breaking-change check (:contracts:checkContractCompatibility) compares against the
-          # contract-charter-v* tags and refuses a shallow clone, so fetch the full history and tags.
+          # contract-charter-v* tags, and the packs CHANGELOG check (:contracts:checkPacksChangelog) against the
+          # contract-packs-v* tags; both refuse a shallow clone, so fetch the full history and tags.
           fetch-depth: 0
           persist-credentials: false
 

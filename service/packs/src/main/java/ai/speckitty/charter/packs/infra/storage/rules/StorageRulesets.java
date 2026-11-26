@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage.rules;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
+import ai.speckitty.charter.kernel.validation.ReasonCode;
 import ai.speckitty.charter.kernel.validation.Rule;
 import ai.speckitty.charter.kernel.validation.Severity;
 import ai.speckitty.charter.packs.domain.PackCodes;
@@ -14,8 +15,10 @@ import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packs.domain.rules.ReferenceRules;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -148,9 +151,9 @@ public final class StorageRulesets {
         List<Reason> orphans = ORPHANS.apply(read);
         List<Reason> references = new ArrayList<>(REFERENCES.apply(read));
         List<Reason> rules = new ArrayList<>(registration().apply(read));
-        rules.removeAll(orphans);
-        rules.removeAll(references);
-        rules.removeAll(nodesOfRefusedAntiPatternFiles(read));
+        rules.removeAll(new HashSet<>(orphans));
+        rules.removeAll(new HashSet<>(references));
+        rules.removeAll(new HashSet<>(nodesOfRefusedAntiPatternFiles(read)));
         List<Reason> stated = new ArrayList<>(readFaults);
         stated.addAll(trailingFaults);
         stated.addAll(rules);
@@ -206,7 +209,7 @@ public final class StorageRulesets {
                 .filter(fault -> fault.isFailing(Severity.VIOLATION))
                 .forEach(fault -> refused.add(fault.location().file()));
         List<Reason> stated = new ArrayList<>(GraphRules.ANTI_PATTERN_WITHOUT_FILE.apply(read.contents()));
-        stated.removeAll(GraphRules.antiPatternsWithoutFile(read.contents(), refused::contains));
+        stated.removeAll(new HashSet<>(GraphRules.antiPatternsWithoutFile(read.contents(), refused::contains)));
         return stated;
     }
 
@@ -243,9 +246,16 @@ public final class StorageRulesets {
         List<PackElementViolation> recorded = held.violations();
         List<Reason> faults = new ArrayList<>(references);
         faults.addAll(storeFaults);
+        // Where the load first records each fault, found once each: a pass over every recorded violation per fault cost
+        // their product (#648).
+        Map<Recorded, Integer> first = new HashMap<>();
+        for (int j = 0; j < recorded.size(); j++) {
+            PackElementViolation violation = recorded.get(j);
+            first.putIfAbsent(new Recorded(violation.file(), violation.kind(), violation.reason()), j);
+        }
         int[] keys = new int[faults.size()];
-        keyed(recorded, references, keys, 0);
-        keyed(recorded, storeFaults, keys, references.size());
+        keyed(first, references, keys, 0);
+        keyed(first, storeFaults, keys, references.size());
         List<Integer> order = new ArrayList<>();
         for (int i = 0; i < faults.size(); i++) {
             order.add(i);
@@ -254,21 +264,16 @@ public final class StorageRulesets {
         return order.stream().map(faults::get).toList();
     }
 
+    /** A fault as the load records it: its file, its code and its words. */
+    private record Recorded(String file, ReasonCode code, String words) {}
+
     /** Each fault's place among the load's violations; an unmatched one takes the place of the one before it in its list. */
-    private static void keyed(List<PackElementViolation> recorded, List<Reason> faults, int[] keys, int offset) {
+    private static void keyed(Map<Recorded, Integer> first, List<Reason> faults, int[] keys, int offset) {
         int carried = -1;
         for (int i = 0; i < faults.size(); i++) {
             Reason fault = faults.get(i);
-            int found = -1;
-            for (int j = 0; j < recorded.size() && found < 0; j++) {
-                PackElementViolation violation = recorded.get(j);
-                if (violation.file().equals(fault.location().file())
-                        && violation.kind().equals(fault.code())
-                        && violation.reason().equals(fault.detail())) {
-                    found = j;
-                }
-            }
-            carried = found >= 0 ? found : carried;
+            Integer found = first.get(new Recorded(fault.location().file(), fault.code(), fault.detail()));
+            carried = found != null ? found : carried;
             keys[offset + i] = carried;
         }
     }

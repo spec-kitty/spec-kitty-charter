@@ -244,7 +244,7 @@ class PackFileKindTest {
         assertThat(KINDS.classify("x/pack.md")).isInstanceOf(PackFileKind.Retired.class);
         assertThat(KINDS.classify("x/PROVENANCE.md")).isInstanceOf(PackFileKind.Retired.class);
         assertThat(KINDS.classify("x/README.md")).isInstanceOf(PackFileKind.Mapped.class);
-        // A file a rule takes in another letter case is unmodelled, not fallback: it is refused, never stripped.
+        // A file only a files rule takes, in another letter case, is unmodelled, not fallback: never stripped (Q1).
         assertThat(KINDS.classify("x/toolguides/x.guide.MD")).isEqualTo(PackFileKind.Unclassified.INSTANCE);
         assertThat(KINDS.classify("x/missions/m/enhancements/a.prompt-fragment.MD"))
                 .isEqualTo(PackFileKind.Unclassified.INSTANCE);

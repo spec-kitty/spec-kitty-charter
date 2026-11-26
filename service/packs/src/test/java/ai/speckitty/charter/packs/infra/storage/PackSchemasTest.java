@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -466,6 +467,44 @@ class PackSchemasTest {
                 .allSatisfy(v -> assertThat(v.value()).contains(reported))
                 .extracting(SchemaViolation::keyword)
                 .contains("type");
+    }
+
+    @Test
+    void eightyThousandNonFiniteValuesBesideTwentyThousandViolationsAreJudgedOnceEach() {
+        // #648: each non-finite value looked for a violation at its place with a pass over every violation, so 80 000
+        // of them beside 20 000 violations (a file near the size cap) took a product of passes. Each step breaks its
+        // title, and its examples hold four NaNs where strings are declared. The NaN at schema_version already breaks
+        // its pattern, so it is judged no further. Asserted: the one violation at schema_version is that pattern
+        // violation, and the total is 100 001 (20 000 titles, one pattern, 80 000 examples), with no type violation
+        // at schema_version beside it.
+        StringBuilder tactic = new StringBuilder("schema_version: .nan\nid: x\nname: x\nsteps:\n");
+        for (int i = 0; i < 20_000; i++) {
+            tactic.append("  - {title: 1, examples: [.nan, .nan, .nan, .nan]}\n");
+        }
+        Object document = Yaml.load(tactic.toString());
+
+        List<SchemaViolation> violations = PackSchemas.bundled().validate("tactic", "x.yaml", document);
+
+        assertThat(violations).hasSize(100_001);
+        assertThat(violations.subList(0, 20_001))
+                .filteredOn(v -> v.pointer().equals(List.of("schema_version")))
+                .singleElement()
+                .satisfies(v -> assertThat(v.keyword()).isEqualTo("pattern"));
+        assertThat(violations.subList(0, 20_001))
+                .filteredOn(v -> !v.pointer().equals(List.of("schema_version")))
+                .extracting(SchemaViolation::pointer)
+                .containsExactlyElementsOf(IntStream.range(0, 20_000)
+                        .mapToObj(i -> List.of("steps", Integer.toString(i), "title"))
+                        .toList());
+        assertThat(violations.subList(20_001, 100_001))
+                .allSatisfy(v -> {
+                    assertThat(v.keyword()).isEqualTo("type");
+                    assertThat(v.value()).contains("NaN");
+                })
+                .extracting(SchemaViolation::pointer)
+                .containsExactlyElementsOf(IntStream.range(0, 80_000)
+                        .mapToObj(i -> List.of("steps", Integer.toString(i / 4), "examples", Integer.toString(i % 4)))
+                        .toList());
     }
 
     @Test

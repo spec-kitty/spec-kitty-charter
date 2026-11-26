@@ -37,9 +37,13 @@ type's `missions/<type>/templates/` is a `template` (a `README.md` under `assets
 under either templates directory or `assets/`, are excluded). A retired file is refused by name with its rule's
 reason, never skipped (ADR-0044 decision 6); the pack-level `pack.md` and `PROVENANCE.md` (#451) and
 `org-charter.yaml` (#431) are retired rules too, and a root file that differs from a root rule's file only in letter
-case (`Readme.md`, `Pack.md`) is refused by name under that rule, with the violation code `case_variant`. Last, after the companion claims of the kind
-bindings (a skill's body, a toolguide's guide), the `ignored` rules (`match` and `reason`, both required) take what
-nothing else took: `**/*.md`, so Markdown no rule models (an author's `docs/notes.md`) is excluded. An excluded file,
+case (`Readme.md`, `Pack.md`) is refused by name under that rule, with the violation code `case_variant`. A file is
+also judged in lower case (#661): an exclusion takes its file in any letter case (`assets/logos/ReadMe.md` is the
+excluded README), a retired rule refuses its family in any letter case wherever it stands (`a.Step-Contract.yaml`),
+and a `files` rule judges its kind over a payload, an exclusion or another `files` rule that takes the file as
+written, so every spelling has its lower-case spelling's kind (`assets/a.Directive.yaml` is a directive). Last,
+after the companion claims of the kind bindings (a skill's body, a toolguide's guide), the `ignored` rules (`match`
+and `reason`, both required) take what nothing else took: `**/*.md`, so Markdown no rule models (an author's `docs/notes.md`) is excluded. An excluded file,
 whether an `exclusions` or an `ignored` match, is not held, not served, not digested and not refused: a registration
 removes it before it commits and reports it as a `file_not_held` diagnostic (ADR-0073). A file that no step takes
 is `unmodelled`: it is warned as `file_not_held` and not held, as an excluded file is (#554, operator ruling Q1). Each
@@ -160,7 +164,8 @@ Every change to a schema, `file-kinds.yaml` or the conformance cases adds a line
 in the same pull request. A change to a rule of `file-kinds.yaml` also adds or changes its conformance case:
 `ClassifierConformanceTest` runs every case against `PackFileKind.classify` and fails when a rule has no case, or a
 case names a rule the table does not hold. `:contracts:checkPacksChangelog`, part of `check`, refuses a malformed or
-misordered heading, or a 0.x minor bump without `### Breaking`.
+misordered heading, a 0.x minor bump without `### Breaking`, or packs contract files that differ from the release of a
+released and tagged top heading ("Releasing the packs contract", below).
 
 ## The packs contract and its releases (#559)
 
@@ -187,6 +192,12 @@ The first releases are release candidates (operator ruling R1, 2026-11-16): `0.1
    (`0.1.0-rc.2`) or the final `0.1.0` from it; any other version above a candidate is refused until its final release
    is recorded. A candidate is never the previous release for the Breaking rule: the first section of a new line, a
    candidate or not, lists what breaks.
+
+Once `contract-packs-v<version>` of the top heading is merged into HEAD, the packs contract's files (`file-kinds.yaml`,
+`schemas/`, `conformance/`) are frozen: `check` (`:contracts:checkPacksChangelog`) refuses HEAD while they differ from
+the tag's, until step 3 opens the next `-SNAPSHOT` (#663). Other files may change, unlike after a charter contract
+release, which refuses any later commit until its reopen. The check also refuses a released heading below the top
+whose tag is not merged into HEAD, so a clone without the tags fails instead of passing unchecked.
 
 Pushing the tag in step 2 publishes the release: `.github/workflows/packs-contract-release.yml` rebuilds the assets at
 the tag with `scripts/release/packs-contract-release-assets.sh` and attaches `packs-contract.tar.gz`,

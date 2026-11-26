@@ -205,18 +205,40 @@ public final class PackGraph {
     }
 
     /**
-     * The starts and every pack they build on, transitively, each once, in breadth-first first-seen order. The edges
-     * are a pack's {@link #buildsOn}: the caller maps each pack to the packs its {@code depends_on} and
-     * {@code parent_pack} name, by its own key, and gives none for a pack it does not hold. A cycle terminates.
+     * The starts and every pack they build on, transitively, each once, in breadth-first first-seen order. The caller
+     * supplies the edges, keyed its own way: either {@link #buildsOn} of each pack's descriptor, or the builds-on edges a
+     * composed closure already resolved ({@code ClosureView#parentOf}). The domain owns the descent; the caller owns only
+     * how a key maps to its edges, and gives none for a pack it does not hold. A cycle terminates.
      *
      * @param starts the packs the descent starts at, in order
-     * @param buildsOn each pack's {@link #buildsOn} edges, as the caller keys its packs
+     * @param buildsOn each pack's builds-on edges, as the caller keys its packs
      * @param <K> how the caller keys a pack
      * @return the starts, then each pack they build on in the order first met; a key with no pack is included, with no
      *     descent from it
      */
     public static <K> Set<K> ancestorsOf(Collection<K> starts, Function<K, ? extends Collection<K>> buildsOn) {
         return reachable(starts, buildsOn);
+    }
+
+    /**
+     * {@link #ancestorsOf(Collection, Function)} over packs the caller holds in a map: a key the map does not hold is
+     * included and not descended from.
+     *
+     * @param starts the packs the descent starts at, in order
+     * @param packs the packs the caller holds, by its key
+     * @param buildsOn a held pack's builds-on edges
+     * @param <K> how the caller keys a pack
+     * @param <V> what the caller holds for a pack
+     * @return as {@link #ancestorsOf(Collection, Function)}
+     */
+    public static <K, V> Set<K> ancestorsOf(
+            Collection<K> starts, Map<K, V> packs, Function<V, ? extends Collection<K>> buildsOn) {
+        Objects.requireNonNull(packs, "packs");
+        Objects.requireNonNull(buildsOn, "buildsOn");
+        return reachable(starts, key -> {
+            V pack = packs.get(key);
+            return pack == null ? List.of() : buildsOn.apply(pack);
+        });
     }
 
     /** Every node reachable from the starts, the starts included, in breadth-first first-seen order, each once. */
@@ -340,6 +362,8 @@ public final class PackGraph {
         Objects.requireNonNull(packId, "packId");
         Objects.requireNonNull(descriptorOf, "descriptorOf");
         Set<String> reached = new LinkedHashSet<>();
+        // A LIFO stack on purpose: the resolver met dependencies last declared first, and
+        // dependsOnClosureIsLifoOverDependsOnOnly pins that order.
         List<String> pending = new ArrayList<>(List.of(packId));
         while (!pending.isEmpty()) {
             String next = pending.remove(pending.size() - 1);

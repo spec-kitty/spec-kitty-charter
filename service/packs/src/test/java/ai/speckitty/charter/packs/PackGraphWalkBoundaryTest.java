@@ -27,8 +27,10 @@ import org.junit.jupiter.api.Test;
  *       ({@code RegistrationJobs}) is no walk and is not matched;
  *   <li>{@link #EDGES_ARE_READ_IN_THE_DOMAIN}: no application code reads a descriptor's {@code depends_on} or
  *       {@code parent_pack}, by a call or a method reference; it asks {@code PackGraph.buildsOn}. Two read-model
- *       projections read them to answer, not to walk: {@code ClosureQueries.parentsOf} (each pack's parent) and
- *       {@code OfferingReadService.dependenciesOf} (the declared edges with their held versions).
+ *       projections read them, each exempt by its full signature so a later overload is not: {@code
+ *       ClosureQueries.parentsOf(List)} records each pack's parent in the closure view, whose resolved edges
+ *       {@code ClosureRoleFacts} later hands to {@code PackGraph.ancestorsOf} (the walk stays in the domain), and
+ *       {@code OfferingReadService.dependenciesOf} answers the declared edges with their held versions.
  * </ul>
  *
  * <p>A walk written with a list as its stack, or by recursion, over edges the domain already handed out is not caught
@@ -41,7 +43,9 @@ class PackGraphWalkBoundaryTest {
     private static final String APPLICATION = ROOT + ".application..";
     private static final Set<String> EDGE_READS = Set.of("dependencies", "parentPack");
     private static final Set<String> READ_MODEL_PROJECTIONS = Set.of(
-            ROOT + ".application.ClosureQueries.parentsOf", ROOT + ".application.OfferingReadService.dependenciesOf");
+            ROOT + ".application.ClosureQueries.parentsOf(java.util.List)",
+            ROOT + ".application.OfferingReadService.dependenciesOf(" + ROOT
+                    + ".domain.PackCompositionResolver$PackUnderResolution, java.util.Map)");
 
     static final ArchRule NO_WORK_QUEUE = noClasses()
             .that()
@@ -60,15 +64,15 @@ class PackGraphWalkBoundaryTest {
             "read PackDescriptor.dependencies() or parentPack() outside a read-model projection",
             access -> access.getTargetOwner().isEquivalentTo(PackDescriptor.class)
                     && EDGE_READS.contains(access.getName())
-                    && !READ_MODEL_PROJECTIONS.contains(
-                            access.getOrigin().getFullName().replaceAll("\\(.*", "")));
+                    && !READ_MODEL_PROJECTIONS.contains(access.getOrigin().getFullName()));
 
     static final ArchRule EDGES_ARE_READ_IN_THE_DOMAIN = noClasses()
             .that()
             .resideInAPackage(APPLICATION)
             .should()
             .accessTargetWhere(A_DESCRIPTOR_EDGE_READ)
-            .because("the packs domain decides which edges a walk follows; ask PackGraph.buildsOn (ADR-0082, #637)");
+            .because("the packs domain reads a pack's builds-on edges and walks them; ask PackGraph.buildsOn and"
+                    + " hand the edges to a PackGraph walk (ADR-0082, #637)");
 
     @Test
     void noApplicationClassWalksThePackGraph() {

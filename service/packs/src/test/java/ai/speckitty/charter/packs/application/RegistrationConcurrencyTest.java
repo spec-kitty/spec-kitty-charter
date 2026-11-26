@@ -16,6 +16,7 @@ import ai.speckitty.charter.packs.domain.Directive;
 import ai.speckitty.charter.packs.domain.DirectiveIdentifier;
 import ai.speckitty.charter.packs.domain.Enforcement;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.testfixtures.Await;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -175,21 +176,7 @@ class RegistrationConcurrencyTest {
 
     /** Holds a swap until a running reader has seen one (2 s at most), so that the overlap never rests on timing. */
     private void pauseUntilAReaderSawASwap() {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
-        do {
-            pause(1);
-        } while (overlapped.get() == 0
-                && readersRunning.get() > 0
-                && !Thread.currentThread().isInterrupted()
-                && System.nanoTime() < deadline);
-    }
-
-    private static void pause(long millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-        }
+        Await.within(Duration.ofSeconds(2), () -> overlapped.get() > 0 || readersRunning.get() == 0);
     }
 
     private static String markersOf(Rig rig, PackIdentifier pack) {

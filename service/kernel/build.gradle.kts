@@ -1,5 +1,6 @@
-// The kernel: shared Pack/DRG vocabulary (kernel.domain), the validation guard library (kernel.validation) and the
-// markdown content form's line rules (kernel.markdown, #299).
+// The kernel: shared Pack/DRG vocabulary (kernel.domain), the validation guard library (kernel.validation), the
+// markdown content form's line rules (kernel.markdown, #299) and the work meter that counts the units of work one call
+// does (kernel.metering, #659).
 // Pure Java by construction: charter.domain-conventions rejects any external dependency, so no Spring, SnakeYAML
 // or networknt can enter. jspecify and the test stack arrive through charter.hand-written / charter.java-base.
 plugins {

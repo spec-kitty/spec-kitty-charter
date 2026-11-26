@@ -232,15 +232,6 @@ public final class ClosureQueries {
         return offering.composedWithFacts(roots);
     }
 
-    /**
-     * The closure of every configured pack.
-     *
-     * @return the view, as {@link #snapshot(Optional)} answers it for absent roots
-     */
-    public ClosureView allConfigured() {
-        return snapshot(Optional.empty());
-    }
-
     private ClosureView viewOf(
             OfferingReadService.ComposedClosure composed, String fingerprint, String closureFingerprint) {
         List<PackUnderResolution> packs = composed.packs();

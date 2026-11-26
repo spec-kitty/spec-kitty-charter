@@ -30,6 +30,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.Failure;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1507,7 +1508,7 @@ class CompositionRulesTest {
 
     /** Each pack's facts with the presets of the given ids, by the pack's descriptor id; no item, so no item fault. */
     private static Function<PackUnderResolution, PackCompositionFacts> presetsHeld(Map<String, List<String>> presets) {
-        return pack -> new PackCompositionFacts(
+        return pack -> CompositionFacts.of(
                 List.of(),
                 List.of(),
                 List.of(),

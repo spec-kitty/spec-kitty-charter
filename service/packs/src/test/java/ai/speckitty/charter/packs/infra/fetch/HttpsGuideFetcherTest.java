@@ -541,11 +541,7 @@ class HttpsGuideFetcherTest {
                     MIB,
                     3,
                     host -> {
-                        try {
-                            Thread.sleep(60_000);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
+                        hangUntilInterrupted();
                         return List.of(GLOBAL);
                     },
                     transport,
@@ -568,11 +564,7 @@ class HttpsGuideFetcherTest {
                     host -> {
                         lookup.set(Thread.currentThread());
                         entered.countDown();
-                        try {
-                            Thread.sleep(60_000);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
+                        hangUntilInterrupted();
                         return List.of(GLOBAL);
                     },
                     transport,
@@ -1053,6 +1045,15 @@ class HttpsGuideFetcherTest {
         @Override
         public HttpClient.Version version() {
             return HttpClient.Version.HTTP_1_1;
+        }
+    }
+
+    /** A lookup that never answers: it waits until the fetcher's deadline interrupts it, however long that takes. */
+    private static void hangUntilInterrupted() {
+        try {
+            new CountDownLatch(1).await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

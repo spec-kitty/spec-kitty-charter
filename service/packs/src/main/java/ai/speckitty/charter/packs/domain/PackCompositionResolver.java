@@ -1039,22 +1039,14 @@ public final class PackCompositionResolver {
         boolean dependedOnAtTheContestsLevel = compose.stream()
                 .filter(other -> other.configured().level() == level)
                 .filter(other -> !other.descriptor().packId().equals(packId))
-                .anyMatch(other -> targetsOf(other).contains(packId));
+                .anyMatch(other -> PackGraph.buildsOn(other.descriptor()).contains(packId));
         return !dependedOnAtTheContestsLevel && reach(pack, byId).containsAll(contestants);
-    }
-
-    /** The {@code pack_id}s a pack names by {@code depends_on} and {@code parent_pack}. */
-    private static List<String> targetsOf(PackUnderResolution pack) {
-        return PackGraph.buildsOn(pack.descriptor());
     }
 
     /** Every {@code pack_id} a pack reaches over {@code depends_on} and {@code parent_pack} within the compose. */
     private static Set<String> reach(PackUnderResolution pack, Map<String, PackUnderResolution> byId) {
-        Set<String> reached = PackGraph.ancestorsOf(
-                targetsOf(pack),
-                next -> Optional.ofNullable(byId.get(next))
-                        .map(PackCompositionResolver::targetsOf)
-                        .orElse(List.of()));
+        Set<String> reached = new LinkedHashSet<>(PackGraph.ancestorsOf(
+                PackGraph.buildsOn(pack.descriptor()), byId, member -> PackGraph.buildsOn(member.descriptor())));
         reached.retainAll(byId.keySet());
         return reached;
     }

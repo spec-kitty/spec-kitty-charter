@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.packs.infra.fetch.git.GitFailure.Kind;
+import ai.speckitty.charter.testfixtures.Await;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -234,7 +235,13 @@ class GitCommandTest {
     void aRunStartedAfterTheDeadlineIsNeverStarted() throws IOException, InterruptedException {
         command();
         GitCommand git = new GitCommand(shim.executable(), home, Duration.ofMillis(50), GitTransport.NONE);
-        Thread.sleep(200);
+        long created = System.nanoTime();
+        // The one allowed wait on a real deadline (see Await): GitCommand measures its deadline on System.nanoTime and
+        // takes no clock to inject, and what the test asks is liveness, that a run begun after the deadline never
+        // starts, not how fast anything is. It waits until the deadline has passed, never a fixed span.
+        Await.until(
+                "the 50 ms deadline to pass",
+                () -> System.nanoTime() - created > Duration.ofMillis(60).toNanos());
 
         assertThatThrownBy(() -> git.run(List.of("rev-parse"), 1024))
                 .isInstanceOfSatisfying(

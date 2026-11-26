@@ -298,10 +298,6 @@ public final class ClosureRoleFacts {
 
     /** Every pack of the set a member builds on, transitively: {@link PackGraph#ancestorsOf} from what it builds on. */
     private static Set<PackIdentifier> ancestorsOf(Member member, Map<PackIdentifier, Member> byPack) {
-        return PackGraph.ancestorsOf(
-                member.buildsOn(),
-                next -> Optional.ofNullable(byPack.get(next))
-                        .map(Member::buildsOn)
-                        .orElse(List.of()));
+        return PackGraph.ancestorsOf(member.buildsOn(), byPack, Member::buildsOn);
     }
 }

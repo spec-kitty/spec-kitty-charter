@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.application.PackRevision;
 import ai.speckitty.charter.packs.application.PackWriteStore;
 import ai.speckitty.charter.packs.application.PackWriteStore.Change;
 import ai.speckitty.charter.packs.domain.MutabilityCheck.Operation;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -259,7 +260,7 @@ class PackMutabilityPolicyTest {
                         List.of(new PackDependency(FixtureUlids.of("Q"), ">=1.0"))));
         Map<String, PackCompositionFacts> facts = Map.of(
                 "q",
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         List.of(),
                         List.of("directive:X"),
                         List.of(),
@@ -269,7 +270,7 @@ class PackMutabilityPolicyTest {
                                 .build(),
                         List.of()),
                 PACK.value(),
-                new PackCompositionFacts(List.of(), ownHeld, List.of(), List.of(), own, List.of()));
+                CompositionFacts.of(List.of(), ownHeld, List.of(), List.of(), own, List.of()));
         PackCatalogRepository catalog =
                 () -> List.of(new ConfiguredPack(q, PackLevel.BUILT_IN), new ConfiguredPack(PACK, PackLevel.ORG));
         PackDescriptorRepository byId = new PackDescriptorRepository() {

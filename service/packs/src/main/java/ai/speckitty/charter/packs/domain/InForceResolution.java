@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
 import ai.speckitty.charter.packs.domain.InForceStates.ArtifactState;
 import ai.speckitty.charter.packs.domain.InForceStates.Bucket;
 import ai.speckitty.charter.packs.domain.InForceStates.DenyNotApplied;
@@ -24,7 +25,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Decides what is in force: a stratified fixed point over the merged closure (research R13, rules E2 to E9). The strata
@@ -37,34 +37,13 @@ import java.util.concurrent.atomic.AtomicLong;
  *       stays. An override never hides an artifact that is not {@code open}.
  * </ol>
  *
- * <p>The function is pure and reads only its arguments; the iteration bounds are the size of the closure, and a bound
- * crossed fails loudly rather than answering.
+ * <p>The function reads only its arguments and changes nothing but the counts of a {@link WorkMeter} bound around it
+ * ({@link ResolutionWork}); the iteration bounds are the size of the closure, and a bound crossed fails loudly rather than
+ * answering.
  */
 public final class InForceResolution {
 
-    private static final AtomicLong RESOLUTIONS = new AtomicLong();
-    private static final AtomicLong WALK_VISITS = new AtomicLong();
-
     private InForceResolution() {}
-
-    /**
-     * How many resolutions this JVM ran: a test hook of the NFR-003 gate, which counts the work a read does, as a delta
-     * around one request.
-     *
-     * @return the resolutions so far
-     */
-    public static long resolutions() {
-        return RESOLUTIONS.get();
-    }
-
-    /**
-     * How many nodes the resolution's walks of the override graph visited: a test hook of the NFR-003 gate.
-     *
-     * @return the visits so far
-     */
-    public static long walkVisits() {
-        return WALK_VISITS.get();
-    }
 
     /**
      * The merged edges the strata walk, as plain values.
@@ -106,7 +85,7 @@ public final class InForceResolution {
         Objects.requireNonNull(merged, "merged");
         Objects.requireNonNull(edges, "edges");
         Objects.requireNonNull(request, "request");
-        RESOLUTIONS.incrementAndGet();
+        WorkMeter.count(ResolutionWork.RESOLUTION);
         Model model = new Model(merged, edges, request);
         model.refuseOverrideCycle();
         return model.states(model.solve());
@@ -214,7 +193,7 @@ public final class InForceResolution {
             if (finished.contains(node)) {
                 return;
             }
-            WALK_VISITS.incrementAndGet();
+            WorkMeter.count(ResolutionWork.RESOLUTION_VISIT);
             if (!path.add(node)) {
                 throw new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE,
@@ -257,7 +236,7 @@ public final class InForceResolution {
 
         /** Counts one step of a walk and fails loudly when a walk takes more steps than the closure can need. */
         private int bounded(int steps) {
-            WALK_VISITS.incrementAndGet();
+            WorkMeter.count(ResolutionWork.RESOLUTION_VISIT);
             int next = steps + 1;
             if (next > (long) bound * bound * bound) {
                 throw new IllegalStateException("an in-force walk crossed its bound of " + bound + " (closure size)");

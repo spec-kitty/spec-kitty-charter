@@ -51,6 +51,22 @@ class MissionValuesTest {
                 .hasMessageContaining("under templates/");
     }
 
+    @ParameterizedTest(name = "the template path ''{0}'' starts under templates/ and climbs out, so it is refused")
+    @ValueSource(strings = {"templates/../spec.md", "templates/a/../../spec.md", "templates/..", "templates/a\\b.md"})
+    void aTemplatePathThatStartsUnderTemplatesStillMayNotLeave(String path) {
+        // The prefix check passes each of these; only the containment rule refuses them (#658, planted break 1).
+        assertThatThrownBy(() -> artifact("output.spec.main", "spec.md", Optional.of(path)))
+                .isInstanceOf(ConstraintBreachException.class)
+                .hasMessageContaining("under templates/ beside its mission type and stays there");
+    }
+
+    @ParameterizedTest(name = "the template path ''{0}'' stays under templates/, so it is accepted")
+    @ValueSource(strings = {"templates/spec.md", "templates/a/b/spec.md", "templates/a..b.md", "templates/..spec.md"})
+    void aTemplatePathThatStaysUnderTemplatesIsAccepted(String path) {
+        assertThat(artifact("output.spec.main", "spec.md", Optional.of(path)).templatePath())
+                .contains(path);
+    }
+
     @Test
     @DisplayName("#299: a step's text breaks no markdown line rule when it is built, field by field")
     void stepTextsFollowTheMarkdownLineRules() {

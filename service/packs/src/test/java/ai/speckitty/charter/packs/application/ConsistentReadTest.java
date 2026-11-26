@@ -6,10 +6,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.PackSources;
+import ai.speckitty.charter.testfixtures.Await;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
@@ -405,17 +408,24 @@ class ConsistentReadTest {
         generation.begin("pack-a");
         assertThat(generation.awaitIdle(java.time.Duration.ofMillis(20))).isFalse();
 
+        Thread waiting = Thread.currentThread();
+        AtomicReference<Throwable> enderFailed = new AtomicReference<>();
         Thread ender = new Thread(() -> {
-            try {
-                Thread.sleep(30);
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
-            }
+            // The swap ends once the test thread waits for it, so the wait is what sees it end.
+            Await.until(
+                    "the test thread waiting for the swap to end",
+                    () -> waiting.getState() == Thread.State.TIMED_WAITING
+                            && Arrays.stream(waiting.getStackTrace())
+                                    .anyMatch(frame -> frame.getClassName().equals(PackWriteGeneration.class.getName())
+                                            && frame.getMethodName().equals("awaitIdle")));
             generation.end("pack-a");
         });
+        ender.setUncaughtExceptionHandler((thread, failure) -> enderFailed.set(failure));
         ender.start();
 
-        assertThat(generation.awaitIdle(java.time.Duration.ofSeconds(10))).isTrue();
+        boolean idle = generation.awaitIdle(java.time.Duration.ofSeconds(10));
         ender.join();
+        assertThat(enderFailed.get()).as("the thread that ends the swap").isNull();
+        assertThat(idle).isTrue();
     }
 }

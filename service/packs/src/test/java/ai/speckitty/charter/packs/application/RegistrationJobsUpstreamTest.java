@@ -15,11 +15,11 @@ import ai.speckitty.charter.packs.application.RegistrationJobs.Stager;
 import ai.speckitty.charter.packs.application.RegistrationJobs.State;
 import ai.speckitty.charter.packs.application.RegistrationJobs.Status;
 import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
+import ai.speckitty.charter.testfixtures.Await;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -55,20 +55,15 @@ class RegistrationJobsUpstreamTest {
                     throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
                 },
                 audit::add,
-                RegistrationJobs.JobGate.OPEN,
                 RegistrationJobs.StorageRoom.UNBOUNDED,
                 new FileStagingArea(host)));
         Reservation reservation = jobs.reserve("acme", Preconditions.none(), ORIGIN);
         reservation.start(stager);
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-        while (System.nanoTime() < deadline) {
-            Status status = reservation.status();
-            if (status.state() == State.REFUSED || status.state() == State.SUCCEEDED) {
-                return status;
-            }
-            Thread.sleep(5);
-        }
-        throw new AssertionError("the job did not end");
+        Await.until("the job to end", () -> {
+            State state = reservation.status().state();
+            return state == State.REFUSED || state == State.SUCCEEDED;
+        });
+        return reservation.status();
     }
 
     @Test

@@ -77,11 +77,7 @@ public final class ScopedPolicies {
     /** What a pack and every pack it builds on, transitively, hold; a pack outside the closure holds nothing here. */
     private static Set<Urn> heldAlong(Scope from, Map<PackUlid, Scope> byId) {
         Set<Urn> held = new LinkedHashSet<>();
-        PackGraph.ancestorsOf(
-                        List.of(from.packId()),
-                        packId -> Optional.ofNullable(byId.get(packId))
-                                .map(Scope::buildsOn)
-                                .orElse(List.of()))
+        PackGraph.ancestorsOf(List.of(from.packId()), byId, Scope::buildsOn)
                 .forEach(packId -> Optional.ofNullable(byId.get(packId)).ifPresent(scope -> held.addAll(scope.held())));
         return held;
     }

@@ -204,7 +204,7 @@ time; the judging differs. A Visitor lets one walk serve every check.
   the rule that needs one adds its mode. `packs.domain.graph` and `packs.domain` depend on each other (the nodes take
   `ConfiguredPack`, `PackOrigins` and the delegation candidate; the driver takes the nodes); no slice-cycle rule
   forbids it, and the graph package goes one way when those types move.
-- *Built (slice 2, #637):* `{@link ai.speckitty.charter.packs.domain.PackGraph}` holds the walks the application layer
+- *Built (slice 2, #637):* `PackGraph` (`packs.domain`) holds the walks the application layer
   wrote by hand: the edges a pack builds on, the descent along them, the composition closure, the packs building on a
   pack, its direct dependents, `cyclesIn` (with the Tarjan pass), the `enhances` grounding, and the composition
   resolver's `depends_on`-only closure, `parent_pack` line, dependency order and leftover cycles. No application class

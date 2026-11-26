@@ -51,15 +51,14 @@ class WholePackStoreReadTest {
     void loadStagedAssemblesTheReadAlone(@TempDir Path host) throws IOException {
         Path pack = richPack(host);
         PackReadout read = read(pack);
-        long walks = PackFileSet.walks();
-        long runs = StoreRead.runs();
         write(pack, "tactics/late.tactic.yaml", "id: late\nschema_version: '1.0'\nname: Late\nsteps:\n- title: s\n");
 
-        WholePackWriteStore.Contents contents = store.loadStaged(read);
+        ReadCounters.Measured<WholePackWriteStore.Contents> contents =
+                ReadCounters.measured(() -> store.loadStaged(read));
 
-        assertThat(PackFileSet.walks()).as("no walk").isEqualTo(walks);
-        assertThat(StoreRead.runs()).as("no read").isEqualTo(runs);
-        assertThat(contents.facts().held()).doesNotContain("tactic:late");
+        assertThat(contents.read().walks()).as("no walk").isZero();
+        assertThat(contents.read().runs()).as("no read").isZero();
+        assertThat(contents.value().facts().held()).doesNotContain("tactic:late");
     }
 
     @Test
