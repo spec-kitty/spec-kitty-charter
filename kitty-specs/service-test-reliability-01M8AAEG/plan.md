@@ -38,7 +38,7 @@ squad's findings and the full-suite red are fixed red-first, and the documentati
 
 ### Documentation (this mission)
 
-```
+```text
 kitty-specs/service-test-reliability-01M8AAEG/
 |-- spec.md
 |-- plan.md
