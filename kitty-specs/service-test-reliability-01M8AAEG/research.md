@@ -68,9 +68,9 @@ it running before `close()` ends it busy. The test asserted an order `close()` d
   chose to keep the meter for tests, Q5=a).
 - **Holding a job pending**: Decision: keep both workers busy on held fillers. Rationale: no main seam; the queue holds
   the job as in production. Alternative: an injected executor (rejected: a collaborator only tests vary).
-- **Kept sleeps**: the dripping server (`HttpsGuideFetcherLoopbackTest`), the stress-test jitter
-  (`MixedReadConcurrencyTest`, `RegistrationConcurrencyTest` via `Await.within`), the slow swap whose duration is
-  asserted (`MixedReadConcurrencyTest` 600 ms). Each is a stimulus, not a wait.
+- **Kept sleeps** (two, NFR-001): the dripping server (`HttpsGuideFetcherLoopbackTest`), and the pause helper of
+  `MixedReadConcurrencyTest`, which staggers its threads and slows one swap past the 600 ms the test reports. Each is a
+  stimulus, not a wait. `RegistrationConcurrencyTest` staggers through `Await.within`, a bounded pause, not a sleep.
 
 ## Mutation notes (red-first evidence)
 
@@ -131,7 +131,7 @@ read-only. Both APPROVE. The integration snapshot they read predates some per-WP
 
 ## Gates on the integration tree (2026-11-26)
 
-`local/659-integration` merges lanes a to d over `f6f21e4c0`; every run is `env -u _JAVA_OPTIONS ./gradlew verifyAll
+`local/659-integration` merges lanes a to d over `f6f21e4c0` (runs 1 to 4), then the Mission branch and `main` (runs 5 and 6); every run is `env -u _JAVA_OPTIONS ./gradlew verifyAll
 --continue --max-workers=2`. No red was retried; each is attributed.
 
 | Run | Result | Attribution | Fix |
@@ -140,6 +140,8 @@ read-only. Both APPROVE. The integration snapshot they read predates some per-WP
 | 2 | red | `:profiles-edge:compileTestJava`: `PacksProfileSourceTest` called the short `PackCompositionFacts` constructor WP03 moved out of main; the first pass rewrote callers in packs, activations and deployable only | lane-c: `CompositionFacts.of`; a sweep of every other module found no other caller |
 | 3 | red | `:packs` and `:deployable` `spotlessJavaCheck`: the squad folds in `OneReadTest` and `HexagonalArchitectureTest` were not formatted; every test passed | lane-a: `spotlessApply` |
 | 4 | green | 8 min 55 s; packs 7391, deployable 2438 and activations 1102 tests, none failing | - |
+| 5 | green | the final tree: the lanes, the Mission artifacts and `main` at `56b7641d7` merged; 15 min 45 s | - |
+| 6 | green | the landed tree (`002bf92b1`: the same, with `main` at `53d3ba8d6`, which brought #648 and #658 into packs); 15 min 6 s | - |
 
 Docs: `check_docs.py all`, markdownlint-cli2 0.18.1 (394 files, 0 errors) and cspell 9.2.0 on the changed pages are
 green. The MD038 hits a direct lint of `contracts/charter/scenarios/README.md` shows predate this Mission (seven on

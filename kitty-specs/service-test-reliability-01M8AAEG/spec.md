@@ -101,21 +101,21 @@ A maintainer reads a main-code class and finds only what production uses: no job
 
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
-| NFR-001 | No wait for a span | 0 `Thread.sleep` calls in the service tests apart from the recorded stimuli (2 kept: the dripping server, and one stress-test pause helper that staggers threads and slows one swap; amended 2026-11-26). | Reliability | High | Open |
+| NFR-001 | No wait for a span | 0 `Thread.sleep` calls in the service tests apart from the recorded stimuli (2 kept: the dripping server, and one stress-test pause helper that staggers threads and slows one swap; `Await.within` is a bounded pause, not a sleep; amended 2026-11-26). | Reliability | High | Met (two recorded sleeps, research.md) |
 | NFR-002 | Waits are bounded | Every state wait fails within 30 s (`Await.LIMIT`) when its state never comes. | Reliability | High | Done (retrofit) |
 | NFR-003 | Suite time does not grow | `:packs:test` wall time stays within 10% of `main`'s on the same runner. | Performance | Medium | Met (+0.7 %, research.md) |
-| NFR-004 | Suite is green | `./gradlew verifyAll` on Java 25 passes with 0 failed tests, every red attributed, no retry-to-green. | Reliability | High | Open |
+| NFR-004 | Suite is green | `./gradlew verifyAll` on Java 25 passes with 0 failed tests, every red attributed, no retry-to-green. | Reliability | High | Met (verifyAll runs, research.md) |
 
 ### Constraints
 
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
-| C-001 | Production unchanged | No production behaviour and no contract change; the meter counts nothing when unbound. | Technical | High | Open |
-| C-002 | Canonical shapes only | Tests build only the canonical records; fixtures build through the canonical constructor. | Technical | High | Open |
-| C-003 | Exclusions | `PackMutabilityPolicy`'s test-only constructors are out (#636 slice 5). Edits to `InForceResolution`, `PackCompositionFacts` and `ClosureView` stay minimal and coordinated with the #637 runner through the dispatcher. | Business | High | Open |
-| C-004 | No PIT | No `pitest` or `checkMutationFloors` run; red-first is shown by hand-made mutants, each reverted. | Technical | High | Open |
-| C-005 | Commits | Signed commits, no Co-Authored-By trailers, no model names. | Regulatory | High | Open |
-| C-006 | Gates | `verifyAll` on Java 25, `check_docs.py all`, markdownlint-cli2 and cspell pass; a changelog fragment is added. | Technical | High | Open |
+| C-001 | Production unchanged | No production behaviour and no contract change; the meter counts nothing when unbound. | Technical | High | Met (no main behaviour changed; verifyAll green) |
+| C-002 | Canonical shapes only | Tests build only the canonical records; fixtures build through the canonical constructor. | Technical | High | Met (fixtures delegate to the canonical constructor) |
+| C-003 | Exclusions | `PackMutabilityPolicy`'s test-only constructors are out (#636 slice 5). Edits to `InForceResolution`, `PackCompositionFacts` and `ClosureView` stay minimal and coordinated with the #637 runner through the dispatcher. | Business | High | Met (PackMutabilityPolicy untouched) |
+| C-004 | No PIT | No `pitest` or `checkMutationFloors` run; red-first is shown by hand-made mutants, each reverted. | Technical | High | Met (no PIT run; mutation notes, research.md) |
+| C-005 | Commits | Signed commits with the `Co-Authored-By: Claude <noreply@anthropic.com>` trailer and no model name (operator ruling relayed 2026-11-26; the CLI's unsigned commits land in one signed squash). | Regulatory | High | Met (the landing commit is signed with the trailer) |
+| C-006 | Gates | `verifyAll` on Java 25, `check_docs.py all`, markdownlint-cli2 and cspell pass; a changelog fragment is added. | Technical | High | Met (gates, research.md; changelog fragment added) |
 
 ### Key Entities
 
