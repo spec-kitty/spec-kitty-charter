@@ -2,12 +2,12 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,8 +45,6 @@ public final class CompositionFactsCache {
     private final PackWriteGeneration generation;
     private final RegistryWriteLock lock;
     private final Map<String, Kept> entries;
-    private final AtomicLong loads = new AtomicLong();
-    private final AtomicLong hits = new AtomicLong();
 
     /** What one read of a pack found, and the state of the pack it found it in. */
     private record Kept(long generation, String digest, PackCompositionFacts facts) {}
@@ -120,7 +118,7 @@ public final class CompositionFactsCache {
         }
         Optional<PackCompositionFacts> kept = kept(pack.value(), before, digest.get());
         if (kept.isPresent()) {
-            hits.incrementAndGet();
+            WorkMeter.count(CacheWork.HIT);
             return kept.get();
         }
         PackCompositionFacts loaded = counted(pack, load);
@@ -131,41 +129,9 @@ public final class CompositionFactsCache {
         return loaded;
     }
 
-    /**
-     * How many facts this cache read from a store: a test hook of the NFR-003 gate, which counts the work a read does.
-     *
-     * @return the loads so far
-     */
-    public long loads() {
-        return loads.get();
-    }
-
-    /**
-     * How many facts this cache answered from an entry: a test hook of the NFR-003 gate.
-     *
-     * @return the hits so far
-     */
-    public long hits() {
-        return hits.get();
-    }
-
-    /** Forgets every entry: the cold start of the NFR-003 gate. */
-    public void clear() {
-        synchronized (entries) {
-            entries.clear();
-        }
-    }
-
-    /** How many packs the cache keeps now. */
-    int size() {
-        synchronized (entries) {
-            return entries.size();
-        }
-    }
-
     /** One read from the store, counted. */
     private PackCompositionFacts counted(PackIdentifier pack, Function<PackIdentifier, PackCompositionFacts> load) {
-        loads.incrementAndGet();
+        WorkMeter.count(CacheWork.LOAD);
         return load.apply(pack);
     }
 

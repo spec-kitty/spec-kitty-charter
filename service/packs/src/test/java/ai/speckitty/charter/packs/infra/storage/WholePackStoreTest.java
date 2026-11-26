@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
 import ai.speckitty.charter.packs.application.WholePackWriteStore;
 import ai.speckitty.charter.packs.domain.NotHeldFile;
 import ai.speckitty.charter.packs.domain.PackCodes;
@@ -21,7 +22,6 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.Skill;
 import ai.speckitty.charter.packs.domain.Template;
-import ai.speckitty.charter.packs.domain.WorkMeter;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
 import ai.speckitty.charter.packs.infra.storage.rules.StorageCodes;
 import java.io.IOException;
@@ -982,7 +982,25 @@ class WholePackStoreTest {
         WorkMeter.Measured<WholePackWriteStore.Remains> remains = WorkMeter.measure(
                 () -> new WholePackStore(counting(new YamlSerializationStrategy(), reads)).salvageStored(STORED, pack));
         assertThat(remains.value().held()).hasSize(files);
-        return reads.get() + (int) remains.work().of(WorkMeter.Work.LOOKUP_PARSE);
+        return reads.get() + (int) remains.work().of(StoreWork.LOOKUP_PARSE);
+    }
+
+    @Test
+    @DisplayName("a lookup by id is counted, so the salvage bound below sees the lookups it adds up")
+    void aLookupByIdIsCounted(@TempDir Path host) throws IOException {
+        Path pack = host.resolve("looked-up");
+        write(
+                pack,
+                "directives/D0.directive.yaml",
+                "schema_version: \"1.0\"\nid: D0\ntitle: T\nintent: I\nenforcement: required\n");
+
+        WorkMeter.Measured<Boolean> found =
+                WorkMeter.measure(() -> new FilesystemPackStore(host, new YamlSerializationStrategy())
+                        .readOne(PackDirectory.of(pack), DirectiveBinding.INSTANCE, "D0")
+                        .isPresent());
+
+        assertThat(found.value()).isTrue();
+        assertThat(found.work().of(StoreWork.LOOKUP_PARSE)).isPositive();
     }
 
     @Test

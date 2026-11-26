@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.Urn;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
 import ai.speckitty.charter.packs.domain.InForceStates.ArtifactState;
 import ai.speckitty.charter.packs.domain.InForceStates.Bucket;
 import ai.speckitty.charter.packs.domain.InForceStates.DenyNotApplied;
@@ -36,8 +37,9 @@ import java.util.TreeSet;
  *       stays. An override never hides an artifact that is not {@code open}.
  * </ol>
  *
- * <p>The function is pure and reads only its arguments; the iteration bounds are the size of the closure, and a bound
- * crossed fails loudly rather than answering.
+ * <p>The function reads only its arguments and changes nothing but the counts of a {@link WorkMeter} bound around it
+ * ({@link ReadWork}); the iteration bounds are the size of the closure, and a bound crossed fails loudly rather than
+ * answering.
  */
 public final class InForceResolution {
 
@@ -83,7 +85,7 @@ public final class InForceResolution {
         Objects.requireNonNull(merged, "merged");
         Objects.requireNonNull(edges, "edges");
         Objects.requireNonNull(request, "request");
-        WorkMeter.count(WorkMeter.Work.RESOLUTION);
+        WorkMeter.count(ReadWork.RESOLUTION);
         Model model = new Model(merged, edges, request);
         model.refuseOverrideCycle();
         return model.states(model.solve());
@@ -191,7 +193,7 @@ public final class InForceResolution {
             if (finished.contains(node)) {
                 return;
             }
-            WorkMeter.count(WorkMeter.Work.RESOLUTION_VISIT);
+            WorkMeter.count(ReadWork.RESOLUTION_VISIT);
             if (!path.add(node)) {
                 throw new CharterRefusal(
                         RefusalCode.PACK_UNREADABLE,
@@ -234,7 +236,7 @@ public final class InForceResolution {
 
         /** Counts one step of a walk and fails loudly when a walk takes more steps than the closure can need. */
         private int bounded(int steps) {
-            WorkMeter.count(WorkMeter.Work.RESOLUTION_VISIT);
+            WorkMeter.count(ReadWork.RESOLUTION_VISIT);
             int next = steps + 1;
             if (next > (long) bound * bound * bound) {
                 throw new IllegalStateException("an in-force walk crossed its bound of " + bound + " (closure size)");

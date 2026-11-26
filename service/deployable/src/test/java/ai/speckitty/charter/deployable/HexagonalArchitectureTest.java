@@ -1,6 +1,7 @@
 package ai.speckitty.charter.deployable;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,6 +20,7 @@ import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaFieldAccess;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
@@ -2504,5 +2506,75 @@ class HexagonalArchitectureTest {
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("UsesSeam")
                 .hasMessageContaining("ScenarioPacks");
+    }
+
+    /**
+     * No main class keeps a static counter: no static field that is not final, and no static atomic or adder, so no
+     * state outlives one call and leaks between tests that run at once (ADR-0075 AA5, #659). The work a read does is
+     * counted on a {@code WorkMeter} bound around it. Three fields are not counters of work and stay: the commit
+     * store's counter of temporary names, the address resolver the JDK loads as a service provider, and the bundled
+     * schemas, built once on first use and retried after a failed build. Test fixtures are not main code.
+     */
+    private static ArchRule noStaticCounterInMain() {
+        DescribedPredicate<JavaField> kept = DescribedPredicate.describe(
+                "kept on purpose (PackCommitStore.COUNTER, GlobalAddressResolverProvider.ALLOWLIST and LOADED_BY_JDK,"
+                        + " PackSchemas.bundled) or test"
+                        + " fixtures",
+                field -> isNamed(field, ".PackCommitStore", "COUNTER")
+                        || isNamed(field, ".GlobalAddressResolverProvider", "ALLOWLIST")
+                        || isNamed(field, ".GlobalAddressResolverProvider", "LOADED_BY_JDK")
+                        || isNamed(field, ".PackSchemas", "bundled")
+                        || field.getOwner()
+                                .getSource()
+                                .map(source -> source.getUri()
+                                        .toString()
+                                        .matches(".*(/build/classes/java/testFixtures/|-test-fixtures\\.jar!).*"))
+                                .orElse(false));
+        ArchCondition<JavaField> beAConstant = new ArchCondition<>("be final and hold no atomic or adder") {
+            @Override
+            public void check(JavaField field, ConditionEvents events) {
+                boolean notFinal = !field.getModifiers().contains(JavaModifier.FINAL);
+                boolean counter = COUNTER_TYPES.stream()
+                        .anyMatch(type -> field.getRawType().isAssignableTo(type));
+                if (notFinal || counter) {
+                    events.add(SimpleConditionEvent.violated(
+                            field,
+                            field.getFullName() + (notFinal ? " is static and not final" : " is a static counter")));
+                }
+            }
+        };
+        return fields().that()
+                .areStatic()
+                .and(DescribedPredicate.not(kept))
+                .and(DescribedPredicate.describe(
+                        "not compiler-made", field -> !field.getModifiers().contains(JavaModifier.SYNTHETIC)))
+                .should(beAConstant);
+    }
+
+    private static boolean isNamed(JavaField field, String ownerSuffix, String name) {
+        return field.getOwner().getName().endsWith(ownerSuffix)
+                && field.getName().equals(name);
+    }
+
+    private static final List<Class<?>> COUNTER_TYPES = List.of(
+            java.util.concurrent.atomic.AtomicInteger.class,
+            java.util.concurrent.atomic.AtomicLong.class,
+            java.util.concurrent.atomic.AtomicBoolean.class,
+            java.util.concurrent.atomic.AtomicReference.class,
+            java.util.concurrent.atomic.LongAdder.class,
+            java.util.concurrent.atomic.DoubleAdder.class);
+
+    @Test
+    void noMainClassKeepsAStaticCounter() {
+        noStaticCounterInMain().check(classes);
+    }
+
+    @Test
+    void theStaticCounterRuleFailsOnAStaticAdderAndOnAFieldThatIsNotFinal() {
+        JavaClasses counting = new ClassFileImporter().importPackages("ai.speckitty.charter.deployable.archfixtures");
+        assertThatThrownBy(() -> noStaticCounterInMain().check(counting))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("StaticCounterFixture.READS is a static counter")
+                .hasMessageContaining("StaticCounterFixture.walks is static and not final");
     }
 }

@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
@@ -18,7 +19,6 @@ import ai.speckitty.charter.packs.domain.PackElementViolation;
 import ai.speckitty.charter.packs.domain.PackRefusalMapping;
 import ai.speckitty.charter.packs.domain.Payload;
 import ai.speckitty.charter.packs.domain.RelationshipEndpointRule;
-import ai.speckitty.charter.packs.domain.WorkMeter;
 import ai.speckitty.charter.packs.domain.markdown.MarkdownDocument;
 import ai.speckitty.charter.packs.domain.rules.Findings;
 import ai.speckitty.charter.packs.domain.rules.GraphBinding;
@@ -341,8 +341,8 @@ final class FilesystemPackStore {
     }
 
     /**
-     * A store whose pack files and companions are held to the given table and schemas: the seam a test uses to give a
-     * companion a structure schema of its own, or to retire a file family of its own (#194).
+     * A store whose pack files and companions are held to the given table and schemas: the whole-pack store's and the
+     * census's, and a table a test gives a companion structure schema or a retired file family of its own (#194).
      *
      * @param root the directory that holds the pack directories
      * @param strategy the format
@@ -487,7 +487,7 @@ final class FilesystemPackStore {
             List<KindBinding<?, ?>> kinds,
             GraphRead graphs,
             PackFileSet.@Nullable Walk walk) {
-        WorkMeter.count(WorkMeter.Work.WHOLE_READ);
+        WorkMeter.count(StoreWork.WHOLE_READ);
         Path directory = existingDirectory(pack);
         PackDescriptorDso descriptor = descriptorOf(directory, named);
         PackFileSet.Listing listing = walk == null
@@ -1449,7 +1449,7 @@ final class FilesystemPackStore {
      */
     private static Optional<Path> locate(Path directory, KindBinding<?, ?> kind, String elementId) {
         for (String file : PackFileSet.files(directory, kind.kind())) {
-            WorkMeter.count(WorkMeter.Work.LOOKUP_PARSE);
+            WorkMeter.count(StoreWork.LOOKUP_PARSE);
             ParsedYaml parsed =
                     ParsedYaml.parse(readText(directory.resolve(file)).orElse(""), file);
             if (parsed.document() instanceof java.util.Map<?, ?> map && elementId.equals(map.get(kind.idKey()))) {
