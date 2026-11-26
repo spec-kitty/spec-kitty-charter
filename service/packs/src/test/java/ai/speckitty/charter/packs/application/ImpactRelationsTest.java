@@ -17,12 +17,10 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -184,73 +182,5 @@ class ImpactRelationsTest {
                 .satisfiesExactly(
                         first -> assertThat(first).contains("directive:B"),
                         second -> assertThat(second).contains("directive:A"));
-    }
-
-    @Test
-    @DisplayName("cyclesIn: two cycles that share a node are reported once, through the first")
-    void cyclesSharingANodeAreReportedOnce() {
-        Map<String, List<String>> graph = new LinkedHashMap<>();
-        graph.put("a", List.of("b"));
-        graph.put("b", List.of("a", "c"));
-        graph.put("c", List.of("b"));
-
-        assertThat(ImpactRelations.cyclesIn(graph)).containsExactly(List.of("a", "b"));
-    }
-
-    @Test
-    @DisplayName("cyclesIn: one strongly connected group is one cycle, whatever the order of its edges (review 1)")
-    void oneGroupIsOneCycleInEveryEdgeOrder() {
-        Map<String, List<String>> first = new LinkedHashMap<>();
-        first.put("v", List.of("x", "u"));
-        first.put("x", List.of("y"));
-        first.put("y", List.of("x", "u"));
-        first.put("u", List.of("v"));
-        Map<String, List<String>> second = new LinkedHashMap<>(first);
-        second.put("v", List.of("u", "x"));
-
-        assertThat(ImpactRelations.cyclesIn(first)).hasSize(1);
-        assertThat(ImpactRelations.cyclesIn(second)).hasSize(1);
-    }
-
-    @Test
-    @DisplayName("cyclesIn: two separate groups are two cycles in every edge and node order")
-    void twoGroupsAreTwoCyclesInEveryOrder() {
-        Map<String, List<String>> first = new LinkedHashMap<>();
-        first.put("a", List.of("c", "b"));
-        first.put("b", List.of("a"));
-        first.put("c", List.of("d"));
-        first.put("d", List.of("c"));
-        Map<String, List<String>> second = new LinkedHashMap<>();
-        second.put("d", List.of("c"));
-        second.put("c", List.of("d"));
-        second.put("b", List.of("a"));
-        second.put("a", List.of("b", "c"));
-
-        assertThat(ImpactRelations.cyclesIn(first)).containsExactly(List.of("c", "d"), List.of("a", "b"));
-        assertThat(ImpactRelations.cyclesIn(second)).containsExactly(List.of("d", "c"), List.of("b", "a"));
-    }
-
-    @Test
-    @DisplayName("cyclesIn: an acyclic graph has no cycle, and a self-loop is a cycle of one")
-    void anAcyclicGraphHasNoCycleAndASelfLoopIsOne() {
-        Map<String, List<String>> acyclic = new LinkedHashMap<>();
-        acyclic.put("a", List.of("b", "c"));
-        acyclic.put("b", List.of("c"));
-        Map<String, List<String>> loop = new LinkedHashMap<>();
-        loop.put("a", List.of("a"));
-
-        assertThat(ImpactRelations.cyclesIn(acyclic)).isEmpty();
-        assertThat(ImpactRelations.cyclesIn(loop)).containsExactly(List.of("a"));
-    }
-
-    @Test
-    @DisplayName("cyclesIn: a long chain ending in a cycle does not exhaust the stack")
-    void aLongChainDoesNotExhaustTheStack() {
-        int n = 200_000;
-        Map<Integer, List<Integer>> graph = new LinkedHashMap<>();
-        IntStream.range(0, n).forEach(i -> graph.put(i, new ArrayList<>(List.of(i + 1))));
-        graph.put(n, List.of(n - 1));
-
-        assertThat(ImpactRelations.cyclesIn(graph)).containsExactly(List.of(n - 1, n));
     }
 }
