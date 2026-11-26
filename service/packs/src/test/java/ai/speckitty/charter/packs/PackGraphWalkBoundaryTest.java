@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.packs.domain.PackGraph;
+import ai.speckitty.charter.packs.domain.ValidationWalker;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -31,6 +33,9 @@ import org.junit.jupiter.api.Test;
  *       ClosureQueries.parentsOf(List)} records each pack's parent in the closure view, whose resolved edges
  *       {@code ClosureRoleFacts} later hands to {@code PackGraph.ancestorsOf} (the walk stays in the domain), and
  *       {@code OfferingReadService.dependenciesOf} answers the declared edges with their held versions.
+ *   <li>{@link #ONLY_THE_DOMAIN_DRIVES}: only {@code packs.domain..} calls {@code PackGraph.walk} and {@code
+ *       ValidationWalker.run} (ADR-0082 decision 2, #638); the application layer runs a rule factory's {@code
+ *       GraphCheck}, which picks the walk mode and the phases, and never drives a walk with a visitor of its own.
  * </ul>
  *
  * <p>A walk written with a list as its stack, or by recursion, over edges the domain already handed out is not caught
@@ -74,6 +79,20 @@ class PackGraphWalkBoundaryTest {
             .because("the packs domain reads a pack's builds-on edges and walks them; ask PackGraph.buildsOn and"
                     + " hand the edges to a PackGraph walk (ADR-0082, #637)");
 
+    private static final DescribedPredicate<JavaAccess<?>> A_DRIVER_CALL = DescribedPredicate.describe(
+            "call PackGraph.walk or ValidationWalker.run",
+            access -> (access.getTargetOwner().isEquivalentTo(PackGraph.class)
+                            && access.getName().equals("walk"))
+                    || (access.getTargetOwner().isEquivalentTo(ValidationWalker.class)
+                            && access.getName().equals("run")));
+
+    static final ArchRule ONLY_THE_DOMAIN_DRIVES = noClasses()
+            .that()
+            .resideOutsideOfPackage(ROOT + ".domain..")
+            .should()
+            .accessTargetWhere(A_DRIVER_CALL)
+            .because("a walk is driven by the packs domain through a rule factory's GraphCheck (ADR-0082, #638)");
+
     @Test
     void noApplicationClassWalksThePackGraph() {
         JavaClasses production = new ClassFileImporter()
@@ -82,6 +101,7 @@ class PackGraphWalkBoundaryTest {
 
         assertThatCode(() -> NO_WORK_QUEUE.check(production)).doesNotThrowAnyException();
         assertThatCode(() -> EDGES_ARE_READ_IN_THE_DOMAIN.check(production)).doesNotThrowAnyException();
+        assertThatCode(() -> ONLY_THE_DOMAIN_DRIVES.check(production)).doesNotThrowAnyException();
     }
 
     @Test
@@ -99,5 +119,10 @@ class PackGraphWalkBoundaryTest {
                 .hasMessageContaining("PackDescriptor.dependencies()")
                 .hasMessageContaining("PackDescriptor.parentPack()")
                 .hasMessageContaining("HandWrittenDescent.parentsByReference");
+        assertThatThrownBy(() -> ONLY_THE_DOMAIN_DRIVES.check(fixtures))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("HandWrittenDescent.drive")
+                .hasMessageContaining("PackGraph.walk")
+                .hasMessageContaining("ValidationWalker.run");
     }
 }
