@@ -2588,7 +2588,10 @@ class HexagonalArchitectureTest {
                 .should()
                 .callMethodWhere(DescribedPredicate.describe(
                         "the target is WorkMeter.measure",
-                        call -> call.getTarget().getOwner().getName().equals("ai.speckitty.charter.kernel.metering.WorkMeter")
+                        call -> call.getTarget()
+                                        .getOwner()
+                                        .getName()
+                                        .equals("ai.speckitty.charter.kernel.metering.WorkMeter")
                                 && call.getTarget().getName().equals("measure")));
     }
 

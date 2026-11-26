@@ -130,7 +130,8 @@ class OneReadTest {
                 CompositionFactsBuilder.build(assembled, read, graphs.documents(), MutabilityPolicySource.empty()));
 
         assertThat(built).isEqualTo(new ReadCounters(0, 0, 0));
-        assertThat(ReadCounters.during(() -> store.read(PackDirectory.of(pack), graphs)).reads())
+        assertThat(ReadCounters.during(() -> store.read(PackDirectory.of(pack), graphs))
+                        .reads())
                 .as("the positive control on the same store: a whole read is counted")
                 .isOne();
     }
