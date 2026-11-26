@@ -121,6 +121,15 @@ class RelationRulesTest {
                 .extracting(ClosureFault::code)
                 .as("the self-override rule is declared first, whatever order the edges are written in")
                 .containsExactly(RefusalCode.SELF_OVERRIDE, RefusalCode.CONFLICTING_RELATIONS);
+        assertThat(faults)
+                .extracting(ClosureFault::detail)
+                .containsExactly(
+                        "the overrides edge of directive:A in pack acme resolves to its own source",
+                        "directive:B in pack acme both enhances and overrides directive:C");
+        assertThat(faults)
+                .allSatisfy(fault -> assertThat(fault.packs())
+                        .extracting(pack -> pack.packId().value())
+                        .containsExactly("acme"));
     }
 
     @Test

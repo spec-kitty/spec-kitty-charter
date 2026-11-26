@@ -57,16 +57,19 @@ final class RelationRules {
                 .toList();
     }
 
+    /** One source and one target, by their places: the pair the conflict rule keys an edge by. */
+    private record Pair(Place source, Place target) {}
+
     /** Every artifact that both enhances and overrides one target (A11). */
     static List<ClosureFault> conflicting(ComposedRelations relations) {
-        Set<List<Place>> enhanced = new LinkedHashSet<>();
+        Set<Pair> enhanced = new LinkedHashSet<>();
         relations.edges().stream()
                 .filter(edge -> edge.is(RelationType.ENHANCES))
-                .forEach(edge -> edge.target().ifPresent(target -> enhanced.add(List.of(edge.source(), target))));
+                .forEach(edge -> edge.target().ifPresent(target -> enhanced.add(new Pair(edge.source(), target))));
         return relations.edges().stream()
                 .filter(edge -> edge.is(RelationType.OVERRIDES))
                 .filter(edge -> edge.target()
-                        .filter(target -> enhanced.contains(List.of(edge.source(), target)))
+                        .filter(target -> enhanced.contains(new Pair(edge.source(), target)))
                         .isPresent())
                 .map(edge -> violation(
                         relations,
