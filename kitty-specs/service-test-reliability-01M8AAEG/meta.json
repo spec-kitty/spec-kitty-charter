@@ -31,6 +31,7 @@
   "purpose_context": "Actions 8 and 9 of the 2026-11-25 codebase-health summary (ADR-0075 AA5): vacuous passes on a loaded runner and global state across parallel tests. Retrofit: the code was written as an Op on test/659-state-waits-and-main-hooks before this Mission existed; the Mission specifies, reviews and lands it.",
   "purpose_tldr": "Make the service tests reliable: state waits instead of sleeps, and no static counters, JobGate or test-only constructors in main code (#659).",
   "slug": "service-test-reliability-01M8AAEG",
+  "status_phase": "1",
   "target_branch": "test/659-state-waits-and-main-hooks",
   "topology": "lanes_with_coord",
   "topology_decision": {

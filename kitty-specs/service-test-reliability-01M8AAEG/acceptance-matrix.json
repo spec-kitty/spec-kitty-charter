@@ -181,21 +181,36 @@
       "description": "No registration job gate in main code",
       "verification_method": "grep_absence",
       "verification_command": "JobGate",
-      "scope": "service/activations/src/main service/artifacts-edge/src/main service/deployable/src/main service/kernel/src/main service/missions-edge/src/main service/missions/src/main service/pack-doctor/src/main service/pack-validation/src/main service/packs/src/main service/profiles-edge/src/main service/profiles/src/main service/routing-edge/src/main service/routing/src/main service/web-transport/src/main"
+      "result": "confirmed_absent",
+      "evidence": "grep found zero matches",
+      "scope": "service/activations/src/main service/artifacts-edge/src/main service/deployable/src/main service/kernel/src/main service/missions-edge/src/main service/missions/src/main service/pack-doctor/src/main service/pack-validation/src/main service/packs/src/main service/profiles-edge/src/main service/profiles/src/main service/routing-edge/src/main service/routing/src/main service/web-transport/src/main",
+      "verified_ref": "test/659-state-waits-and-main-hooks",
+      "verified_surface_kind": "coord",
+      "provenance_origin": "recorded"
     },
     {
       "invariant_id": "NI-002",
       "description": "No ClosureQueries.allConfigured in main code",
       "verification_method": "grep_absence",
       "verification_command": "allConfigured(",
-      "scope": "service/activations/src/main service/artifacts-edge/src/main service/deployable/src/main service/kernel/src/main service/missions-edge/src/main service/missions/src/main service/pack-doctor/src/main service/pack-validation/src/main service/packs/src/main service/profiles-edge/src/main service/profiles/src/main service/routing-edge/src/main service/routing/src/main service/web-transport/src/main"
+      "result": "confirmed_absent",
+      "evidence": "grep found zero matches",
+      "scope": "service/activations/src/main service/artifacts-edge/src/main service/deployable/src/main service/kernel/src/main service/missions-edge/src/main service/missions/src/main service/pack-doctor/src/main service/pack-validation/src/main service/packs/src/main service/profiles-edge/src/main service/profiles/src/main service/routing-edge/src/main service/routing/src/main service/web-transport/src/main",
+      "verified_ref": "test/659-state-waits-and-main-hooks",
+      "verified_surface_kind": "coord",
+      "provenance_origin": "recorded"
     },
     {
       "invariant_id": "NI-003",
       "description": "No test JobGate fixture left",
       "verification_method": "grep_absence",
       "verification_command": "HoldableGate",
-      "scope": "service"
+      "result": "confirmed_absent",
+      "evidence": "grep found zero matches",
+      "scope": "service",
+      "verified_ref": "test/659-state-waits-and-main-hooks",
+      "verified_surface_kind": "coord",
+      "provenance_origin": "recorded"
     }
   ]
 }
