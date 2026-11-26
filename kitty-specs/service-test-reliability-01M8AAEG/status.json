@@ -30,7 +30,8 @@
       "last_transition_at": "2026-11-26T06:19:16.335077+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "- 2026-11-25T22:53:46Z – claude – shell_pid=8197 – Out-of-map: deployable archfixtures/package-info.java (the @NullMarked rule needs one per package). Red-first: three mutants (lookup count, cache HIT count, static field in main) turned 4 tests red; reverted."
+        "- 2026-11-25T22:53:46Z – claude – shell_pid=8197 – Out-of-map: deployable archfixtures/package-info.java (the @NullMarked rule needs one per package). Red-first: three mutants (lookup count, cache HIT count, static field in main) turned 4 tests red; reverted.",
+        "Independent review (reviewer-renata subagent): APPROVE. Findings folded in lane-a (named exemptions, anchored fixtures exclusion, javadoc); the cold-cache check stays in EffectiveReadOperationBudgetTest because the Spring cache is a shared singleton (recorded)."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
