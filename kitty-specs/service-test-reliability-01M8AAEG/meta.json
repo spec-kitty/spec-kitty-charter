@@ -1,6 +1,8 @@
 {
+  "accept_commit": "e974e0d65d993d15097c193db9265b55d6bc43df",
   "acceptance_history": [
     {
+      "accept_commit": "e974e0d65d993d15097c193db9265b55d6bc43df",
       "acceptance_mode": "pr",
       "accepted_at": "2026-11-26T11:20:06.504717+00:00",
       "accepted_by": "claude::java-jenny",
