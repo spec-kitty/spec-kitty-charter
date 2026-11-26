@@ -4,8 +4,8 @@
   2026-11-25 and 2026-11-26; packs contract `0.1.0-SNAPSHOT`). A file an exclusion takes in lower case is not held and
   is reported as a `file_not_held` diagnostic under that exclusion's reason, where a payload rule held it as bytes
   before (`missions/x/templates/ReadMe.md`), or a retired rule refused it (`missions/mission-steps/ReadMe.md`). A file
-  a payload rule takes as written and a retired or `files` rule takes in lower case is refused as retired, or judged
-  as that kind. A retired family in another letter case is refused wherever it stands
+  a payload rule takes as written and a retired or `files` rule takes in lower case is refused as retired (a retired
+  rule) or judged as that kind (a `files` rule). A retired family in another letter case is refused wherever it stands
   (`Mission_Step_Contract.graph.yaml` is no longer read as a graph shard, and `a.Step-Contract.yaml` is no longer only
   warned), a hidden file of a kind (`assets/.X.Asset.yaml`) is judged as that kind, and every spelling of a file has
   the kind of its lower-case spelling (`presets/a.Directive.yaml` is a directive). Two `file_not_held` details change:

@@ -50,9 +50,9 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
     `**/mission_step_contract.graph.yaml`. `core/a.Step-Contract.yaml`, `core/glossaries/x.Glossary-Pack.yaml` and
     `core/Mission-Steps/plan/specify.md` were unmodelled; they are refused as retired under their family's rule.
 
-  Unchanged: a file no rule takes as written that only a `files` rule takes in lower case stays unmodelled
-  (`core/toolguides/a.guide.MD`, `core/Missions/plan/steps/.x.prompt.md`), and a root case variant keeps the code
-  `case_variant`. Steps 3 and 5 of the header of `conformance/classifier-cases.yaml` and the "Letter case" section
+  Unchanged: a file no rule takes as written that only a `files` or `payloads` rule takes in lower case stays
+  unmodelled (`core/toolguides/a.guide.MD`, `core/Missions/plan/steps/.x.prompt.md`, `core/Templates/spec-template.md`),
+  and a root case variant keeps the code `case_variant`. Steps 3, 5 and 6 of the header of `conformance/classifier-cases.yaml` and the "Letter case" section
   of `file-kinds.yaml` state the rule. A consumer's classifier must follow (doc-kitty's port, open-packs'
   pack-doctor). The spec-kitty-open-packs content at the pinned `1692a3b` and the charter's example packs hold no
   file whose verdict changes.

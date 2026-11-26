@@ -34,7 +34,8 @@ import org.jspecify.annotations.Nullable;
  * excluded under that rule, whatever takes it as written, unless a {@code files} rule maps it as written; when it ends
  * at a {@code retired} rule, the file is refused under that rule wherever it stands, after the root case variants;
  * and when it ends at a {@code files} rule, the file is that kind over a payload, an exclusion or another
- * {@code files} rule that takes it as written. A file nothing takes as written that only a {@code files} rule takes in lower case stays unclassified (Q1).
+ * {@code files} rule that takes it as written. A file nothing takes as written that only a {@code files} or
+ * {@code payloads} rule takes in lower case stays unclassified (Q1).
  * A root file that differs only in letter case from a root rule's file is refused by name ({@link CaseVariant}), and
  * the {@code ignored} fallback matches in any letter case but never takes a file the lower-cased run maps.
  *
@@ -402,7 +403,8 @@ final class PackFileKind {
         // path and the globs in lower case, decides where it reaches another rule. An exclusion takes its file in any
         // letter case, a retired rule its family wherever it stands, and a files rule its kind over a payload, an
         // exclusion or another files rule that takes the path as written. A path nothing takes as written that only a
-        // files rule takes in lower case stays unclassified (Q1), and a root case variant keeps its own code (#624).
+        // files or payloads rule takes in lower case stays unclassified (Q1), and a root case variant keeps its own
+        // code (#624).
         Classification folded = classifyFolded(path);
         if (exact instanceof Excluded) {
             return isFileKind(folded) ? folded : exact;
