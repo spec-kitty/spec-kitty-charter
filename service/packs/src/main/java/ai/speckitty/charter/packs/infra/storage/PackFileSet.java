@@ -178,8 +178,9 @@ final class PackFileSet {
     }
 
     /**
-     * Walks a pack once, classifying with {@code table} in place of the bundled one: the seam a test uses to show that
-     * a rule's content form, not its path or kind token alone, decides where a file is held.
+     * Walks a pack once, classifying with {@code table} in place of the bundled one: the store's read passes the table of
+     * its companion rules, and a table of a test's own shows that a rule's content form, not its path or kind token
+     * alone, decides where a file is held.
      *
      * @param packDir the pack directory
      * @param table the file-kind table
@@ -326,7 +327,7 @@ final class PackFileSet {
     }
 
     /**
-     * The digested files when only {@code kinds} are loaded: the seam a test uses to plant an omission.
+     * The digested files when only {@code kinds} are loaded, which is how an omission of a kind is planted.
      *
      * @param packDir the pack directory
      * @param kinds the loaded kinds to include
@@ -340,8 +341,8 @@ final class PackFileSet {
     }
 
     /**
-     * The digested files when {@code table} classifies in place of the bundled one: the seam a test uses to digest with
-     * rules of its own, a table without the retired section included (#194).
+     * The digested files when {@code table} classifies in place of the bundled one: the inspector passes its table, and
+     * any table may stand in, one without the retired section included (#194).
      *
      * @param packDir the pack directory
      * @param table the file-kind table

@@ -420,7 +420,8 @@ final class FilesystemPackStore {
     }
 
     /**
-     * Reads a pack with the given bindings in place of the registry: the seam a test uses to read a binding of its own.
+     * Reads a pack with the given bindings in place of the registry's: a reader of fewer kinds, or of a binding of its
+     * own.
      *
      * <p>Last it judges the edges of the pack's readable graph documents by {@link RelationshipEndpointRule} (FR-014,
      * ADR-0064 decision 13): each {@code overrides} edge whose source kind is not activatable, then each edge whose
