@@ -285,7 +285,7 @@ class ClosureQueriesTest {
         assertThat(queries.snapshot(Optional.empty()).packs())
                 .extracting(entry -> entry.id().value())
                 .containsExactly("beta", "alpha", "gamma");
-        assertThat(queries.allConfigured().packs()).hasSize(3);
+        assertThat(queries.snapshot(Optional.empty()).packs()).hasSize(3);
     }
 
     @Test
@@ -352,7 +352,7 @@ class ClosureQueriesTest {
                 descriptor("org", "1.0.0"),
                 holding(List.of("directive:D1"), MutabilityPolicySource.empty(), governing));
 
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         assertThat(view.floor().requiringPacks(DIRECTIVE_D1)).containsExactly(FixtureUlids.of("org"));
         assertThat(view.isRequired(new Urn(NodeKind.DIRECTIVE, "D2"))).isFalse();
@@ -380,7 +380,7 @@ class ClosureQueriesTest {
                 descriptor("org", "1.0.0"),
                 holding(List.of("directive:B"), MutabilityPolicySource.empty(), later));
 
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         assertThat(view.presets().get("team"))
                 .as("the last holder in merge order wins (ADR-0053 d6)")
@@ -405,7 +405,7 @@ class ClosureQueriesTest {
                 descriptor("org", "1.0.0"),
                 holding(List.of("directive:DIRECTIVE_001"), MutabilityPolicySource.empty(), preset));
 
-        assertThatThrownBy(() -> queries().allConfigured()).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+        assertThatThrownBy(() -> queries().snapshot(Optional.empty())).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
             assertThat(refusal.getMessage()).contains("directive:directive_001", "directive:DIRECTIVE_001");
         });
@@ -418,7 +418,7 @@ class ClosureQueriesTest {
                 .build();
         pack("org", PackLevel.ORG, descriptor("org", "1.0.0"), holding(List.of("directive:DIRECTIVE_001"), caseOnly));
 
-        assertThatThrownBy(() -> queries().allConfigured())
+        assertThatThrownBy(() -> queries().snapshot(Optional.empty()))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING));
@@ -431,7 +431,7 @@ class ClosureQueriesTest {
                 .build();
         pack("org", PackLevel.ORG, descriptor("org", "1.0.0"), holding(List.of("directive:DIRECTIVE_001"), unheld));
 
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "DIRECTIVE_001"))).isFalse();
     }
@@ -446,7 +446,7 @@ class ClosureQueriesTest {
         pack("p", PackLevel.PROJECT, descriptor("p", "1.0.0"), holding(List.of("directive:P1"), locksDirectives));
         pack("q", PackLevel.ORG, descriptor("q", "1.0.0"), holding("directive:Q1"));
 
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         assertThat(view.isLocked(new Urn(NodeKind.DIRECTIVE, "P1")))
                 .as("p locks what p holds")
@@ -495,7 +495,7 @@ class ClosureQueriesTest {
                 descriptor("org", "1.0.0"),
                 holding(List.of("directive:D1"), MutabilityPolicySource.empty(), governing));
 
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         assertThat(view.floor().isRequired(z))
                 .as("no pack of the closure holds directive:Z")
@@ -509,7 +509,7 @@ class ClosureQueriesTest {
 
     @Test
     void absentRootsOfAServiceWithNoConfiguredPackGiveAnEmptyClosure() {
-        ClosureView view = queries().allConfigured();
+        ClosureView view = queries().snapshot(Optional.empty());
 
         assertThat(view.closurePackIds()).isEmpty();
         assertThat(view.packs()).isEmpty();
@@ -563,7 +563,7 @@ class ClosureQueriesTest {
                 descriptor("right", "1.0.0"),
                 holding(List.of(), MutabilityPolicySource.empty(), right));
 
-        assertThatThrownBy(() -> queries().allConfigured()).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+        assertThatThrownBy(() -> queries().snapshot(Optional.empty())).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
             assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
             assertThat(refusal.getMessage()).contains("the preset `team`");
         });
@@ -681,7 +681,7 @@ class ClosureQueriesTest {
 
         factsRead.clear();
         digests.set(0);
-        queries.allConfigured();
+        queries.snapshot(Optional.empty());
 
         assertThat(digests.get()).isEqualTo(2);
         assertThat(factsRead).containsExactlyInAnyOrder("alpha", "beta", "gamma");

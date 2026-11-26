@@ -157,7 +157,7 @@ class ClosureViewTest {
                     return facts.get(pack.value());
                 },
                 read);
-        return new ClosureQueries(offering, catalog, read).allConfigured();
+        return new ClosureQueries(offering, catalog, read).snapshot(Optional.empty());
     }
 
     private InForceStates select(String... selected) {
@@ -700,7 +700,7 @@ class ClosureViewTest {
         DomainRepositoryService store = new DomainRepositoryService(() -> locations, new YamlSerializationStrategy());
         ConsistentRead read = new ConsistentRead(() -> "sha256:" + "a".repeat(64));
         OfferingReadService offering = new OfferingReadService(store, store, store, read);
-        return new ClosureQueries(offering, store, read, store, store).allConfigured();
+        return new ClosureQueries(offering, store, read, store, store).snapshot(Optional.empty());
     }
 
     @Test
@@ -818,7 +818,7 @@ class ClosureViewTest {
                                 Optional.of(Payload.of(text.getBytes(StandardCharsets.UTF_8))), Optional.empty())))
                 .orElse(Map.of());
         return new ClosureQueries(offering, catalog, read, pack -> stored.get(pack.value()), companions)
-                .allConfigured();
+                .snapshot(Optional.empty());
     }
 
     @Test

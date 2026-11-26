@@ -97,8 +97,9 @@ public final class RegistryWriteLock {
     }
 
     /**
-     * Whether {@code thread} is queued for the lock, which is exact where a thread's state is not. For tests of this
-     * package, which wait until a writer is seen blocked on the lock.
+     * Whether {@code thread} is queued for the lock, which is exact where a thread's state is not. Kept on purpose: it is
+     * the one exact observable of a writer waiting on the registry, which the concurrency tests of this package wait for
+     * instead of sleeping (#659); a thread's state cannot tell this lock from any other wait.
      *
      * @param thread the thread asked about
      * @return true while it waits to take the lock

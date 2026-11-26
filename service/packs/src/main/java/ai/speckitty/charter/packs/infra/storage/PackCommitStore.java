@@ -121,8 +121,9 @@ public final class PackCommitStore implements WholePackWriteStore {
     }
 
     /**
-     * The test seam inside the real swap (#490): the points between its steps where a test pauses it, so a reader can be
-     * run in each state of the pack directory. Production uses {@link #NONE}, which does nothing.
+     * The points between the steps of the real swap (#490), where a swap can be paused so a reader runs in each state of
+     * the pack directory. Production uses {@link #NONE}, which does nothing. Kept on purpose: no state outside the swap
+     * shows a reader the directory between its two moves, and the tests of reads in that window need it (#659).
      */
     interface SwapPhases {
 

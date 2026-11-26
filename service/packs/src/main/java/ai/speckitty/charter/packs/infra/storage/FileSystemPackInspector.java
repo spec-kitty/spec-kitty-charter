@@ -201,8 +201,9 @@ public final class FileSystemPackInspector implements PackReading {
     }
 
     /**
-     * The reader over a walk of the test's own: the seam a test uses for a directory that exists but cannot be listed,
-     * which a process running as root cannot plant with permissions (#554, T026).
+     * The reader over every collaborator, the walk of a pack directory included; the other constructors pass
+     * {@link PackFileSet#walk}. A walk of its own plants a directory that exists but cannot be listed, which a process
+     * running as root cannot plant with permissions (#554, T026).
      *
      * @param table the file-kinds table
      * @param strategy the serialization format
