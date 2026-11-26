@@ -2511,9 +2511,10 @@ class HexagonalArchitectureTest {
     /**
      * No main class keeps a static counter: no static field that is not final, and no static atomic or adder, so no
      * state outlives one call and leaks between tests that run at once (ADR-0075 AA5, #659). The work a read does is
-     * counted on a {@code WorkMeter} bound around it. Three fields are not counters of work and stay: the commit
-     * store's counter of temporary names, the address resolver the JDK loads as a service provider, and the bundled
-     * schemas, built once on first use and retried after a failed build. Test fixtures are not main code.
+     * counted on a {@code WorkMeter} bound around it. Four fields are not counters of a read's work and stay: the
+     * commit store's counter of temporary names, the two atomics of the address resolver the JDK loads as a service
+     * provider, and the bundled schemas, built once on first use and retried after a failed build. Test fixtures are
+     * not main code, and their own static caches ({@code ExamplePacks}, {@code PlantedPacks}) are exempt with them.
      */
     private static ArchRule noStaticCounterInMain() {
         DescribedPredicate<JavaField> kept = DescribedPredicate.describe(
@@ -2576,5 +2577,31 @@ class HexagonalArchitectureTest {
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("StaticCounterFixture.READS is a static counter")
                 .hasMessageContaining("StaticCounterFixture.walks is static and not final");
+    }
+
+    /**
+     * Only tests measure: no main class calls {@code WorkMeter.measure}, so the meter stays the read budgets' measurement
+     * point and never becomes telemetry by accident (ADR-0075 AA5 amendment, #659). Main code only counts.
+     */
+    private static ArchRule onlyTestsMeasure() {
+        return noClasses()
+                .should()
+                .callMethodWhere(DescribedPredicate.describe(
+                        "the target is WorkMeter.measure",
+                        call -> call.getTarget().getOwner().getName().equals("ai.speckitty.charter.kernel.metering.WorkMeter")
+                                && call.getTarget().getName().equals("measure")));
+    }
+
+    @Test
+    void noMainClassMeasuresWork() {
+        onlyTestsMeasure().check(classes);
+    }
+
+    @Test
+    void theMeasureRuleFailsOnAClassThatMeasures() {
+        JavaClasses measuring = new ClassFileImporter().importPackages("ai.speckitty.charter.deployable.archfixtures");
+        assertThatThrownBy(() -> onlyTestsMeasure().check(measuring))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("MeasuringFixture");
     }
 }
