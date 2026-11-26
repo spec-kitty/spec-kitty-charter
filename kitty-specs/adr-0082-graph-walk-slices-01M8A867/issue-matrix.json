@@ -119,6 +119,18 @@
       "title": "<auto-classified: pr_or_commit_ref>",
       "verdict": "not-applicable",
       "wp": null
+    },
+    "#667": {
+      "evidence_ref": "WP05 edge-index rules fix the 500 pack_unreadable",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "in-mission",
+      "wp": "WP05"
     }
   },
   "schema_version": 1
