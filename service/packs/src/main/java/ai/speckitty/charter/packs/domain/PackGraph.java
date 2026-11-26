@@ -96,8 +96,8 @@ public final class PackGraph {
     /**
      * Walks the composition closure of the scope's roots (ADR-0082 decision 2): every pack whose {@code pack_id} the
      * closure holds, once each, in the graph's order. When packs share a {@code pack_id}, each is visited and the
-     * closure follows what each of them builds on. After each pack come the elements the mode emits for it, in
-     * declared order. The visitor is handed only what the scope selects; an element it does not select is still walked through,
+     * closure follows what each of them builds on. After each pack come the elements the mode emits for it, in declared
+     * order. The visitor is handed only what the scope selects; an element it does not select is still walked through,
      * so its pack's elements are visited. {@link Descent#SKIP} on a pack skips its elements; on an element it is
      * {@link Descent#CONTINUE}, since nothing is walked beneath an element. {@link Descent#STOP} ends the walk. The
      * walk is iterative and visits each pack once, so a cycle ends and a long chain cannot exhaust the stack.

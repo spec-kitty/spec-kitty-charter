@@ -38,6 +38,11 @@ import org.junit.jupiter.api.Test;
 @DisplayName("PackGraph.walk: one driver, a scope that only selects, the domain's edges (#638)")
 class PackGraphWalkTest {
 
+    private static final Relationship OVERRIDES =
+            Relationship.of(u("directive:C"), u("directive:D"), RelationType.OVERRIDES);
+    private static final Relationship ENHANCES =
+            Relationship.of(u("directive:A"), u("directive:B"), RelationType.ENHANCES);
+
     private static PackNode pack(String id, Optional<String> parent, String... dependsOn) {
         return new PackNode(
                 new ConfiguredPack(new PackIdentifier(id), PackLevel.ORG),
@@ -182,11 +187,6 @@ class PackGraphWalkTest {
                 .containsExactly(
                         "pack:p", "edge:ENHANCES:p", "edge:OVERRIDES:p", "edge:SPECIALIZES:p", "edge:STEP_LINK:p");
     }
-
-    private static final Relationship OVERRIDES =
-            Relationship.of(u("directive:C"), u("directive:D"), RelationType.OVERRIDES);
-    private static final Relationship ENHANCES =
-            Relationship.of(u("directive:A"), u("directive:B"), RelationType.ENHANCES);
 
     /** Two packs, b building on a, each writing an overrides edge, then an enhances edge. */
     private static PackGraph twoPacksWithTwoEdges() {
