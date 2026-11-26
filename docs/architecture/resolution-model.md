@@ -2,7 +2,7 @@
 title: Resolution model
 description: What the charter domain computes (layer merge, activation, cascade, action-scoped context, profile resolution) and the fail-loud rules it inherits.
 doc_status: draft
-updated: 2026-11-14T00:00:00Z
+updated: 2026-11-26T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -73,7 +73,7 @@ flowchart LR
    mutability level is checked against what later packs do to it: a change the level does not
    allow is a refusal ([ADR-0012](/adr/0012-pack-mutability-policy/)): the registration writes raise
    `governance_policy_violation` (#293), and the merge refuses a layer override the level forbids as
-   `500 pack_unreadable` (DIV-217). When org packs declare the same URN, core's later-declared pack wins for every URN and
+   `override_not_permitted`, `500` on a read and `422` on a registration (DIV-217, #639). When org packs declare the same URN, core's later-declared pack wins for every URN and
    every restated edge (core `59d190a7`, #87); the service does not: two siblings that define or change one artifact
    are refused `pack_sibling_conflict` unless one `overrides` entry settles it (ADR-0048 d9, rules C14 and C15, the note
    below), so the order of declaration never decides.
@@ -157,7 +157,8 @@ carries it to `activations` as a value (C-002). `/offering` composes and never m
 3. **Edges** (C19, C20). An edge from a losing version is dropped with it; an edge to the overridden id, bare or
    `<pack>::`-written, resolves to the winner.
 4. **The gate** (C21). An override is allowed only when the overridden artifact is `open`, judged along the closure
-   without the winning pack. Otherwise the merge refuses `500 pack_unreadable` (DIV-217). A settled contest is not
+   without the winning pack. Otherwise the merge refuses `override_not_permitted`, `500` on a read and `422` on a
+   registration (DIV-217, #639). A settled contest is not
    level-gated until [#358](https://github.com/spec-kitty/spec-kitty-charter/issues/358) (DIV-219).
 
 Every winner carries its `packId`, `level` and mutability level. The merge also keeps one `LayerOverride` record
@@ -172,7 +173,8 @@ held by a pack that defines its mission type and declares it, and by the closure
 a held step is its merged winner, so a layer override of a held step counts (OD-9, DIV-243).
 
 The write cascade walks the merged edges, so it never follows an edge a losing version declared (rule E20, DIV-230).
-A write over a closure whose merge refuses therefore answers `500` as a read does. The compose facts of each pack are
+An activation write over a closure whose merge refuses therefore answers `500` as a read does: `override_not_permitted`
+for a forbidden layer override, `self_override` for an `overrides` edge the merge re-points to its own source (#639). The compose facts of each pack are
 kept between reads by `CompositionFactsCache`, which follows the invariants of #416, keys each pack on a digest of its files that includes their paths (so an
 out-of-band rename misses, as an edit does) and still reads that digest on every call (DIV-236).
 

@@ -30,6 +30,10 @@ audience:
     `mission_step_unlinked`.
 - A read answered each `500 pack_unreadable`, the first only; it answers every fault with its code, 500. Registration
   and the impact-checked writes answer the same codes as 422 (ADR-0056), so they now refuse three shapes they accepted.
+  A stored pack that replaces a locked artifact is then cleared only by its `DELETE`: re-registering it keeps the
+  override (refused, C21) or drops a locked artifact (refused by the write gate).
+- Only these four faults refuse a write: a merge that refuses with its own code (an unsettled step contest) leaves a
+  write as it was. On a read, the fault the merge meets first stays the answer, a C21 fault before a later contest.
 - `ClosureImpactCheck` runs one walker per closure over the relations, edge-index and own-closure phases; the walker's
   phase gate replaces the hand-written gates, and `relationFaults` is deleted. A registration whose closure declares a
   fallback or a pin beside such a fault answered `500 pack_unreadable` (#667); it answers the fault's 422.

@@ -511,7 +511,7 @@ or with no place, declares none and is not judged), else
 No fragment is ever dropped silently: a prompt override that drops a slot an enhancement in force fills is refused,
 and one that drops a slot no enhancement in force fills composes. Moments and statuses (OD-4 (i)):
 
-- every composing read answers `500`, after the composition codes and the merge's `pack_unreadable` (F6), through an
+- every composing read answers `500`, after the composition codes and the merge's refusals (F6), through an
   explicit `ClosureView.requireSlots(states)` that the read session calls, so the in-force resolution stays pure;
 - a registration and the impact-checked pack writes answer `422`, judged for each stored activation whose closure the
   change joins, on that closure as the write leaves it, through the gate `ActivationImpact.requireComposable`, the
@@ -1375,7 +1375,7 @@ another pack's stray step link, every such fault of the merge in one refusal (#6
 (the context adds the `404`s of E16).
 *Amended 2026-11-12 (slice C, OD-5, Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`):* the effective step prompt (F8)
 answers, in this order and every one before a `304`: `404 activation_not_found`; then the closure's composition codes
-and the merge's `pack_unreadable` (the names are judged on the merged closure, so a closure that cannot compose or merge
+and the merge's refusals (the names are judged on the merged closure, so a closure that cannot compose or merge
 answers its `500` first); then `404 mission_type_not_found` and `404 action_not_found` as E16 judges them; then
 `409 mission_type_not_in_force` for a mission type the closure holds and the activation does not put in force; then
 `500 prompt_slot_missing` (F6). The action context answers `200` with an empty context for the
@@ -1396,7 +1396,8 @@ to 3 times on `stale_input`.
 so a cascade never follows an edge a losing version declared; W26 and W33 read `Eff` over `M`.
 *Source:* research R2 (open point), open review item 3; plan IC-07, IC-13; decision `DM-01M6R4W1H9P3451V89KHP97XKM`
 (merged edges). **Built (PR B)** (DIV-230): the cascade walks the merged edges, builds the merge, and so a write over a closure that
-does not merge answers `500` with `pack_unreadable` or `pack_sibling_conflict`.
+does not merge answers `500` with the merge's code: `override_not_permitted` or `self_override` for an edge-index fault
+(#639), `pack_unreadable` or `pack_sibling_conflict`.
 > ⚠ **Unclear:** W23–W24 treat every `Fl(C)` item as active, while at read a required item may be hidden by an override
 > and a floor enhancer may be ungrounded (E6). Whether the keep set should use `Eff` is not ruled.
 

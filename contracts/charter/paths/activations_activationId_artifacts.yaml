@@ -22,9 +22,11 @@ get:
     page, kind or state) never matches (RFC 9110 section 13.1.2).
 
     An unknown activation is 404 activation_not_found. A closure that cannot compose or merge is 500, with its code:
-    pack_unreadable also for a layer override or an overrides edge that the mutability level of the overridden artifact
-    forbids (ADR-0063 D3), naming the artifact, both packs and the level, and for an overrides cycle among active
-    artifacts, naming the cycle; stale_input and internal_error may be retried. The answer is never partial.
+    override_not_permitted for a layer override that the mutability level of the overridden artifact forbids (ADR-0063
+    D3, C21), naming the artifact, the winning pack, the pack it replaces and the level; self_override for an overrides
+    edge the layer merge re-points to its own source; pack_unreadable for an overrides cycle among active artifacts,
+    naming the cycle (#639: every fault of the merge in one refusal); stale_input and internal_error may be retried. The
+    answer is never partial.
   tags:
   - Activation
   parameters:

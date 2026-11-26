@@ -19,10 +19,10 @@ get:
 
     The order of the refusals: an unknown activation is a 404 activation_not_found, the only reason this read answers
     404. A pack of the closure that is no longer configured, a closure that cannot compose or merge (two packs of one
-    level holding one context id are pack_sibling_conflict), and a winner's pack that cannot be read are 500, with
-    their code (pack_unreadable also for a layer override that the mutability level forbids); stale_input and
-    internal_error may be retried. The answer is never partial: the winners and the contexts are read against one
-    source fingerprint, which the answer carries, and inputs that change between the two are stale_input.
+    level holding one context id are pack_sibling_conflict), and a winner's pack that cannot be read are 500, with their
+    code (override_not_permitted for a layer override that the mutability level forbids, #639); stale_input and
+    internal_error may be retried. The answer is never partial: the winners and the contexts are read against one source
+    fingerprint, which the answer carries, and inputs that change between the two are stale_input.
 
     ETag identifies the representation: it changes with the activation's revision and with any pack of the
     activation's closure, and it does not change when a pack outside the closure changes. A matching If-None-Match is a

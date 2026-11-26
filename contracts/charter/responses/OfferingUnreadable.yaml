@@ -10,9 +10,9 @@ description: >-
   when the configured packs cannot be served together, with the packs member naming the packs involved, the
   violating pack first; or the layer merge of the closure has a fault, which a read answers with the code a
   registration of the same closure answers (operator ruling D2), every fault in one refusal:
-  override_not_permitted, for a layer override the mutability level of the overridden artifact forbids (C21) or an
-  enhancement of a step whose mission type is locked (C22, C25), naming the enhancing or winning pack, then the pack
-  that sets the level; self_override, for an overrides edge the merge re-points to its own source (C36, A12);
+  override_not_permitted, for a layer override the mutability level of the overridden artifact forbids (C21), naming
+  the winning pack, then the pack it replaces, or for an enhancement of a step whose mission type is locked (C22,
+  C25), naming the enhancing pack, then the pack that locks the mission type; self_override, for an overrides edge the merge re-points to its own source (C36, A12);
   pack_reference_artifact_missing with the violation mission_step_unlinked, for another pack's requires edge at a
   mission type in force that names no step of the type; or one of four others: pack_unreadable, when a configured
   pack's directory is missing, it has no readable pack.yaml, its graph documents cannot all be read or an edge of one

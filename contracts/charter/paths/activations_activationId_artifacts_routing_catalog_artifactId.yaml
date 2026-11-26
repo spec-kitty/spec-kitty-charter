@@ -5,25 +5,24 @@ get:
   operationId: getEffectiveRoutingCatalog
   summary: Read a routing catalog under an activation, with its state and the catalog as its winning pack declares it.
   description: >-
-    One routing catalog under an activation (ADR-0080 decision 6): the winner the layer merge keeps across the levels
-    of the activation's closure, with the pack and the level that hold it, its state, reason, policy and required as
+    One routing catalog under an activation (ADR-0080 decision 6): the winner the layer merge keeps across the levels of
+    the activation's closure, with the pack and the level that hold it, its state, reason, policy and required as
     listEffectiveArtifacts gives them for the same catalog, and, in routingCatalog, the catalog as that pack declares
-    it. A catalog is answered whatever its state: one the activation does not select is answered with state inactive
-    and reason not_selected, as getEffectiveArtifact answers it. _links.self is this request, _links.artifact the
+    it. A catalog is answered whatever its state: one the activation does not select is answered with state inactive and
+    reason not_selected, as getEffectiveArtifact answers it. _links.self is this request, _links.artifact the
     pack-scoped read of the winning copy (getPackRoutingCatalog), _links.collection the activation's catalogs
     (listEffectiveRoutingCatalogs) and _links.up the activation. The generic read getEffectiveArtifact never carries the
-    catalog's content: this literal path is the read of the kind.
-    The order of the refusals: an unknown activation is a 404 activation_not_found; then an id that no pack of the
-    activation's closure holds as a routing catalog is a 404 artifact_not_found, judged before any If-None-Match, so a
-    name no pack holds is a 404 whatever the header says. A pack of the closure that is no longer configured, a closure
-    that cannot compose or merge, and a winner whose pack cannot read it are 500, with their code (pack_unreadable also
-    for a layer override that the mutability level forbids); stale_input and internal_error may be retried. The answer
-    is never partial: the state and the catalog are one verified read against the source fingerprint, which the answer
-    carries.
-    ETag identifies the representation the request names: it changes with the activation's revision, with any pack of
-    the activation's closure, and with the catalog, and it does not change when a pack outside the closure changes. It
-    is not the tag of getEffectiveArtifact for the same catalog, whose body differs. A matching If-None-Match is a 304
-    without a body, and a tag of another representation never matches (RFC 9110 section 13.1.2).
+    catalog's content: this literal path is the read of the kind. The order of the refusals: an unknown activation is a
+    404 activation_not_found; then an id that no pack of the activation's closure holds as a routing catalog is a 404
+    artifact_not_found, judged before any If-None-Match, so a name no pack holds is a 404 whatever the header says. A
+    pack of the closure that is no longer configured, a closure that cannot compose or merge, and a winner whose pack
+    cannot read it are 500, with their code (override_not_permitted for a layer override that the mutability level
+    forbids, #639); stale_input and internal_error may be retried. The answer is never partial: the state and the
+    catalog are one verified read against the source fingerprint, which the answer carries. ETag identifies the
+    representation the request names: it changes with the activation's revision, with any pack of the activation's
+    closure, and with the catalog, and it does not change when a pack outside the closure changes. It is not the tag of
+    getEffectiveArtifact for the same catalog, whose body differs. A matching If-None-Match is a 304 without a body, and
+    a tag of another representation never matches (RFC 9110 section 13.1.2).
   tags:
   - EffectiveRoutingCatalogs
   parameters:
