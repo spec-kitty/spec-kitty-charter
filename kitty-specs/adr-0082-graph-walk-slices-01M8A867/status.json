@@ -165,6 +165,9 @@
       "last_event_id": "01M8CZKD6RXRYN08CRZAHA3DR6",
       "last_transition_at": "2026-11-26T22:28:44.888298+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP05 done on lane-e (main merged in; signed). Edge-index refusals are relations-phase rules (EdgeIndexRules, MergedRelations); one walker per closure; ADR-0056 statuses; contract Breaking fragment. Adversarial review (10 findings) and re-check (3) folded; F1 keeps writes accepting a merge refusal other than an edge-index fault (behaviour preserved). Out of map: WP04's RelationRules/RelationRulesTest (nit fold), activations Javadoc/stubs and activations path descriptions (stale pack_unreadable text). verifyAll green at f6264a63c; f259b8777 is test/doc only."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 31061,
