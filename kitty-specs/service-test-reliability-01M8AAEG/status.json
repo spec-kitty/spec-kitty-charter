@@ -163,6 +163,9 @@
       "last_event_id": "01M8BFP25TEDXCK509X40DWBMA",
       "last_transition_at": "2026-11-26T08:31:20.250584+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "Gates run and attributed; NFR-003 met (+0.7 %)"
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 15303,
