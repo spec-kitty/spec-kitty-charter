@@ -93,7 +93,7 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
 
 1. **The own closure** (R-k). A preset item is judged against its declaring pack's own closure: the pack and every pack
    it reaches over `depends_on` and `parent_pack`, never a dependent. It is the domain's composition closure
-   (`PackCompositionResolver.compositionClosure`) rooted at the pack, so no walk is added.
+   (`PackGraph.compositionClosure`) rooted at the pack, so no walk is added.
 2. **Declared and held** (R-l, R-v). An item is *declared* when a pack of the own closure holds it as an artifact file
    or as a graph node of its kind (`PackCompositionFacts.declared`). It is *held* when a pack of the own closure holds
    it as an artifact file (`PackCompositionFacts.held`). These two fields replace `defined` outright. References resolve
