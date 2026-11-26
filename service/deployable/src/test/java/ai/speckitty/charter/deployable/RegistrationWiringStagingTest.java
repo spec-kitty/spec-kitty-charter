@@ -100,20 +100,46 @@ class RegistrationWiringStagingTest {
                 .isEqualTo(root.resolve("staging"));
     }
 
-    @Test
-    void withoutAConfigRootTheSweepNeverTouchesTheTemporaryDirectory(@TempDir Path temporary)
-            throws IOException, InterruptedException {
-        Path stale = Files.createDirectories(temporary.resolve("staging").resolve("left-by-someone-else"));
-        Files.writeString(stale.resolve("file"), "not the service's");
+    /** A registration id: the only name a sweep removes from a staging root. */
+    private static final String JOB = "01M8AAEGAWWX40BC7NQ6GAZVQ2";
+
+    /** A job directory left two hours ago under {@code <parent>/staging}: what a sweep of that root removes. */
+    private static Path staleJobUnder(Path parent) throws IOException {
+        Path stale = Files.createDirectories(parent.resolve("staging").resolve(JOB));
+        Files.writeString(stale.resolve("file"), "left behind");
         Files.setLastModifiedTime(stale, FileTime.from(Instant.now().minus(Duration.ofHours(2))));
+        return stale;
+    }
+
+    @Test
+    void aSweepOverThatStagingRootRemovesTheStaleJobDirectory(@TempDir Path temporary, @TempDir Path root)
+            throws IOException {
+        Path stale = staleJobUnder(temporary);
+        RegistrationWiring.RegistrationStagingRoot staging =
+                new RegistrationWiring.RegistrationStagingRoot(temporary.resolve("staging"));
+
+        try (RegistrationWiring.SweepRunner sweep =
+                wiring.stagingSweeper(staging, rootAt(root), mock(RegistrationJobs.class), Clock.systemUTC())) {
+            assertThat(sweep).isNotNull();
+        }
+
+        assertThat(stale)
+                .as("the positive control: a sweep of that root removes the entry the next test leaves")
+                .doesNotExist();
+    }
+
+    @Test
+    void withoutAConfigRootTheSweepNeverTouchesTheTemporaryDirectory(@TempDir Path temporary) throws IOException {
+        Path stale = staleJobUnder(temporary);
         String before = System.getProperty("java.io.tmpdir");
         System.setProperty("java.io.tmpdir", temporary.toString());
         try {
             RegistrationWiring.RegistrationStagingRoot staging =
                     wiring.registrationStagingRoot(new RegistrationProperties(false, null), noRoot);
+            // A sweep that starts sweeps once before it returns (StagingSweeper.start), so what it would remove is gone
+            // by the time the runner is handed back; the next sweep is five minutes away.
             try (RegistrationWiring.SweepRunner sweep =
                     wiring.stagingSweeper(staging, noRoot, mock(RegistrationJobs.class), Clock.systemUTC())) {
-                Thread.sleep(1500);
                 assertThat(sweep).isNotNull();
             }
         } finally {
@@ -121,7 +147,7 @@ class RegistrationWiringStagingTest {
         }
 
         assertThat(stale.resolve("file"))
-                .as("what another process left in the temporary directory")
+                .as("a job directory under the temporary directory, which only a sweep of that root would remove")
                 .exists();
     }
 }
