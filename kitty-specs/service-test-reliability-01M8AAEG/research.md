@@ -96,7 +96,7 @@ checked clean. No PIT was run (C-004).
 
 - retained(): operator ruling 2026-11-26 (AskUserQuestion in session): keep, javadoc records why (the one observable of "no job was made"); retention test tightened to isEqualTo(MAX_RETAINED). FR-008 amended accordingly.
 - FR-004: ended() and markRunning's phase check mask each other; each alone is an equivalent mutant. The new test (aWorkerThatTakesAJobEndedMeanwhileDropsItAndWritesNothing) kills the mutant that lets an ended job reach its work (both guards gone: the stager runs, arrivals rise).
-- Not done (outside the operator-ruled F3/F12 scope; tidy-ups, not defects): javadoc "the seam a test uses" on PackFileSet.walk(table)/digested(kinds|table), WholePackCensus census(bindings)/retired, WholePackStore 4-arg constructor, PackRemediation move/delete seams, PolicyYaml.write, FilesystemPackStore.read(bindings); PackMutabilityPolicy (excluded, #636 slice 5).
+- Not done (outside the operator-ruled F3/F12 scope; tidy-ups, not defects): main javadoc that names a test as a member's caller remains on WholePackCensus (census with bindings, retired companion), the WholePackStore 4-arg constructor, PackRemediation's move and delete seams, PolicyYaml.write, PackFileKind's table from text and FileActivationRepository; PackMutabilityPolicy is excluded (#636 slice 5). PackFileSet and FilesystemPackStore, which this Mission changes, were reworded (squad #47).
 - CLI unsigned commits: operator ruling 2026-11-26: push as made; land one signed squash with the Co-Authored-By trailer.
 - WP01 review, MEDIUM: `OfferingReadServiceCacheWiringTest` no longer starts cold, because the Spring cache is a shared
   singleton and a fresh one needs a new context. It proves the wiring (the second read is answered by the cache alone);
