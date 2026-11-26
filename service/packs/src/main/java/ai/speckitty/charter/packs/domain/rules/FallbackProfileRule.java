@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.application;
+package ai.speckitty.charter.packs.domain.rules;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
@@ -10,7 +10,6 @@ import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
-import ai.speckitty.charter.packs.domain.ClosureWalk;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +20,8 @@ import java.util.Optional;
  * {@code fallback_profile} is held by a pack of that closure (decision 2), is {@code locked} along it (decision 3), and
  * declares the reserved role {@value RoleBearer#GENERIC} and no alt-roles (decision 4), and is agent-performed (ruling
  * D4: a fallback serves every role nothing else fits, so a human never stands in as one). The rule is data-blind
- * beyond these facts: the service never holds fallback content. It runs behind {@link ClosureWalk} (#556).
+ * beyond these facts: the service never holds fallback content. {@link PackRulesets#ownClosure} hands it out, and the
+ * {@link ai.speckitty.charter.packs.domain.ValidationWalker} runs it (#556, #638).
  */
 final class FallbackProfileRule {
 
@@ -36,11 +36,11 @@ final class FallbackProfileRule {
      * @param closure the declaring pack's own closure
      * @param profiles where the winning profile's entity is read
      * @return {@code fallback_profile_unknown} alone when no pack of the closure holds the profile, since nothing more
-     *     can be judged of it; otherwise every one of not locked, not role-neutral and not agent-performed that holds, in
-     *     that order; empty when the declaration holds
+     *     can be judged of it; otherwise every one of not locked, not role-neutral and not agent-performed that holds,
+     *     in that order; empty when the declaration holds
      */
     static List<ClosureFault> check(
-            PackIdentifier pack, String profileId, ClosureFacts closure, ClosureWalk.Profiles profiles) {
+            PackIdentifier pack, String profileId, ClosureFacts closure, ProfileReader profiles) {
         String named = "the fallback_profile " + profileId + " of pack " + pack.value();
         Origin origin = profileOrigin(pack, profileId);
         Optional<RoleBearer> held = heldProfile(profileId, closure, profiles);
@@ -81,8 +81,8 @@ final class FallbackProfileRule {
     }
 
     /**
-     * What a breach of a profile a pack names is about (R-o): the pack and the profile's URN, or the pack alone when the
-     * id it names is no URN id.
+     * What a breach of a profile a pack names is about (R-o): the pack and the profile's URN, or the pack alone when
+     * the id it names is no URN id.
      *
      * @param pack the pack that names the profile
      * @param profileId the profile's id, as the pack names it
@@ -103,7 +103,7 @@ final class FallbackProfileRule {
      * @param profiles where the winning profile's entity is read
      * @return the profile; empty when no pack of the closure holds a readable agent profile of that id
      */
-    static Optional<RoleBearer> heldProfile(String profileId, ClosureFacts closure, ClosureWalk.Profiles profiles) {
+    static Optional<RoleBearer> heldProfile(String profileId, ClosureFacts closure, ProfileReader profiles) {
         Optional<CharterArtifact> held = closure.holds(ArtifactKind.AGENT_PROFILE, profileId)
                 ? closure.winnerPackOf(ArtifactKind.AGENT_PROFILE, profileId)
                         .flatMap(holder -> profiles.read(holder, profileId))

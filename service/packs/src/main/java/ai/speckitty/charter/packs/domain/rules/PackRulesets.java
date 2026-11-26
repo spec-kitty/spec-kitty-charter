@@ -1,16 +1,25 @@
 package ai.speckitty.charter.packs.domain.rules;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
+import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.EnhancementCompose;
+import ai.speckitty.charter.packs.domain.GraphCheck;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackContents;
+import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.Preset;
-import java.util.ArrayList;
+import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
+import ai.speckitty.charter.packs.domain.ValidationWalker;
+import ai.speckitty.charter.packs.domain.graph.PackGraphNode;
+import ai.speckitty.charter.packs.domain.graph.PackNode;
+import ai.speckitty.charter.packs.domain.graph.Scope;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -46,14 +55,20 @@ public final class PackRulesets {
                 List<PackUnderResolution> closure, PackUnderResolution member, PackCompositionFacts facts);
     }
 
+    /** One of {@code REFERENCES}' checks, by name. */
+    private record NamedCheck(String name, MemberCheck check) {}
+
+    /** The name of the own-closure phase: the closure walk's name, which ruling R-u keeps free for it. */
+    private static final String OWN_CLOSURE = "closure_walk";
+
     /**
      * {@code REFERENCES}' checks, in registration's phase order (its phases 2 to 4): the substep delegations, the
      * references, the step enhancements' targets.
      */
-    private static final List<MemberCheck> REFERENCES = List.of(
-            PackCompositionResolver::delegationFaultsOf,
-            PackCompositionResolver::referenceFaultsOf,
-            EnhancementCompose::targetFaultsOf);
+    private static final List<NamedCheck> REFERENCES = List.of(
+            new NamedCheck("substep_delegations", PackCompositionResolver::delegationFaultsOf),
+            new NamedCheck("references", PackCompositionResolver::referenceFaultsOf),
+            new NamedCheck("enhancement_targets", EnhancementCompose::targetFaultsOf));
 
     private PackRulesets() {}
 
@@ -130,9 +145,16 @@ public final class PackRulesets {
      * ({@link PackCompositionResolver#referenceFaultsOf}) and the step enhancements' targets
      * ({@link EnhancementCompose#targetFaultsOf}), each judged for every member given, in the order given; the first
      * check that finds any fault answers all of them, and the later checks do not run, since a later check would answer
-     * the same cause again (a delegation candidate is also the reference of its {@code scope} edge). Registration judges
-     * every member of the closure it composes; pack-doctor's {@code --full} does the same per root of its set, every
-     * pack of the root's closure a member (ruling R-ae), reporting a fault several roots find once.
+     * the same cause again (a delegation candidate is also the reference of its {@code scope} edge). Registration
+     * judges every member of the closure it composes; pack-doctor's {@code --full} does the same per root of its set,
+     * every pack of the root's closure a member (ruling R-ae), reporting a fault several roots find once. Each check is
+     * a phase of the {@link ValidationWalker}, handed each member itself in the order given; its phase gate is the
+     * stop rule (every closure fault is a violation).
+     *
+     * <p>Interim: the members reach the walker by a direct feed, not by {@code PackGraph#walk}. The nodes are
+     * {@link PackUnderResolution}s, not pack-graph nodes, and the caller's members (a subset of the closure, in the
+     * caller's order) are not the composition closure of a scope, which a driver would walk in the graph's order.
+     * Slice 4 of epic #636 (relations as rules) moves this check onto a graph walk with a mode of its own.
      *
      * @param closure the composed closure, in merge order
      * @param members the members whose checks run, each a pack of the closure
@@ -146,16 +168,92 @@ public final class PackRulesets {
         Objects.requireNonNull(closure, "closure");
         Objects.requireNonNull(members, "members");
         Objects.requireNonNull(factsOf, "factsOf");
-        for (MemberCheck check : REFERENCES) {
-            List<ClosureFault> found = new ArrayList<>();
-            for (PackUnderResolution member : members) {
-                found.addAll(check.faults(closure, member, factsOf.apply(member)));
-            }
-            if (!found.isEmpty()) {
-                return List.copyOf(found);
-            }
-        }
-        return List.of();
+        List<ValidationWalker.Phase<PackUnderResolution>> phases = REFERENCES.stream()
+                .map(named -> new ValidationWalker.Phase<PackUnderResolution>(
+                        named.name(),
+                        List.of(new ValidationWalker.OnNode<PackUnderResolution, PackUnderResolution>(
+                                named.name(),
+                                PackUnderResolution.class,
+                                member -> true,
+                                member -> named.check().faults(closure, member, factsOf.apply(member))))))
+                .toList();
+        return ValidationWalker.of(phases)
+                .run(visitor -> members.forEach(visitor::onNode))
+                .faults();
+    }
+
+    /**
+     * The own-closure rules of one declaring pack (#556 FR-005, #638): one collect-all phase over the declaring pack's
+     * node, judging its own closure's facts with the write in place. In order: its ADR-0068 fallback profile
+     * ({@link FallbackProfileRule}), only when the pack's descriptor names one; its own role pins, then the pin
+     * conflicts of its closure ({@link RolePinRule}); then the profile enhancements in force
+     * ({@link ProfileEnhancementRule}), which passes when there are none. Every breach of each rule is reported.
+     * The fallback and own-pin rules run on the declaring pack's node, so a walk that does not hand it over exactly
+     * once would pass them unjudged; the check throws {@link IllegalStateException} then, rather than report nothing.
+     * Registration, every write and the startup census get these rules here and nowhere else; run them over
+     * {@link #ownClosureOf} of the declaring pack.
+     *
+     * @param closure the declaring pack's own closure, as the reads compose it
+     * @param profiles where a winning profile's entity is read
+     * @param merge the profiles slice's merge, which judges an enhancement; empty when the deployment has none
+     * @return the check: the packs walk and the one phase
+     */
+    public static GraphCheck ownClosure(
+            ClosureFacts closure, ProfileReader profiles, Optional<ProfileEnhancementGateway> merge) {
+        Objects.requireNonNull(closure, "closure");
+        Objects.requireNonNull(profiles, "profiles");
+        Objects.requireNonNull(merge, "merge");
+        return new GraphCheck(
+                PackGraph.Walk.PACKS,
+                List.of(new ValidationWalker.Phase<PackGraphNode>(
+                        OWN_CLOSURE,
+                        List.of(
+                                new ValidationWalker.OnClose<PackGraphNode>("declaring_pack_visited", nodes -> {
+                                    long packs = nodes.stream()
+                                            .filter(PackNode.class::isInstance)
+                                            .count();
+                                    if (packs != 1) {
+                                        throw new IllegalStateException("the own-closure rules judge the declaring"
+                                                + " pack's node exactly once, and the walk handed over " + packs);
+                                    }
+                                    return List.of();
+                                }),
+                                new ValidationWalker.OnNode<PackGraphNode, PackNode>(
+                                        "fallback_profile",
+                                        PackNode.class,
+                                        node -> node.descriptor()
+                                                .fallbackProfile()
+                                                .isPresent(),
+                                        node -> FallbackProfileRule.check(
+                                                node.pack(),
+                                                node.descriptor()
+                                                        .fallbackProfile()
+                                                        .orElseThrow(),
+                                                closure,
+                                                profiles)),
+                                new ValidationWalker.OnNode<PackGraphNode, PackNode>(
+                                        "role_pins",
+                                        PackNode.class,
+                                        node -> true,
+                                        node -> RolePinRule.ownPins(node.pack(), closure, profiles)),
+                                new ValidationWalker.OnClose<PackGraphNode>(
+                                        "role_pin_conflicts", nodes -> RolePinRule.conflicts(closure)),
+                                new ValidationWalker.OnClose<PackGraphNode>(
+                                        "profile_enhancements",
+                                        nodes -> ProfileEnhancementRule.check(closure, profiles, merge))))));
+    }
+
+    /**
+     * The scope of a declaring pack's own-closure check: its own closure, the declaring pack alone selected.
+     *
+     * @param declaring the declaring pack, by configured identifier
+     * @return the scope
+     */
+    public static Scope ownClosureOf(PackIdentifier declaring) {
+        Objects.requireNonNull(declaring, "declaring");
+        return new Scope(
+                List.of(declaring),
+                node -> node instanceof PackNode pack && pack.pack().equals(declaring));
     }
 
     /**
