@@ -1,7 +1,7 @@
 {
-  "event_count": 16,
-  "last_event_id": "01M8CBKKQTXYD1ZZD9BWFBDSNW",
-  "materialized_at": "2026-11-26T16:39:20.058339+00:00",
+  "event_count": 18,
+  "last_event_id": "01M8CBN707V6FS3D2P8DYJCCWT",
+  "materialized_at": "2026-11-26T16:40:12.369005+00:00",
   "mission_number": "",
   "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
   "mission_type": "software-dev",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 5
+    "planned": 4
   },
   "work_packages": {
     "WP01": {
@@ -60,9 +60,9 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude::java-jenny",
-      "lane": "planned",
-      "last_event_id": "01M8CBKKQTXYD1ZZD9BWFBDSNW",
-      "last_transition_at": "2026-11-26T16:39:20.058339+00:00",
+      "lane": "in_progress",
+      "last_event_id": "01M8CBN707V6FS3D2P8DYJCCWT",
+      "last_transition_at": "2026-11-26T16:40:12.369005+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "WP02 on lane-b (8d3d30cd5): GraphWalker<N,E>, the graph node types and Scope, PackGraph.of and walk with PACKS and RELATIONS (research R-2). verifyAll green on lane-b. Content equals refactor/638-graph-walker's WP02 part (4217f0a53 plus the review fold dc10633df). The adversarial review found no behaviour difference; all findings folded. Out-of-map: PackGraph.java (WP01-owned, WP01 approved) gains the instance driver."
@@ -75,7 +75,7 @@
         "reviewer": "claude::reviewer-renata",
         "verdict": "changes_requested"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
