@@ -16,7 +16,7 @@
 #
 # Steps the serving WPs add (listed in scenarios/README.md, "Registration steps"): the archive steps (an archive is
 # built from the files named, as tar.gz unless a step says zip), the registration steps (poll the Location until the job
-# ends, hold and release the jobs at the RegistrationJobs seam, forget the ended jobs), and one source seam per kind (a
+# ends, hold and release the jobs at their storage-room check, forget the ended jobs), and one source seam per kind (a
 # stub https exchange, a local bare git repository, a configured filesystem root).
 
 @contract @registration

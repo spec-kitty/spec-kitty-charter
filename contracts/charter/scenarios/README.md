@@ -475,7 +475,9 @@ vocabulary above.
 - `Then the path of the Location header starts with "<text>"`, `Then the field at "<json-pointer>" is present`,
   `Then the field at "<json-pointer>" is absent` and `Then the field at "<json-pointer>" is the remembered one` (the
   remember step is `When I remember the field "<field>" of the response body`).
-- The `RegistrationJobs` seam: `Given the registration jobs are held before they run`, `Given the registration queue is full` (two
+- The held storage room of the registration jobs (a `HeldRoom` over the jobs' storage-room check, which a job passes as
+  it starts to run): `Given the registration jobs are held before they run` (both workers run held fillers, so the next
+  job waits `pending`, as the queue holds it), `Given the registration queue is full` (two
   held jobs run and eight wait, ADR-0065 D8), `When I release the held
   registration jobs`, `When I release the held registration jobs and hold them while they run` (the job is then
   `running`) and `When the service forgets the ended registrations` (the clock passes the hour the status is kept).

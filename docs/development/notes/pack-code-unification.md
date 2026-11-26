@@ -2,7 +2,7 @@
 title: "Note: one code per pack fault (the R2 table)"
 description: "The R2 code table of #554: for each pack fault, what validate mode and the registration answer today, and the one code and wording kept."
 doc_status: draft
-updated: 2026-11-23T00:00:00Z
+updated: 2026-11-26T00:00:00Z
 type: Guide
 kind: Reference
 related:
@@ -631,7 +631,8 @@ narrowed run reports nothing for it. The rule functions are package-private, so 
   - **AA5: the read counters are global statics.** `FilesystemPackStore`'s `LOOKUP_PARSES` and `READS`,
     `PackFileSet`'s `WALKS` and `StoreRead`'s `RUNS` are static `LongAdder`s that the one-read tests sample before
     and after a call. They count every read of the JVM, so a test that runs beside another read can miscount. The
-    unification replaces them with a counter the reader is given.
+    unification replaces them with a counter the reader is given. *Resolved 2026-11-26 (#659) without the unification:
+    a `WorkMeter` bound around one call counts each unit (ADR-0075, amendment of that date).*
 
 ## Outcomes of WP04
 
