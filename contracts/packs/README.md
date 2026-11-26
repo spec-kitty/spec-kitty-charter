@@ -160,7 +160,8 @@ Every change to a schema, `file-kinds.yaml` or the conformance cases adds a line
 in the same pull request. A change to a rule of `file-kinds.yaml` also adds or changes its conformance case:
 `ClassifierConformanceTest` runs every case against `PackFileKind.classify` and fails when a rule has no case, or a
 case names a rule the table does not hold. `:contracts:checkPacksChangelog`, part of `check`, refuses a malformed or
-misordered heading, or a 0.x minor bump without `### Breaking`.
+misordered heading, a 0.x minor bump without `### Breaking`, or packs contract files that differ from the release of a
+released and tagged top heading ("Releasing the packs contract", below).
 
 ## The packs contract and its releases (#559)
 
@@ -187,6 +188,12 @@ The first releases are release candidates (operator ruling R1, 2026-11-16): `0.1
    (`0.1.0-rc.2`) or the final `0.1.0` from it; any other version above a candidate is refused until its final release
    is recorded. A candidate is never the previous release for the Breaking rule: the first section of a new line, a
    candidate or not, lists what breaks.
+
+Once `contract-packs-v<version>` of the top heading is merged into HEAD, the packs contract's files (`file-kinds.yaml`,
+`schemas/`, `conformance/`) are frozen: `check` (`:contracts:checkPacksChangelog`) refuses HEAD while they differ from
+the tag's, until step 3 opens the next `-SNAPSHOT` (#663). Other files may change, unlike after a charter contract
+release, which refuses any later commit until its reopen. The check also refuses a released heading below the top
+whose tag is not merged into HEAD, so a clone without the tags fails instead of passing unchecked.
 
 Pushing the tag in step 2 publishes the release: `.github/workflows/packs-contract-release.yml` rebuilds the assets at
 the tag with `scripts/release/packs-contract-release-assets.sh` and attaches `packs-contract.tar.gz`,
