@@ -320,6 +320,28 @@ class PackGraphTest {
         }
 
         @Test
+        @DisplayName("dependsOnClosure, onParentLine and topologicalOrder over a 200,000-pack chain (NFR-002)")
+        void theResolverWalksOverALongChain() {
+            int n = 200_000;
+            Map<String, PackDescriptor> chain = new LinkedHashMap<>();
+            Map<String, List<String>> dependencies = new LinkedHashMap<>();
+            for (int i = 0; i <= n; i++) {
+                Optional<String> below = i == 0 ? Optional.empty() : Optional.of("p" + (i - 1));
+                chain.put("p" + i, descriptor("p" + i, below, below.stream().toArray(String[]::new)));
+                dependencies.put("p" + i, below.stream().toList());
+            }
+            Function<String, Optional<PackDescriptor>> packs = id -> Optional.ofNullable(chain.get(id));
+            List<String> ids = List.copyOf(dependencies.keySet());
+
+            assertThat(PackGraph.dependsOnClosure("p" + n, packs)).hasSize(n + 1);
+            assertThat(PackGraph.onParentLine(chain.get("p" + n), "p0", packs)).isTrue();
+            PackGraph.Ordering<String> order = PackGraph.topologicalOrder(
+                    ids.reversed(), id -> id, dependencies, Comparator.naturalOrder(), id -> id);
+            assertThat(order.placed()).hasSize(n + 1).startsWith("p0", "p1").endsWith("p" + n);
+            assertThat(order.leftover()).isEmpty();
+        }
+
+        @Test
         @DisplayName("leftoverCycles on a chain into a cycle names only the cycle")
         void leftoverCyclesOnAChainIntoACycle() {
             int n = 2_000;
