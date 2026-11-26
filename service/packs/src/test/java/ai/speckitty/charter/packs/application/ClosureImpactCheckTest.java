@@ -1470,4 +1470,96 @@ class ClosureImpactCheckTest {
                 .as("the control: the named pack holds the candidate")
                 .isEqualTo(Outcome.CREATED);
     }
+
+    // ---- own-closure breaches through the walker, closure by closure (#638, T015) ----------------------------------
+
+    private static final String PINNED_ORG_ID = PackRegistrationServiceTest.ulid('T');
+    private static final String PINS_ID = PackRegistrationServiceTest.ulid('Y');
+    private static final String FALLS_BACK_ID = PackRegistrationServiceTest.ulid('Z');
+    private static final String ON_PINNED_ORG = "depends_on:\n  - pack_id: " + PINNED_ORG_ID + "\n    range: '>=1.0'\n";
+
+    private static String reviewer(String id) {
+        return "profile-id: " + id + "\nname: " + id + "\nrole: reviewer\n"
+                + "purpose: Review the work.\nspecialization:\n  primary-focus: Review\n";
+    }
+
+    /** An org pack holding reviewer-renata, and reviewer-rhea unless a version drops her. */
+    private static Packs pinnedOrg(String version, boolean holdsRhea) {
+        Packs org = Packs.of(PINNED_ORG_ID, "pinned-org", version, "org")
+                .file("agent_profiles/reviewer-renata.agent.yaml", reviewer("reviewer-renata"));
+        return holdsRhea ? org.file("agent_profiles/reviewer-rhea.agent.yaml", reviewer("reviewer-rhea")) : org;
+    }
+
+    private static Packs pinsRhea() {
+        return Packs.of(PINS_ID, "a-pins", "1.0.0", "project", ON_PINNED_ORG + "mutability_policy: policy.yaml\n")
+                .file("policy.yaml", "schema_version: 1\nrole_pins:\n  reviewer: reviewer-rhea\n");
+    }
+
+    private static Packs fallsBackToRhea() {
+        return Packs.of(
+                FALLS_BACK_ID, "b-falls-back", "1.0.0", "project", ON_PINNED_ORG + "fallback_profile: reviewer-rhea\n");
+    }
+
+    @Test
+    void ownClosureBreachesOfTwoClosuresStayClosureMajorThroughTheWalker(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("pinned-org", pinnedOrg("1.0.0", true));
+        rig.install("a-pins", pinsRhea());
+        rig.install("b-falls-back", fallsBackToRhea());
+
+        CharterRefusal refused =
+                refusal(() -> rig.register("pinned-org", rig.stage(pinnedOrg("1.1.0", false)), Preconditions.none()));
+
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::code)
+                .as("the closures in catalog order, each closure's breaches in turn: a-pins' pin breach comes before"
+                        + " b-falls-back's fallback breach, though the fallback rule runs first within a closure")
+                .containsExactly("role_pin_unknown", "fallback_profile_unknown");
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::detail)
+                .satisfiesExactly(
+                        pin -> assertThat(pin).startsWith("In the closure rooted at a-pins: "),
+                        fallback -> assertThat(fallback).startsWith("In the closure rooted at b-falls-back: "));
+    }
+
+    @Test
+    void aPresetItemIsReportedBesideAnOwnClosureBreach(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("pinned-org", pinnedOrg("1.0.0", true));
+        Packs both = Packs.of(PINS_ID, "pins", "1.0.0", "project", ON_PINNED_ORG + "mutability_policy: policy.yaml\n")
+                .file("policy.yaml", "schema_version: 1\nrole_pins:\n  reviewer: reviewer-rex\n")
+                .file("presets/starter.yaml", REQUIRE_X);
+
+        CharterRefusal refused = refusal(() -> rig.register("pins", rig.stage(both), Preconditions.none()));
+
+        assertThat(refused.violations())
+                .extracting(RefusalViolation::pointer, RefusalViolation::code)
+                .as("the breach first, then the preset item, ungated by the breach; the item keeps its violation at"
+                        + " the item beside the fault's own")
+                .containsExactly(
+                        tuple("", "role_pin_unknown"),
+                        tuple("", "preset_item_not_held"),
+                        tuple("presets/starter.yaml#/activated_directives/0", "preset_item_not_held"));
+    }
+
+    @Test
+    void theCensusNamesThePacksOfARelationFault(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("acme", storedAcme(CYCLE));
+
+        assertThat(rig.impact.census())
+                .singleElement()
+                .satisfies(finding -> assertThat(finding.detail()).contains(" (packs acme)"));
+    }
+
+    @Test
+    void theCensusReachesTheOwnClosureRules(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("pinned-org", pinnedOrg("1.0.0", false));
+        rig.install("b-falls-back", fallsBackToRhea());
+
+        assertThat(rig.impact.census())
+                .extracting(ClosureImpactCheck.Finding::pack, ClosureImpactCheck.Finding::code)
+                .containsExactly(tuple("b-falls-back", RefusalCode.FALLBACK_PROFILE_UNKNOWN));
+    }
 }

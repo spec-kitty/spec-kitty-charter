@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
@@ -333,6 +334,22 @@ class OwnClosureRulesTest {
                 .filteredOn(code ->
                         code == RefusalCode.ROLE_PIN_CONFLICT || code == RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD)
                 .containsExactly(RefusalCode.ROLE_PIN_CONFLICT, RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD);
+    }
+
+    @Test
+    @DisplayName("enhancements in force with no merge in the deployment is a defect, not a fault")
+    void enhancementsWithoutAMergeThrow() {
+        Urn base = Urn.parse("agent_profile:base").orElseThrow();
+        Urn enhancer = Urn.parse("agent_profile:enhancer").orElseThrow();
+        Map<Urn, List<MergedClosure.Winner>> enhancersOf = new LinkedHashMap<>();
+        enhancersOf.put(base, List.of(winner(enhancer, ACME)));
+        Facts facts = new Facts();
+        facts.enhancements = Optional.of(new ClosureFacts.ProfileEnhancements(
+                Map.of(base, winner(base, BASE), enhancer, winner(enhancer, ACME)), enhancersOf));
+
+        assertThatThrownBy(
+                        () -> walk(Optional.empty(), facts, (holder, id) -> Optional.of(profile(id)), Optional.empty()))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test

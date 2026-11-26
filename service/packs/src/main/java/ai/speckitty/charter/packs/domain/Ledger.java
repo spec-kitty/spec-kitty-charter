@@ -21,7 +21,8 @@ public record Ledger(List<ClosureFault> faults) {
     }
 
     /**
-     * The ledger as the kernel's rationale, in the same order.
+     * The ledger as the kernel's rationale, in the same order. No production caller reads it yet: slice 7 of epic #636
+     * moves the edge's refusal mapping onto the rationale, and this is the projection it reads (ADR-0082 decision 4).
      *
      * @return the rationale
      */

@@ -115,6 +115,11 @@ class ValidationWalkerTest {
         assertThat(nodes.runs).as("one traversal per phase that runs").isEqualTo(1);
     }
 
+    /**
+     * Stands in for T012's "a WARNING does not gate" case. A {@link ClosureFault} cannot carry a warning: its code must
+     * be a closure-check code, and every one is a violation. So gating on a violation and gating on any fault answer
+     * the same today, and no closure fault can tell the two apart; this pins the premise instead.
+     */
     @Test
     @DisplayName("every closure-check code is a VIOLATION, so the gate stops at the first phase with any fault")
     void everyClosureCodeIsAViolation() {

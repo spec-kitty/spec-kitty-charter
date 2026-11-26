@@ -32,7 +32,6 @@ import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -413,7 +412,8 @@ public final class ClosureImpactCheck implements ImpactCheck {
             nodes.add(new PackNode(configured, configured.id().equals(declaring) ? descriptor : member.descriptor()));
         }
         if (!members.containsKey(declaring)) {
-            throw new IllegalStateException("the composed closure holds its declaring pack " + declaring.value());
+            throw new IllegalStateException(
+                    "the composed closure does not hold its declaring pack " + declaring.value());
         }
         PackGraph graph = PackGraph.of(
                 nodes, pack -> composed.factsOf(Objects.requireNonNull(members.get(pack), "a pack of the closure")));
@@ -517,7 +517,9 @@ public final class ClosureImpactCheck implements ImpactCheck {
             breaches.forEach(breach -> faults.add(withinClosure(roots, breach, staged)));
             // A preset-item fault carries its violation, so it answers alone as the rule raised it, and is named in
             // its closure only beside other faults, as place() does for a compose fault with violations.
-            presetItemFaults(declaring, closures.composed().get(roots))
+            presetItemFaults(
+                            declaring,
+                            Objects.requireNonNull(closures.composed().get(roots), "a composed closure"))
                     .forEach(fault -> faults.add(
                             fault,
                             alone -> alone.with(
@@ -533,10 +535,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
      * its violation at the item.
      */
     private static List<ClosureFault> presetItemFaults(
-            PackIdentifier declaring, OfferingReadService.@Nullable ComposedClosure composed) {
-        if (composed == null) {
-            return List.of();
-        }
+            PackIdentifier declaring, OfferingReadService.ComposedClosure composed) {
         return PackRulesets.presetItemFaults(
                         composed.packs(),
                         pack -> Objects.requireNonNull(
