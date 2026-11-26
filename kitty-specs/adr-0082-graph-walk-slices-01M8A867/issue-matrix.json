@@ -25,7 +25,7 @@
       "wp": null
     },
     "#637": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "lane-a kitty/mission-adr-0082-graph-walk-slices-01M8A867-lane-a; PR #665",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -33,8 +33,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP01"
     },
     "#638": {
       "evidence_ref": "<link or commit>",
