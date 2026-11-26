@@ -37,7 +37,7 @@ final class FallbackProfileRule {
      * @param profiles where the winning profile's entity is read
      * @return {@code fallback_profile_unknown} alone when no pack of the closure holds the profile, since nothing more
      *     can be judged of it; otherwise every one of not locked, not role-neutral and not agent-performed that holds,
-     * in     that order; empty when the declaration holds
+     *     in that order; empty when the declaration holds
      */
     static List<ClosureFault> check(
             PackIdentifier pack, String profileId, ClosureFacts closure, ProfileReader profiles) {

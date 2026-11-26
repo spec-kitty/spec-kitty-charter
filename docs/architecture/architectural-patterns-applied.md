@@ -197,10 +197,13 @@ time; the judging differs. A Visitor lets one walk serve every check.
   the reverse index of `ClosureRoots`, the cycle and strongly-connected-group code, and keeps `EdgeIndex` as its index.
 - *Built (slice 3, #638):* the node types are in `packs.domain.graph` (`PackGraphNode`, `PackNode`, `ArtifactNode`,
   `EdgeNode` with the edge as written, `EdgeKind`). `PackGraph.of(packs in merge order, factsOf)` builds the graph
-  once per judge, reading facts lazily, and `PackGraph#walk(scope, mode, visitor)` is the driver: the roots'
+  over a closure's packs, reading facts lazily, and `PackGraph#walk(scope, mode, visitor)` is the driver: the roots'
   composition closure once each, in the graph's order, the scope's selection handed over, the mode's edges in declared
-  order. The domain's modes (`PACKS`, `COMPOSE`, `ARTIFACTS`, `RELATIONS`, `REFERENCES`) decide the edges; a rule's
-  check carries its mode, so a caller never picks one.
+  order. The domain's modes (`PACKS`, and `RELATIONS` for slice 4) decide the edges; a rule's check carries its mode,
+  so a caller never picks one. No mode emits an `ArtifactNode` or the descriptor, reference and delegation edges yet;
+  the rule that needs one adds its mode. `packs.domain.graph` and `packs.domain` depend on each other (the nodes take
+  `ConfiguredPack`, `PackOrigins` and the delegation candidate; the driver takes the nodes); no slice-cycle rule
+  forbids it, and the graph package goes one way when those types move.
 - *Built (slice 2, #637):* `{@link ai.speckitty.charter.packs.domain.PackGraph}` holds the walks the application layer
   wrote by hand: the edges a pack builds on, the descent along them, the composition closure, the packs building on a
   pack, its direct dependents, `cyclesIn` (with the Tarjan pass), the `enhances` grounding, and the composition
@@ -256,9 +259,9 @@ active-set doctor need the same list, ranked by severity.
   deleted, and one `ClosureFault.of(...)` factory builds every closure fault.
 - *Proposed:* a `ValidationWalker` appends to the `Rationale` as it walks. No parallel result shape is kept beside it:
   `PackCompositionResolver.Refusal`, `ClosureVerdict` and the string notices of `ImpactCheck` fold into it.
-- *Built (slice 3, #638), as an interim shape:* the walker's ledger is `Findings`, a list of `ClosureFault`s whose
-  `reason()` is the kernel's `Reason`, with `rationale()` projecting it in order. A `ClosureFault` also carries the packs,
-  violations and `requiredBy` the edge maps; the ledger settles on `Rationale` with slice 7 (ruling R-x).
+- *Built (slice 3, #638), as an interim shape:* the walker's ledger is `Ledger`, a list of `ClosureFault`s whose
+  `reason()` is the kernel's `Reason`, with `rationale()` projecting it in order. A `ClosureFault` also carries the
+  packs, violations and `requiredBy` the edge maps; the ledger settles on `Rationale` with slice 7 (ruling R-x).
 
 Reference: Fowler, [*Replacing Throwing Exceptions with Notification in
 Validations*](https://martinfowler.com/articles/replaceThrowWithNotification.html).

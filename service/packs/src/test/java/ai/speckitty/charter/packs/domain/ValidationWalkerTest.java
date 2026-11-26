@@ -54,7 +54,7 @@ class ValidationWalkerTest {
         }
     }
 
-    private static List<String> details(Findings findings) {
+    private static List<String> details(Ledger findings) {
         return findings.faults().stream().map(ClosureFault::detail).toList();
     }
 
@@ -104,7 +104,7 @@ class ValidationWalkerTest {
                 });
         Nodes nodes = new Nodes(new Big("a"));
 
-        Findings found = ValidationWalker.of(List.of(
+        Ledger found = ValidationWalker.of(List.of(
                         new ValidationWalker.Phase<>("first", List.of(each("r1", ":r1"))),
                         new ValidationWalker.Phase<>("second", List.of(laterCheck))))
                 .run(nodes);
@@ -127,7 +127,7 @@ class ValidationWalkerTest {
     @Test
     @DisplayName("the ledger projects onto the kernel's rationale in its order")
     void theRationaleKeepsTheOrder() {
-        Findings found = ValidationWalker.of(
+        Ledger found = ValidationWalker.of(
                         List.of(new ValidationWalker.Phase<>("one", List.of(each("r1", ":r1"), each("r2", ":r2")))))
                 .run(new Nodes(new Big("a")));
 
@@ -137,13 +137,41 @@ class ValidationWalkerTest {
     @Test
     @DisplayName("every phase passing gives an empty ledger that is not violated")
     void allPassing() {
-        Findings found = ValidationWalker.of(List.<ValidationWalker.Phase<Node>>of(new ValidationWalker.Phase<>(
+        Ledger found = ValidationWalker.of(List.<ValidationWalker.Phase<Node>>of(new ValidationWalker.Phase<>(
                         "one",
                         List.of(new ValidationWalker.OnNode<>("quiet", Node.class, node -> true, node -> List.of())))))
                 .run(new Nodes(new Big("a")));
 
         assertThat(found.faults()).isEmpty();
         assertThat(found.violated()).isFalse();
+    }
+
+    @Test
+    @DisplayName("a relationship the driver hands over is judged like a node, in visit order")
+    void aRelationshipIsJudged() {
+        ValidationWalker<Node> walker =
+                ValidationWalker.of(List.of(new ValidationWalker.Phase<>("one", List.of(each("r1", ":r1")))));
+
+        assertThat(details(walker.run(visitor -> {
+                    visitor.onNode(new Big("a"));
+                    visitor.onRelationship(new Small("edge"));
+                    visitor.onNode(new Big("b"));
+                })))
+                .containsExactly("a:r1", "edge:r1", "b:r1");
+    }
+
+    @Test
+    @DisplayName("a walker is visited only inside its run, and runs one traversal at a time")
+    void aWalkerHoldsOneRun() {
+        ValidationWalker<Node> walker =
+                ValidationWalker.of(List.of(new ValidationWalker.Phase<>("one", List.of(each("r1", ":r1")))));
+
+        assertThatThrownBy(() -> walker.onNode(new Big("outside"))).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> walker.run(visitor -> walker.run(new Nodes(new Big("nested")))))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(details(walker.run(new Nodes(new Big("after")))))
+                .as("a refused run leaves the walker usable")
+                .containsExactly("after:r1");
     }
 
     @Test

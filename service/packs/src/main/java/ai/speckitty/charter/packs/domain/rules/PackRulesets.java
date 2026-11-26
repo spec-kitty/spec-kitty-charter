@@ -17,20 +17,18 @@ import ai.speckitty.charter.packs.domain.ValidationWalker;
 import ai.speckitty.charter.packs.domain.graph.PackGraphNode;
 import ai.speckitty.charter.packs.domain.graph.PackNode;
 import ai.speckitty.charter.packs.domain.graph.Scope;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * The named compositions of the content rules, of {@code CLOSURE} and of {@code REFERENCES} (#554, FR-002, FR-003, S1
- * to S3; #632 item 3): each surface runs a composition by its name, with no surface profile and no mode flag. The
- * storage edge lifts {@link #content()} onto its one read ({@code StorageRulesets.registration()}), and validate mode
- * takes the same verdict through the domain port {@code PackReading}, so what registration finds, validate mode finds
- * too, by construction.
+ * The named compositions of the content rules, of {@code CLOSURE} and of {@code REFERENCES} (#554, FR-002, FR-003, S1 to
+ * S3; #632 item 3): each surface runs a composition by its name,
+ * with no surface profile and no mode flag. The storage edge lifts {@link #content()} onto its one read
+ * ({@code StorageRulesets.registration()}), and validate mode takes the same verdict through the domain port
+ * {@code PackReading}, so what registration finds, validate mode finds too, by construction.
  *
  * <p>No glossary rule and no asset-escape rule: both are the edge's checks (S2). The glossary's checks are the one
  * reader's prechecks, a storage format rule, a retired shape or a {@link GraphBinding} fault (WP06 D1); a path that
@@ -76,11 +74,11 @@ public final class PackRulesets {
 
     /**
      * The pack's consistency, over the facts of the one read: the graph (binding and the endpoint bridge), the repeated
-     * artifact and asset ids, the repeated substep id, the prompt slots, the step enhancements with their fragments,
-     * the mission type's step links and substep delegations, the routing catalogs' consistency
-     * ({@link RoutingCatalogRules}, ADR-0080), the reference closure ({@link ReferenceRules}, #355: an asset, guard,
-     * lifecycle or mission type that does not close over what it names), and the orphan fragments last, in the order a
-     * registration lists them. Collect-all: every rule runs, in this order.
+     * artifact and asset ids, the repeated substep id, the prompt slots, the step enhancements with their fragments, the
+     * mission type's step links and substep delegations, the routing catalogs' consistency ({@link RoutingCatalogRules},
+     * ADR-0080), the reference closure ({@link ReferenceRules}, #355: an
+     * asset, guard, lifecycle or mission type that does not close over what it names), and the orphan fragments last,
+     * in the order a registration lists them. Collect-all: every rule runs, in this order.
      *
      * @return the composition
      */
@@ -89,15 +87,15 @@ public final class PackRulesets {
     }
 
     /**
-     * {@code CLOSURE}, the set check pack-doctor runs (#478), so pack-doctor names one composition and defines no rule
-     * of its own: every composition fault of a set of packs with levels ({@link CompositionRules#faults}), then the
-     * preset contests ({@link CompositionRules#presetFaults}), judged in merge order so the answer does not depend on
-     * the order the packs are given in, then the preset items ({@link PresetItemRules}, #629, #632 item 1), judged over
-     * each pack's own closure (R-k), then the case-only answer ({@link CaseOnlyRules}, rulings R-y, R-z), judged over
-     * the closure rooted at each pack as registration's phase 6 judges it. Collect-all: every phase runs. Its reasons
-     * are {@link #closureFaults}', in that order, each with its phase's rule name: there is one derivation.
-     * Registration and every write run the same bodies: {@link #presetItemFaults}, and {@link CaseOnlyRules#matches} in
-     * the composing judge.
+     * {@code CLOSURE}, the set check pack-doctor runs (#478), so pack-doctor names one composition and defines no rule of
+     * its own: every composition fault of a set of packs with levels ({@link CompositionRules#faults}), then the preset
+     * contests ({@link CompositionRules#presetFaults}), judged in merge order so the answer does not depend on the order
+     * the packs are given in, then the preset items ({@link PresetItemRules}, #629, #632 item 1), judged over each pack's
+     * own closure (R-k), then the case-only answer ({@link CaseOnlyRules}, rulings R-y, R-z), judged over the closure
+     * rooted at each pack as registration's phase 6 judges it. Collect-all: every phase runs. Its reasons are
+     * {@link #closureFaults}', in that order, each with its phase's rule name: there is one derivation. Registration and
+     * every write run the same bodies: {@link #presetItemFaults}, and {@link CaseOnlyRules#matches} in the composing
+     * judge.
      *
      * @param factsOf each pack's composition facts: the presets it holds, and what it holds and declares
      * @return the composition
@@ -150,8 +148,8 @@ public final class PackRulesets {
      * the same cause again (a delegation candidate is also the reference of its {@code scope} edge). Registration
      * judges every member of the closure it composes; pack-doctor's {@code --full} does the same per root of its set,
      * every pack of the root's closure a member (ruling R-ae), reporting a fault several roots find once. Each check is
-     * a phase of the {@link ValidationWalker}, handed the members in the order given; its phase gate is the stop rule
-     * (every closure fault is a violation).
+     * a phase of the {@link ValidationWalker}, handed each member itself in the order given; its phase gate is the
+     * stop rule (every closure fault is a violation).
      *
      * @param closure the composed closure, in merge order
      * @param members the members whose checks run, each a pack of the closure
@@ -165,21 +163,17 @@ public final class PackRulesets {
         Objects.requireNonNull(closure, "closure");
         Objects.requireNonNull(members, "members");
         Objects.requireNonNull(factsOf, "factsOf");
-        Map<PackNode, PackUnderResolution> byNode = new LinkedHashMap<>();
-        members.forEach(member -> byNode.putIfAbsent(new PackNode(member.configured(), member.descriptor()), member));
-        List<ValidationWalker.Phase<PackGraphNode>> phases = REFERENCES.stream()
-                .map(named -> new ValidationWalker.Phase<PackGraphNode>(
+        List<ValidationWalker.Phase<PackUnderResolution>> phases = REFERENCES.stream()
+                .map(named -> new ValidationWalker.Phase<PackUnderResolution>(
                         named.name(),
-                        List.of(new ValidationWalker.OnNode<PackGraphNode, PackNode>(
-                                named.name(), PackNode.class, node -> true, node -> {
-                                    PackUnderResolution member =
-                                            Objects.requireNonNull(byNode.get(node), "a member of the closure");
-                                    return named.check().faults(closure, member, factsOf.apply(member));
-                                }))))
+                        List.of(new ValidationWalker.OnNode<PackUnderResolution, PackUnderResolution>(
+                                named.name(),
+                                PackUnderResolution.class,
+                                member -> true,
+                                member -> named.check().faults(closure, member, factsOf.apply(member))))))
                 .toList();
         return ValidationWalker.of(phases)
-                .run(visitor -> members.forEach(
-                        member -> visitor.onNode(new PackNode(member.configured(), member.descriptor()))))
+                .run(visitor -> members.forEach(visitor::onNode))
                 .faults();
     }
 

@@ -35,7 +35,7 @@ public record GraphCheck(PackGraph.Walk walk, List<ValidationWalker.Phase<PackGr
      * @param scope the roots and the selection
      * @return the ledger
      */
-    public Findings run(PackGraph graph, Scope scope) {
+    public Ledger run(PackGraph graph, Scope scope) {
         Objects.requireNonNull(graph, "graph");
         Objects.requireNonNull(scope, "scope");
         return ValidationWalker.of(phases).run(visitor -> graph.walk(scope, walk, visitor));

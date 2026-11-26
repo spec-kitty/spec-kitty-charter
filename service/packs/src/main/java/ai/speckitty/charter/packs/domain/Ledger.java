@@ -9,14 +9,14 @@ import java.util.List;
  *
  * @param faults the faults, phase by phase, each phase's in check order
  */
-public record Findings(List<ClosureFault> faults) {
+public record Ledger(List<ClosureFault> faults) {
 
     /**
      * Copies the faults.
      *
      * @param faults the faults
      */
-    public Findings {
+    public Ledger {
         faults = List.copyOf(faults);
     }
 

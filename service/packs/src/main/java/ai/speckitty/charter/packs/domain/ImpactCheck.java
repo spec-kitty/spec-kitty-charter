@@ -72,8 +72,7 @@ public interface ImpactCheck {
     }
 
     /**
-     * A write to one stored pack, an artifact or a relationship or a removal of one: its facts once the write is
-     * stored.
+     * A write to one stored pack, an artifact or a relationship or a removal of one: its facts once the write is stored.
      *
      * @param pack the pack written to, by its registered id
      * @param write what the pack's facts become once the write is stored

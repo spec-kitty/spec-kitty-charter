@@ -305,6 +305,37 @@ class OwnClosureRulesTest {
     }
 
     @Test
+    @DisplayName("the pin conflicts come before the profile enhancements in one verdict (check order)")
+    void theConflictsComeBeforeTheEnhancements() {
+        Urn base = Urn.parse("agent_profile:base").orElseThrow();
+        Urn enhancer = Urn.parse("agent_profile:enhancer").orElseThrow();
+        Map<Urn, List<MergedClosure.Winner>> enhancersOf = new LinkedHashMap<>();
+        enhancersOf.put(base, List.of(winner(enhancer, ACME)));
+        Facts facts = new Facts();
+        facts.pins.put("reviewer", "a");
+        facts.conflicts.put("reviewer", List.of(ACME, BASE));
+        facts.enhancements = Optional.of(new ClosureFacts.ProfileEnhancements(
+                Map.of(base, winner(base, BASE), enhancer, winner(enhancer, ACME)), enhancersOf));
+        ProfileEnhancementGateway drops = new ProfileEnhancementGateway() {
+            @Override
+            public Optional<Dropped> firstDrop(CharterArtifact profile, List<Enhancing> inClosureOrder) {
+                return Optional.of(new Dropped(inClosureOrder.getFirst().pack(), "purpose", "drops purpose"));
+            }
+
+            @Override
+            public Composed compose(List<Layer> rootToLeaf) {
+                throw new UnsupportedOperationException("the rule only judges drops");
+            }
+        };
+
+        assertThat(walk(Optional.empty(), facts, (holder, id) -> Optional.of(profile(id)), Optional.of(drops)))
+                .extracting(ClosureFault::code)
+                .filteredOn(code ->
+                        code == RefusalCode.ROLE_PIN_CONFLICT || code == RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD)
+                .containsExactly(RefusalCode.ROLE_PIN_CONFLICT, RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD);
+    }
+
+    @Test
     @DisplayName("a closure whose layers do not merge has no enhancement fault: the merge's owners refuse it")
     void aClosureThatDoesNotMergeHasNoEnhancementFault() {
         assertThat(walk(Optional.empty(), new Facts())).isEmpty();

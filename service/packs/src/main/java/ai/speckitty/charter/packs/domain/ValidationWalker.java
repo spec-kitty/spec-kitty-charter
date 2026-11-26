@@ -25,6 +25,9 @@ import java.util.function.Predicate;
  * {@link ClosureFault}s, whose {@link ClosureFault#reason()} is the kernel's {@code Reason}; slice 7 of epic #636
  * settles the ledger on {@code Rationale}.
  *
+ * <p>A walker holds the state of the run in progress: it is visited only inside {@link #run}, runs one traversal at a
+ * time and is not thread-safe. The rule factory hands out a new walker for every run.
+ *
  * @param <N> the node type the checks judge
  */
 public final class ValidationWalker<N> implements GraphWalker<N, N> {
@@ -148,6 +151,7 @@ public final class ValidationWalker<N> implements GraphWalker<N, N> {
     private List<List<ClosureFault>> buckets = List.of();
     private List<N> visited = List.of();
     private Phase<N> current;
+    private boolean running;
 
     private ValidationWalker(List<Phase<N>> phases) {
         this.phases = phases;
@@ -175,29 +179,43 @@ public final class ValidationWalker<N> implements GraphWalker<N, N> {
      * @param traversal how the nodes reach the walker
      * @return the ledger: each phase's findings in check order, up to and including the first phase with a violation
      */
-    public Findings run(Traversal<N> traversal) {
+    public Ledger run(Traversal<N> traversal) {
         Objects.requireNonNull(traversal, "traversal");
-        List<ClosureFault> ledger = new ArrayList<>();
-        for (Phase<N> phase : phases) {
-            current = phase;
-            buckets = new ArrayList<>();
-            phase.checks().forEach(check -> buckets.add(new ArrayList<>()));
-            visited = new ArrayList<>();
-            traversal.walk(this);
-            List<N> closed = List.copyOf(visited);
-            for (int at = 0; at < phase.checks().size(); at++) {
-                if (phase.checks().get(at) instanceof OnClose<N> whole) {
-                    buckets.get(at).addAll(whole.rule().apply(closed));
+        if (running) {
+            throw new IllegalStateException("a walker runs one traversal at a time");
+        }
+        running = true;
+        try {
+            List<ClosureFault> ledger = new ArrayList<>();
+            for (Phase<N> phase : phases) {
+                Ledger found = runPhase(phase, traversal);
+                ledger.addAll(found.faults());
+                if (found.violated()) {
+                    break;
                 }
             }
-            List<ClosureFault> found = new ArrayList<>();
-            buckets.forEach(found::addAll);
-            ledger.addAll(found);
-            if (found.stream().anyMatch(fault -> fault.reason().isFailing(Severity.VIOLATION))) {
-                break;
+            return new Ledger(ledger);
+        } finally {
+            running = false;
+        }
+    }
+
+    /** One traversal for one phase: each node check's bucket, then each whole-closure check's, in check order. */
+    private Ledger runPhase(Phase<N> phase, Traversal<N> traversal) {
+        current = phase;
+        buckets = new ArrayList<>();
+        phase.checks().forEach(check -> buckets.add(new ArrayList<>()));
+        visited = new ArrayList<>();
+        traversal.walk(this);
+        List<N> closed = List.copyOf(visited);
+        for (int at = 0; at < phase.checks().size(); at++) {
+            if (phase.checks().get(at) instanceof OnClose<N> whole) {
+                buckets.get(at).addAll(whole.rule().apply(closed));
             }
         }
-        return new Findings(ledger);
+        List<ClosureFault> found = new ArrayList<>();
+        buckets.forEach(found::addAll);
+        return new Ledger(found);
     }
 
     @Override
@@ -213,6 +231,9 @@ public final class ValidationWalker<N> implements GraphWalker<N, N> {
     }
 
     private void dispatch(N node) {
+        if (!running) {
+            throw new IllegalStateException("a walker is visited only by the traversal it runs");
+        }
         visited.add(node);
         for (int at = 0; at < current.checks().size(); at++) {
             if (current.checks().get(at) instanceof OnNode<N, ?> each) {
