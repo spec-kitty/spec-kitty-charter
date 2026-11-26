@@ -11,7 +11,7 @@ findings-disposition contract of procedure `adversarial-squad-deployment`.
 | 2 | architect | MEDIUM | the meter sits in `packs.domain`, names infra types; `InForceResolution` "pure" claim false | accepted | FR-005a, IC-01 |
 | 3 | architect | MEDIUM | `CompositionFactsCache.loads/hits` still test hooks | accepted (Q6=a) | FR-005c, IC-01 |
 | 4 | architect | MEDIUM | `PackMutabilityPolicy` test-only constructors untouched | deferred_with_rationale: excluded by operator; #636 slice 5 owns them | spec C-003 |
-| 5 | architect | MEDIUM | `RegistrationJobs.retained`, `ClosureQueries.allConfigured`, `RegistryWriteLock.hasQueuedThread` test-only | accepted (Q6=a): first two leave main, the third stays with a reason | FR-008, IC-03 |
+| 5 | architect | MEDIUM | `RegistrationJobs.retained`, `ClosureQueries.allConfigured`, `RegistryWriteLock.hasQueuedThread` test-only | changed: `allConfigured` leaves main; `retained` and `hasQueuedThread` stay with reasons (`retained` by operator ruling 2026-11-26) | FR-008, IC-03 |
 | 6 | architect | LOW | canonical-constructor wording; seam javadoc; widened `ATOMIC`/`MOVE_ASIDE` | accepted | FR-007a, IC-03 |
 | 7 | architect | LOW | no ArchUnit rule stops static counters returning | accepted | FR-005d |
 | 8 | architect | LOW | meter undercounts work moved to another thread | accepted | FR-005b |
@@ -115,3 +115,22 @@ checked clean. No PIT was run (C-004).
   `kitty-specs/`, and a second copy there would conflict at consolidation.
 - Work-package reviews ran in this session as independent reviewer subagents (operator ruling 2026-11-25): WP01, WP02
   and WP03 APPROVE with findings folded; WP04 REJECT, folded, APPROVE on re-review.
+
+## Pre-merge squad (2026-11-26)
+
+Lenses: reviewer-renata and architect-alphonso on the aggregate diff (`local/659-integration` against `origin/main`),
+read-only. Both APPROVE. The integration snapshot they read predates some per-WP folds; each finding's disposition:
+
+| # | Lens | Severity | Finding | Disposition | Where |
+|---|------|----------|---------|-------------|-------|
+| 40 | architect | LOW | AA5 note says Resolved while the amendment is Proposed | accepted | ADR-0075, unification note (lane-d) |
+| 41 | architect | LOW | "three named fields" in the rule javadoc and ADR | accepted (ADR fixed in the WP04 fold; javadoc now says four) | lane-a, lane-d |
+| 42 | architect | LOW | ADR-0006 module map omits kernel.metering | accepted | ADR-0006 (lane-d) |
+| 43 | architect | LOW | nothing enforces "only tests call measure" | accepted: ArchUnit rule `onlyTestsMeasure` with a fixture | lane-a |
+| 44 | architect | NIT | ADR omits structured-scope forks | accepted (WP04 fold) | ADR-0075 |
+| 45 | architect | NIT | `MOVE_ASIDE` widened to package-private | changed: kept; the test-side `CommitStores` needs it, no wider | - |
+| 46 | reviewer | LOW | spec, plan and tasks still say `retained()` leaves main | accepted: SC-002, plan, tasks and row 5 amended | spec, plan, tasks |
+| 47 | reviewer | LOW | "the seam a test uses" javadoc remains; `PackFileSet.listing` is called from main | accepted for the files this Mission changes (PackFileSet, FilesystemPackStore); deferred_with_rationale for WholePackCensus, WholePackStore, PackRemediation, PolicyYaml, FileActivationRepository and PackMutabilityPolicy: outside the operator-ruled F3/F12 scope, tidy-ups not defects (charter Rule 1: recorded, not filed) | lane-a; SC-002 |
+| 48 | reviewer | LOW | four exempt fields vs FR-005d's two | accepted (FR-005d amended) | spec |
+| 49 | reviewer | LOW | the wiring test no longer starts cold | changed: recorded; the cold start is in the budget test; FR-005c amended | spec, research |
+| 50 | reviewer | LOW | two OneReadTest zero assertions lack a same-test positive control | accepted | lane-a OneReadTest |

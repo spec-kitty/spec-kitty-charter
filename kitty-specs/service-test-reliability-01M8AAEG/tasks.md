@@ -18,7 +18,7 @@ Mission: `service-test-reliability-01M8AAEG`. Spec: `spec.md`. Plan: `plan.md`. 
 | T010 | ConsistentReadTest | WP02 | [P] |
 | T011 | RegistrationJobsTest.closingTheJobs... | WP02 | [P] |
 | T012 | FR-004 | WP02 | [P] |
-| T013 | RegistrationJobs.retained() leaves main | WP02 | [P] |
+| T013 | RegistrationJobs.retained() kept with its reason (amended) | WP02 | [P] |
 | T014 | Run  | WP02 | [P] |
 | T015 | ClosureQueries.allConfigured() leaves main; its five test callers read | WP03 | [P] |
 | T016 | RegistryWriteLock.hasQueuedThread and PackCommitStore.SwapPhases/moveA | WP03 | [P] |
@@ -62,7 +62,7 @@ T009 GitSourceFetcherTest: release only when inFlight == 2 and the other four fe
 T010 ConsistentReadTest: capture the ender thread's failure in an AtomicReference and rethrow after join; mutant: awaitIdle that never sees the end (WP02)
 T011 RegistrationJobsTest.closingTheJobs...: hold the room again before close(); assert each waiting job ends refused busy, one audit entry each, nothing written, no staging; drop the arrival count; mutant: close() that lets a waiting job commit (WP02)
 T012 FR-004: rename the deadline test for a queued job withdrawn; a new test holds the job monitor (synchronized on the reservation), frees one worker, waits until it is BLOCKED on that monitor (ThreadMXBean lock identity), ends the job (clock + expireOverdue), releases; the worker writes nothing, one audit entry; mutant: drop the markRunning phase check; record the ended() guard as an equivalent mutant (WP02)
-T013 RegistrationJobs.retained() leaves main: the seven tests read what they check from statuses or owned(); RemovalConcurrencyTest wait loop through Await.within; inline the private await wrappers in RegistrationJobsTest and PackRegistrationSteps to Await.until; one Await-based helper for the reservation-ended predicate shared by RegistrationJobsTest and RegistrationJobsUploadTest (WP02)
+T013 RegistrationJobs.retained() stays with its reason (amended 2026-11-26 by operator ruling; it was planned to leave main) and the retention test asserts the exact bound; RemovalConcurrencyTest wait loop through Await.within; inline the private await wrappers in RegistrationJobsTest and PackRegistrationSteps to Await.until; one Await-based helper for the reservation-ended predicate shared by RegistrationJobsTest and RegistrationJobsUploadTest (WP02)
 T014 Run :packs:test, :activations:test, :deployable:test; every red attributed, no retry-to-green (WP02)
 
 ## WP03 - F12 members, seam wording and fixture arities

@@ -126,7 +126,7 @@ A maintainer reads a main-code class and finds only what production uses: no job
 ## Success Criteria *(mandatory)*
 
 - **SC-001**: Every changed test has a mutation note naming the mutant that turned it red and confirming the revert. [build] (no-op passable: no)
-- **SC-002**: A search of main code finds no static mutable counter, no `JobGate`, no `retained()`, no `allConfigured()`, and no javadoc calling a member a test seam except the two seams kept with reasons. [build] (no-op passable: no)
+- **SC-002**: A search of main code finds no static mutable counter, no `JobGate`, no `allConfigured()`, and no javadoc in the files this Mission changes calling a member a test seam; `retained()`, `hasQueuedThread` and `SwapPhases` stay with their reasons (amended 2026-11-26: `retained()` by operator ruling; the same wording in files outside the F3/F12 scope is recorded as Not done in research.md). [build] (no-op passable: no)
 - **SC-003**: `verifyAll` passes on Java 25 with the full suite green, and the docs checks pass. [ratchet] (no-op passable: no, paired with SC-001)
 - **SC-004**: Issue #659 is closed by the pull request, and the health plan rows 8 and 9 are marked. [build] (no-op passable: no)
 

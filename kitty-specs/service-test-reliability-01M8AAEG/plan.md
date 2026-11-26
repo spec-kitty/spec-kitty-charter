@@ -89,9 +89,9 @@ No charter violations to justify.
 
 - **Purpose**: finish Q6=a and make main's remaining seams honest.
 - **Relevant requirements**: FR-007a, FR-008
-- **Affected surfaces**: `RegistrationJobs.retained()` and `ClosureQueries.allConfigured()` leave main (callers in tests rewritten against public behaviour); `RegistryWriteLock.hasQueuedThread` and `PackCommitStore.SwapPhases` keep their place with a reason in their javadoc; javadoc calling a constructor "the seam a test uses" rewritten; `CommitStores` moved from packs testFixtures to packs `src/test`; `RegistrationWiring` class javadoc.
+- **Affected surfaces**: `ClosureQueries.allConfigured()` leaves main (callers in tests rewritten against public behaviour); `RegistrationJobs.retained()` stays with its reason (operator ruling 2026-11-26); `RegistryWriteLock.hasQueuedThread` and `PackCommitStore.SwapPhases` keep their place with a reason in their javadoc; javadoc calling a constructor "the seam a test uses" rewritten; `CommitStores` moved from packs testFixtures to packs `src/test`; `RegistrationWiring` class javadoc.
 - **Sequencing/depends-on**: none
-- **Risks**: `retained()` may be read by a test of retention; that test then reads the status of the oldest job instead.
+- **Risks**: `retained()` has no faithful public stand-in (it counts ended jobs too); kept by operator ruling 2026-11-26.
 
 ### IC-04 - Documentation in line with the code
 
