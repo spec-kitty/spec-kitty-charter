@@ -74,4 +74,44 @@ it running before `close()` ends it busy. The test asserted an order `close()` d
 
 ## Mutation notes (red-first evidence)
 
-Filled per change in WP05.
+Each mutant was applied by hand, the named tests were run, the mutant was reverted from a copy, and `git status` was
+checked clean. No PIT was run (C-004).
+
+| WP | Mutant | Result | Revert |
+|----|--------|--------|--------|
+| WP01 | lookup count point dropped (FilesystemPackStore.locate) | WholePackStoreTest.aLookupByIdIsCounted red | reverted |
+| WP01 | cache HIT count point dropped (CompositionFactsCache) | EffectiveReadOperationBudgetTest.aWarmRead... red; OfferingReadServiceCacheWiringTest red | reverted |
+| WP01 | static non-final field added to PackFileSet (main) | HexagonalArchitectureTest.noMainClassKeepsAStaticCounter red | reverted |
+| WP01 | static adder and non-final static in archfixtures | theStaticCounterRuleFails... asserts the rule trips (permanent positive control) | n/a |
+| retrofit B | doubled RESOLUTION/RESOLUTION_VISIT/WHOLE_READ/STORE_RUN/TREE_WALK; extra walk in WholePackStore | OneReadTest, OneReadRegistrationTest, PackReadingTest, ReadoutFactsTest, WholePackStoreReadTest, EffectiveReadOperationBudgetTest red | reverted |
+| retrofit C | RegistrationJobs pool of three workers | six RegistrationJobsTest cases red | reverted |
+| WP02 | no-root wiring sweeps <tmpdir>/staging (null-safe) | RegistrationWiringStagingTest.withoutAConfigRoot... red | reverted |
+| WP02 | git fetch slot limit + 1 | GitSourceFetcherTest.atMostTheConfiguredNumberOfFetchesRunAtOnce red | reverted |
+| WP02 | awaitIdle answers at once, never waits | ConsistentReadTest.awaitIdle... red (ender failure surfaced) | reverted |
+| WP02 | close() stops no job | RegistrationJobsTest.closingTheJobs... red | reverted |
+| WP02 | both ended-job guards gone (ended(), markRunning phase) | RegistrationJobsTest.aWorkerThatTakesAJobEndedMeanwhile... red | reverted |
+| WP03 | removals only (allConfigured, CommitStores visibility move, unused fixture arities); allConfigured callers switched to the identical snapshot(Optional.empty()) | compile proof; lane-c suites 7388/7389 green, the one red is the first-pass closingTheJobs defect fixed in WP02 (lane-b) | n/a |
+
+## Decisions taken during implementation
+
+- retained(): operator ruling 2026-11-26 (AskUserQuestion in session): keep, javadoc records why (the one observable of "no job was made"); retention test tightened to isEqualTo(MAX_RETAINED). FR-008 amended accordingly.
+- FR-004: ended() and markRunning's phase check mask each other; each alone is an equivalent mutant. The new test (aWorkerThatTakesAJobEndedMeanwhileDropsItAndWritesNothing) kills the mutant that lets an ended job reach its work (both guards gone: the stager runs, arrivals rise).
+- Not done (outside the operator-ruled F3/F12 scope; tidy-ups, not defects): javadoc "the seam a test uses" on PackFileSet.walk(table)/digested(kinds|table), WholePackCensus census(bindings)/retired, WholePackStore 4-arg constructor, PackRemediation move/delete seams, PolicyYaml.write, FilesystemPackStore.read(bindings); PackMutabilityPolicy (excluded, #636 slice 5).
+- CLI unsigned commits: operator ruling 2026-11-26: push as made; land one signed squash with the Co-Authored-By trailer.
+| WP02 | no-root wiring sweeps <tmpdir>/staging (null-safe) | RegistrationWiringStagingTest.withoutAConfigRoot... red | reverted |
+| WP02 | git fetch slot limit + 1 | GitSourceFetcherTest.atMostTheConfiguredNumberOfFetchesRunAtOnce red | reverted |
+| WP02 | awaitIdle answers at once, never waits | ConsistentReadTest.awaitIdle... red (ender failure surfaced) | reverted |
+| WP02 | close() stops no job | RegistrationJobsTest.closingTheJobs... red | reverted |
+| WP02 | both ended-job guards gone (ended(), markRunning phase) | RegistrationJobsTest.aWorkerThatTakesAJobEndedMeanwhile... red | reverted |
+| WP03 | removals only (allConfigured, CommitStores visibility move, unused fixture arities); allConfigured callers switched to the identical snapshot(Optional.empty()) | compile proof; lane-c suites 7388/7389 green, the one red is the first-pass closingTheJobs defect fixed in WP02 (lane-b) | n/a |
+- WP01 review, MEDIUM: `OfferingReadServiceCacheWiringTest` no longer starts cold, because the Spring cache is a shared
+  singleton and a fresh one needs a new context. It proves the wiring (the second read is answered by the cache alone);
+  the cold-start check lives in `EffectiveReadOperationBudgetTest`, whose fixture rebuilds the service over an empty
+  cache. Recorded, not filed.
+- FR-005d gained a fourth named exemption, `PackSchemas.bundled` (a lazily built, immutable schema value retried after
+  a failed build), and the test fixtures; `GlobalAddressResolverProvider` is exempt by field, not whole.
+- WP05 writes its planning artifacts in the coordination worktree (the Mission branch, where they live), not the root
+  checkout the CLI names for the planning lane: finalize moved the root checkout to the merge target, which has no
+  `kitty-specs/`, and a second copy there would conflict at consolidation.
+- Work-package reviews ran in this session as independent reviewer subagents (operator ruling 2026-11-25): WP01, WP02
+  and WP03 APPROVE with findings folded; WP04 REJECT, folded, APPROVE on re-review.
