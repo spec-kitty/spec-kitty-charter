@@ -103,7 +103,7 @@ A maintainer reads a main-code class and finds only what production uses: no job
 |----|-------|-------------|----------|----------|--------|
 | NFR-001 | No wait for a span | 0 `Thread.sleep` calls in the service tests apart from the recorded stimuli (2 kept: the dripping server, and one stress-test pause helper that staggers threads and slows one swap; amended 2026-11-26). | Reliability | High | Open |
 | NFR-002 | Waits are bounded | Every state wait fails within 30 s (`Await.LIMIT`) when its state never comes. | Reliability | High | Done (retrofit) |
-| NFR-003 | Suite time does not grow | `:packs:test` wall time stays within 10% of `main`'s on the same runner. | Performance | Medium | Open |
+| NFR-003 | Suite time does not grow | `:packs:test` wall time stays within 10% of `main`'s on the same runner. | Performance | Medium | Met (+0.7 %, research.md) |
 | NFR-004 | Suite is green | `./gradlew verifyAll` on Java 25 passes with 0 failed tests, every red attributed, no retry-to-green. | Reliability | High | Open |
 
 ### Constraints

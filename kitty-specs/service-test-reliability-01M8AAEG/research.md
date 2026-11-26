@@ -134,3 +134,23 @@ read-only. Both APPROVE. The integration snapshot they read predates some per-WP
 | 48 | reviewer | LOW | four exempt fields vs FR-005d's two | accepted (FR-005d amended) | spec |
 | 49 | reviewer | LOW | the wiring test no longer starts cold | changed: recorded; the cold start is in the budget test; FR-005c amended | spec, research |
 | 50 | reviewer | LOW | two OneReadTest zero assertions lack a same-test positive control | accepted | lane-a OneReadTest |
+
+## Gates on the integration tree (2026-11-26)
+
+`local/659-integration` merges lanes a to d over `f6f21e4c0`; every run is `env -u _JAVA_OPTIONS ./gradlew verifyAll
+--continue --max-workers=2`. No red was retried; each is attributed.
+
+| Run | Result | Attribution | Fix |
+|-----|--------|-------------|-----|
+| 1 | killed | the container's memory limit killed the Gradle daemon (dmesg); not a test result | rerun with two workers |
+| 2 | red | `:profiles-edge:compileTestJava`: `PacksProfileSourceTest` called the short `PackCompositionFacts` constructor WP03 moved out of main; the first pass rewrote callers in packs, activations and deployable only | lane-c: `CompositionFacts.of`; a sweep of every other module found no other caller |
+| 3 | red | `:packs` and `:deployable` `spotlessJavaCheck`: the squad folds in `OneReadTest` and `HexagonalArchitectureTest` were not formatted; every test passed | lane-a: `spotlessApply` |
+| 4 | green | 8 min 55 s; packs 7391, deployable 2438 and activations 1102 tests, none failing | - |
+
+Docs: `check_docs.py all`, markdownlint-cli2 0.18.1 (394 files, 0 errors) and cspell 9.2.0 on the changed pages are
+green. The MD038 hits a direct lint of `contracts/charter/scenarios/README.md` shows predate this Mission (seven on
+`main`) and lie outside the gate's `docs/**` globs.
+
+NFR-003: `:packs:test --rerun --max-workers=2`, wall time on this runner, alternating trees: `main` (`f6f21e4c0`) 377 s
+and 359 s (mean 368 s); this Mission 362 s and 379 s (mean 370.5 s). The difference, +0.7 %, is inside the 10 % bound
+and within the spread of two runs of the same tree.
