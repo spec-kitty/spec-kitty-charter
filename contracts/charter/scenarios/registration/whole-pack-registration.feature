@@ -425,6 +425,31 @@ Feature: Registering a whole pack replaces the pack the service holds
     When I GET "/packs/acme"
     Then the field "revision" of the response body is the remembered one
 
+  # #661 (operator ruling, 2026-11-25): an exclusion takes a letter-case variant of its file, also where a payload rule
+  # takes the path as written. A ReadMe.md under a mission's templates is the excluded README, not a template payload,
+  # so the stored pack is unchanged and the file is reported under the exclusion's reason.
+  Scenario: A letter-case variant of an excluded file is not held as a payload
+    Given the archive "noted" is a copy of the archive "v1"
+    And the archive "noted" holds the file "missions/x/templates/ReadMe.md":
+      """
+      # Templates of x
+      """
+    When I PUT "/packs/acme" with the archive "v1"
+    And I poll the registration until it ends
+    And I GET "/packs/acme"
+    And I remember the field "revision" of the response body
+    And I PUT "/packs/acme" with the archive "noted"
+    Then the response status is 202
+    When I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    And the field at "/result/outcome" is "unchanged"
+    And the field at "/result/revision" is the remembered one
+    And the field at "/result/diagnostics" holds exactly 1 item(s)
+    And the field at "/result/diagnostics/0/code" is "file_not_held"
+    And the field at "/result/diagnostics/0/detail" contains "missions/x/templates/ReadMe.md: not held (Orientation notes beside the mission templates they describe"
+    When I GET "/packs/acme"
+    Then the field "revision" of the response body is the remembered one
+
   # FR-005, FR-021: a first registration holds the pack without the excluded file, and says so.
   Scenario: A pack created with an excluded file is stored without it
     Given the archive "noted" is a copy of the archive "v1"

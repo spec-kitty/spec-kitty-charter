@@ -29,6 +29,15 @@ import org.jspecify.annotations.Nullable;
  * that matches still wins), so a retired family is refused by name even where a files glob would take its file. A
  * top-level key the table does not define is refused when it loads, never ignored.
  *
+ * <p>Globs match as written, but for letter-case variants (#645, #661): the same precedence also runs with the path
+ * and the globs in lower case ({@link #classifyFolded}). When that run ends at an {@code exclusions} rule, the file is
+ * excluded under that rule, whatever takes it as written, unless a {@code files} rule maps it as written; when it ends
+ * at a {@code retired} rule, the file is refused under that rule wherever it stands, after the root case variants;
+ * and when it ends at a {@code files} rule, the file is that kind over a payload, an exclusion or another
+ * {@code files} rule that takes it as written. A file nothing takes as written that only a {@code files} rule takes in lower case stays unclassified (Q1).
+ * A root file that differs only in letter case from a root rule's file is refused by name ({@link CaseVariant}), and
+ * the {@code ignored} fallback matches in any letter case but never takes a file the lower-cased run maps.
+ *
  * <p>The rule's content form decides how the store holds the file. A table is refused when it loads if a {@code files}
  * rule declares a form other than {@code yaml} or {@code markdown} (its schema validates the parsed YAML document, or
  * the parsed Markdown model), a {@code markdown} rule's schema does not load, a {@code payloads} rule declares a form
@@ -389,24 +398,51 @@ final class PackFileKind {
      */
     Classification classify(String path) {
         Classification exact = classify(path, Compiled::pattern);
+        // A letter-case variant (#661; operator rulings 2026-11-25 and 2026-11-26): the same precedence, run with the
+        // path and the globs in lower case, decides where it reaches another rule. An exclusion takes its file in any
+        // letter case, a retired rule its family wherever it stands, and a files rule its kind over a payload, an
+        // exclusion or another files rule that takes the path as written. A path nothing takes as written that only a
+        // files rule takes in lower case stays unclassified (Q1), and a root case variant keeps its own code (#624).
+        Classification folded = classifyFolded(path);
+        if (exact instanceof Excluded) {
+            return isFileKind(folded) ? folded : exact;
+        }
+        if (isFileKind(exact)) {
+            return folded instanceof Retired || isFileKind(folded) ? folded : exact;
+        }
+        if (folded instanceof Excluded || (isPayload(exact) && !isPayload(folded))) {
+            return folded;
+        }
         if (!(exact instanceof Unclassified)) {
             return exact;
         }
         // A case variant of a ruled root file is refused by name; only then is the fallback consulted (FR-022).
         Optional<Classification> variant = caseVariant(path);
-        return variant.isPresent() ? variant.get() : ignored(path).orElse(exact);
+        if (variant.isPresent()) {
+            return variant.get();
+        }
+        return folded instanceof Retired ? folded : ignored(path, folded).orElse(exact);
+    }
+
+    /** Whether {@code classification} is a {@code files} rule's: mapped with the schema that validates it. */
+    private static boolean isFileKind(Classification classification) {
+        return classification instanceof Mapped mapped && mapped.schema().isPresent();
+    }
+
+    /** Whether {@code classification} is a payload's: mapped with no schema (#193, ADR-0040). */
+    private static boolean isPayload(Classification classification) {
+        return classification instanceof Mapped mapped && mapped.schema().isEmpty();
     }
 
     /**
      * The first {@code ignored} rule that matches {@code path}, as the file's exclusion; empty when none does, and
-     * empty when the files, exclusions, retired and payload rules, run on the path in lower case, map or retire it
-     * ({@code a.guide.MD}); a path that run excludes still falls through to the fallback (#645). Such a file stays
-     * unclassified, so it is not held and warned about as {@code file_not_held} (Q1), never swept up by the
-     * fallback.
+     * empty when {@code folded}, the path's lower-cased classification ({@link #classifyFolded}), maps it
+     * ({@code toolguides/a.guide.MD}): such a file stays unclassified, so it is not held and warned about as
+     * {@code file_not_held} (Q1), never swept up by the fallback. A path the lower-cased run excludes or retires never
+     * gets here: {@link #classify} excludes or refuses it under that rule.
      */
-    private Optional<Classification> ignored(String path) {
-        Classification folded = classifyFolded(path);
-        if (!(folded instanceof Unclassified) && !(folded instanceof Excluded)) {
+    private Optional<Classification> ignored(String path, Classification folded) {
+        if (!(folded instanceof Unclassified)) {
             return Optional.empty();
         }
         for (int i = 0; i < ignoredPatterns.size(); i++) {
@@ -450,8 +486,9 @@ final class PackFileKind {
      * Classifies a path case-folded: the path and every rule's glob in lower case ({@link Locale#ROOT}), the fold the
      * write's claim check applies to a written path ({@code Companions.Inside#claim}). It is how a companion's path is
      * classified (#272, ADR-0039 decision 3): on a case-insensitive file system {@code README.MD} is {@code README.md}, so
-     * a rule owns every spelling of its file. A real file is classified as written ({@link #classify}). The {@code ignored}
-     * fallback is not consulted: a file only the fallback matches is claimable by a companion (#451).
+     * a rule owns every spelling of its file. A real file is classified as written, and in lower case where the class
+     * Javadoc's letter-case paragraph says ({@link #classify}, #661). The {@code ignored} fallback is not consulted: a
+     * file only the fallback matches is claimable by a companion (#451).
      *
      * @param path the path relative to the directory that holds the pack directories, with forward slashes
      * @return how the path would be handled in any letter case
