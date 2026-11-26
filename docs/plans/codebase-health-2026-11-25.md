@@ -2,7 +2,7 @@
 title: "Codebase health, 2026-11-25"
 description: The one-page verdict of the 2026-11-25 codebase assessment delta, its scorecard against 2026-11-20, top hotspots, re-ranked actions and operator questions.
 doc_status: draft
-updated: 2026-11-25T00:00:00Z
+updated: 2026-11-26T00:00:00Z
 type: Plan
 kind: Planning
 related:
@@ -92,8 +92,8 @@ Score = revisions × total cyclomatic complexity, bookkeeping commits left out.
 | 5 | Guard the five open planted-break rules, template path first | new | S | MEDIUM: a containment rule can be deleted with every gate green |
 | 6 | Finish the typed fault identity: delete the text matching and `PackElementViolation` | new (ADR-0075 AA2; #614) | M | MEDIUM: hotspots 1, 2 and 7 break on a wording edit |
 | 7 | One parse per file and one companion resolution | new (related: #416) | L | MEDIUM: the hottest file stays the costliest to change |
-| 8 | Replace the sleeps with state waits; one shared await helper | new | S–M | MEDIUM: vacuous passes on a loaded runner |
-| 9 | Take the static counters, `JobGate` and the test-only constructors out of main code | new (ADR-0075 AA5) | S | MEDIUM: global state across parallel tests |
+| 8 | Replace the sleeps with state waits; one shared await helper | #659 (delivered by its pull request) | S–M | MEDIUM: vacuous passes on a loaded runner |
+| 9 | Take the static counters, `JobGate` and the test-only constructors out of main code | #659 (ADR-0075 AA5; delivered by its pull request) | S | MEDIUM: global state across parallel tests |
 | 10 | Bound class size and parameter count, forbid package cycles, refresh `hexagonal-service.md`, then split the largest classes | new (#205 covers the diagrams only) | S, then L | MEDIUM: the largest classes grew 3% in 5.4 days with no gate |
 
 The per-kind read path (11-20 action 9) and the smaller actions of 11-20 stand as they were listed
