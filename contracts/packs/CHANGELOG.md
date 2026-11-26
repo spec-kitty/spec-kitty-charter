@@ -57,6 +57,13 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
 
 ### Changed
 
+- `conformance/classifier-cases.yaml` adds five cases for a case variant of a file that an `exclusions` rule matches
+  in lower case (#645): three are excluded under `**/*.md`, because in lower case the exclusion beats the payload or
+  retired rule that also matches, and two stay `unmodelled` (no `ignored` rule matches, or a `files` rule wins in
+  lower case). Step 4 of its header and the `ignored` comment of `file-kinds.yaml` say that the lower-cased run
+  applies the whole precedence of steps 1 and 2. The service already classified each path so, so this is not a
+  `### Breaking` entry. The old step 4 wording allowed a looser reading: a classifier that only asks whether a
+  `files`, `retired` or `payloads` glob matches in lower case fails the three excluded cases.
 - The README and the comments of `file-kinds.yaml` and `conformance/classifier-cases.yaml` say that a root case
   variant (`Pack.yaml`, `Readme.md`, `PROVENANCE.MD`) is refused under the violation code `case_variant`, no longer
   `retired` (#624). The code is the charter contract's (`CharterRefusalCode`), and its change is breaking there. This
