@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,7 @@ class WriteFactsLanguagesTest {
     private static final Urn TACTIC = Urn.parse("tactic:jvm").orElseThrow();
 
     private static PackCompositionFacts facts() {
-        return new PackCompositionFacts(
+        return CompositionFacts.of(
                 List.of(),
                 List.of("tactic:jvm", "tactic:other"),
                 List.of(),

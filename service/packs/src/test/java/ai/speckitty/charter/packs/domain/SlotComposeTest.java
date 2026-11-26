@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.SlotId;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -55,7 +56,7 @@ class SlotComposeTest {
             for (Held held : packs) {
                 facts.put(
                         held.pack().configured().id().value(),
-                        new PackCompositionFacts(
+                        CompositionFacts.of(
                                 List.of(),
                                 held.pack().referableArtifacts(),
                                 List.of(),

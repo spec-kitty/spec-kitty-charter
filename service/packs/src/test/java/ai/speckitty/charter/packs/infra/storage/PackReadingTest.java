@@ -44,9 +44,9 @@ class PackReadingTest {
         PackRoot root = new PackRoot(subject.name(), Optional.empty(), pack.toString());
         PackReading reading = READER;
 
-        long walks = PackFileSet.walks();
-        PackReadout readout = reading.read(root);
-        long walked = PackFileSet.walks() - walks;
+        ReadCounters.Measured<PackReadout> read = ReadCounters.measured(() -> reading.read(root));
+        PackReadout readout = read.value();
+        long walked = read.read().walks();
         TreeRead tree = READER.readTree(root);
 
         assertThat(walked).as("one walk of the tree").isOne();

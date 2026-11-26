@@ -34,6 +34,8 @@ import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolu
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.PromptFacts;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.ClosureViews;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -233,7 +235,7 @@ class ActivationImpactAdapterTest {
                     "mission_type:M",
                     "action:M/s");
         }
-        return new ClosureView(
+        return ClosureViews.of(
                 List.of(),
                 Map.of(),
                 Map.of(),
@@ -270,7 +272,7 @@ class ActivationImpactAdapterTest {
                 new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), urns));
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         List.of(),
                         urns,
                         List.of(),

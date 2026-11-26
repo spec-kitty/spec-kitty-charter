@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.infra.storage;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
 import ai.speckitty.charter.packs.domain.PackContents.FileRead;
 import ai.speckitty.charter.packs.infra.storage.rules.LinkRules;
 import ai.speckitty.charter.packs.infra.storage.rules.ManifestRules;
@@ -177,8 +178,9 @@ final class PackFileSet {
     }
 
     /**
-     * Walks a pack once, classifying with {@code table} in place of the bundled one: the seam a test uses to show that
-     * a rule's content form, not its path or kind token alone, decides where a file is held.
+     * Walks a pack once, classifying with {@code table} in place of the bundled one: the store's read passes the table of
+     * its companion rules, and a table of a test's own shows that a rule's content form, not its path or kind token
+     * alone, decides where a file is held.
      *
      * @param packDir the pack directory
      * @param table the file-kind table
@@ -225,7 +227,7 @@ final class PackFileSet {
      * census), every link, never followed (the census, which refuses it, D6), and every special file, never opened (the
      * census, which refuses it, R-ad), each pack-relative, {@code /}-separated and in {@link String} order. No surface
      * reads a file but through {@link #regular()}, so none reads through a link or opens a FIFO. Every tree walk of a
-     * pack goes through here, so a test counts them ({@link #walks()}).
+     * pack goes through here, each counted as a {@link StoreWork#TREE_WALK}.
      *
      * @param regular every regular file that is not itself a link
      * @param links every symbolic link, to a file, a directory or nothing
@@ -249,17 +251,6 @@ final class PackFileSet {
         static final Walk NONE = new Walk(List.of(), List.of(), List.of());
     }
 
-    private static final java.util.concurrent.atomic.LongAdder WALKS = new java.util.concurrent.atomic.LongAdder();
-
-    /**
-     * How many walks of a pack tree this JVM has made: the counter that tells a surface walks a pack once.
-     *
-     * @return the count
-     */
-    static long walks() {
-        return WALKS.sum();
-    }
-
     /**
      * Walks a pack tree once, from the directory's real path, so a root configured through a link is entered (#174,
      * #284); a link below the root is listed as a link and never read through, a special file is listed as one and never
@@ -272,7 +263,7 @@ final class PackFileSet {
      *     listed
      */
     static Walk walk(Path directory, String packName) {
-        WALKS.increment();
+        WorkMeter.count(StoreWork.TREE_WALK);
         List<String> regular = new ArrayList<>();
         List<String> links = new ArrayList<>();
         List<String> special = new ArrayList<>();
@@ -336,7 +327,7 @@ final class PackFileSet {
     }
 
     /**
-     * The digested files when only {@code kinds} are loaded: the seam a test uses to plant an omission.
+     * The digested files when only {@code kinds} are loaded, which is how an omission of a kind is planted.
      *
      * @param packDir the pack directory
      * @param kinds the loaded kinds to include
@@ -350,8 +341,8 @@ final class PackFileSet {
     }
 
     /**
-     * The digested files when {@code table} classifies in place of the bundled one: the seam a test uses to digest with
-     * rules of its own, a table without the retired section included (#194).
+     * The digested files when {@code table} classifies in place of the bundled one: the inspector passes its table, and
+     * any table may stand in, one without the retired section included (#194).
      *
      * @param packDir the pack directory
      * @param table the file-kind table

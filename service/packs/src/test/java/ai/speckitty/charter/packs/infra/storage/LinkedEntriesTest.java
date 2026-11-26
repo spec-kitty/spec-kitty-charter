@@ -384,7 +384,7 @@ class LinkedEntriesTest {
             """;
 
     private static PackCommitStore commits(Path host) {
-        return new PackCommitStore(
+        return CommitStores.over(
                 new StorageRootLocations(host.resolve("packs")),
                 STRATEGY,
                 new RegistryWriteLock(Duration.ofSeconds(5)),

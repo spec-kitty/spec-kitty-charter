@@ -20,6 +20,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -274,7 +275,7 @@ class CaseOnlyRulesTest {
     }
 
     private static PackCompositionFacts facts(List<String> held, List<Preset> presets, MutabilityPolicySource policy) {
-        return new PackCompositionFacts(List.of(), held, List.of(), List.of(), policy, presets);
+        return CompositionFacts.of(List.of(), held, List.of(), List.of(), policy, presets);
     }
 
     /** A pack configured under its name, whose descriptor declares the ULID {@code id}. */

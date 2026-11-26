@@ -32,6 +32,7 @@ import ai.speckitty.charter.packs.domain.PackRepository;
 import ai.speckitty.charter.packs.domain.PackSources;
 import ai.speckitty.charter.packs.domain.TermIdentifier;
 import ai.speckitty.charter.packs.domain.TermStatus;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
@@ -124,7 +125,7 @@ class ForeignArtifactReadTest {
                 .toList();
         facts.put(
                 name,
-                new PackCompositionFacts(
+                CompositionFacts.of(
                         List.of(),
                         held,
                         List.of(),

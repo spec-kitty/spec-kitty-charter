@@ -23,6 +23,7 @@ import ai.speckitty.charter.packs.domain.PackRoot;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.infra.storage.TreeReads;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -449,7 +450,7 @@ class PresetItemRulesTest {
     }
 
     private static PackCompositionFacts facts(List<String> held, List<String> declared, List<Preset> presets) {
-        return new PackCompositionFacts(List.of(), held, declared, List.of(), MutabilityPolicySource.empty(), presets);
+        return CompositionFacts.of(List.of(), held, declared, List.of(), MutabilityPolicySource.empty(), presets);
     }
 
     /** A pack configured under its name, whose descriptor declares the ULID {@code id}. */

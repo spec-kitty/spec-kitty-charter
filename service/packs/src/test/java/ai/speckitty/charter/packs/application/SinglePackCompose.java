@@ -7,8 +7,8 @@ import ai.speckitty.charter.kernel.domain.PackLevel;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
-import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -45,7 +45,7 @@ public final class SinglePackCompose {
                 throw new UnsupportedOperationException();
             }
         };
-        PackArtifactRepository facts = pack -> new PackCompositionFacts(
+        PackArtifactRepository facts = pack -> CompositionFacts.of(
                 List.of(),
                 current.get().artifacts().stream()
                         .map(CharterArtifact::urn)

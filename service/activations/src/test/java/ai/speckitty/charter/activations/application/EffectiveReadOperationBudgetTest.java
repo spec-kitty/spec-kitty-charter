@@ -3,7 +3,9 @@ package ai.speckitty.charter.activations.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
-import ai.speckitty.charter.packs.domain.InForceResolution;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
+import ai.speckitty.charter.packs.application.CacheWork;
+import ai.speckitty.charter.packs.domain.ResolutionWork;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,9 +22,9 @@ import org.springframework.mock.web.MockHttpServletResponse;
  * and it digests the pack files three times, the two of the verified read and the one
  * of the closure's own digest, which the closure-scoped tags (decision {@code 01M6Y11E55YP5TG1EJ1MDKCFRP}) added: each pack
  * of the closure once, digested on its own so the digest does not depend on the configured order (NFR-001). Wall time is
- * {@link EffectiveReadBudgetTest}'s, which only reports. The counts are taken through the test hooks on
- * {@code CompositionFactsCache} and {@code InForceResolution}, as a delta around the request, with the cache cold and
- * then warm.
+ * {@link EffectiveReadBudgetTest}'s, which only reports. The counts are those of a {@code WorkMeter} bound around the
+ * request alone: the cache's loads and hits ({@code CacheWork}) and the resolutions and their walk visits
+ * ({@code ResolutionWork}), with the cache cold and then warm.
  */
 class EffectiveReadOperationBudgetTest {
 
@@ -53,7 +55,7 @@ class EffectiveReadOperationBudgetTest {
                 .getResponse();
     }
 
-    /** What one request did, as the deltas of the hooks and the digest counters around it. */
+    /** What one request did: its metered work, and the deltas of the digest counters around it. */
     private record Work(
             long loads, long hits, long resolutions, long walkVisits, int wholeDigests, int closureDigests) {}
 
@@ -63,30 +65,27 @@ class EffectiveReadOperationBudgetTest {
 
     /** What one request to the path did, its answer a 200 that contains the text. */
     private static Work measured(EffectiveReadFixture fixture, String path, String contains) throws Exception {
-        long loads = fixture.cache.loads();
-        long hits = fixture.cache.hits();
-        long resolutions = InForceResolution.resolutions();
-        long visits = InForceResolution.walkVisits();
         int whole = fixture.digests.whole();
         int closure = fixture.digests.closure();
-        MockHttpServletResponse answer = fixture.mvc
+        WorkMeter.Measured<MockHttpServletResponse> measured = WorkMeter.measure(() -> fixture.mvc
                 .perform(get(path).accept(MediaType.APPLICATION_JSON))
                 .andReturn()
-                .getResponse();
+                .getResponse());
+        MockHttpServletResponse answer = measured.value();
         assertThat(answer.getStatus()).as(answer.getContentAsString()).isEqualTo(200);
         assertThat(answer.getContentAsString()).contains(contains);
         return new Work(
-                fixture.cache.loads() - loads,
-                fixture.cache.hits() - hits,
-                InForceResolution.resolutions() - resolutions,
-                InForceResolution.walkVisits() - visits,
+                measured.work().of(CacheWork.LOAD),
+                measured.work().of(CacheWork.HIT),
+                measured.work().of(ResolutionWork.RESOLUTION),
+                measured.work().of(ResolutionWork.RESOLUTION_VISIT),
                 fixture.digests.whole() - whole,
                 fixture.digests.closure() - closure);
     }
 
     @Test
     void aColdReadComposesOnceResolvesOnceAndWalksNoMoreThanOneResolutionOfTheFixture() throws Exception {
-        fixture.cache.clear();
+        fixture.coldStart();
 
         Work cold = measured();
 
@@ -127,15 +126,13 @@ class EffectiveReadOperationBudgetTest {
     @Test
     void aNotModifiedReadDoesTheComposeAndNeitherTheMergeNorTheResolution() throws Exception {
         String etag = read().getHeader("ETag");
-        long resolutions = InForceResolution.resolutions();
-
-        MockHttpServletResponse notModified = fixture.mvc
+        WorkMeter.Measured<MockHttpServletResponse> notModified = WorkMeter.measure(() -> fixture.mvc
                 .perform(get(EffectiveReadFixture.PATH).header("If-None-Match", etag))
                 .andReturn()
-                .getResponse();
+                .getResponse());
 
-        assertThat(notModified.getStatus()).isEqualTo(304);
-        assertThat(InForceResolution.resolutions() - resolutions).isZero();
+        assertThat(notModified.value().getStatus()).isEqualTo(304);
+        assertThat(notModified.work().of(ResolutionWork.RESOLUTION)).isZero();
     }
 
     @Test
@@ -153,7 +150,7 @@ class EffectiveReadOperationBudgetTest {
 
     /** The work of one cold read of the artifact list over the base fixture: the counts every other read is held to. */
     private static Work listedCold(EffectiveReadFixture fixture) throws Exception {
-        fixture.cache.clear();
+        fixture.coldStart();
         return measured(fixture, EffectiveReadFixture.PATH, "\"hasNextPage\":true");
     }
 
@@ -161,9 +158,9 @@ class EffectiveReadOperationBudgetTest {
     void theGraphAndSkippedReadsOfAClosureWithNoTensionDoTheWorkOfTheListRead() throws Exception {
         Work list = listedCold(fixture);
 
-        fixture.cache.clear();
+        fixture.coldStart();
         Work graph = measured(fixture, EffectiveReadFixture.GRAPH, "\"edges\":[");
-        fixture.cache.clear();
+        fixture.coldStart();
         Work skipped = measured(fixture, EffectiveReadFixture.SKIPPED, "\"report\"");
 
         assertThat(graph)
@@ -179,9 +176,9 @@ class EffectiveReadOperationBudgetTest {
         EffectiveReadFixture tensions = new EffectiveReadFixture(root, true);
         String pair = "\"source\":\"directive:" + EffectiveReadFixture.TENSION_A + "\"";
 
-        tensions.cache.clear();
+        tensions.coldStart();
         Work graph = measured(tensions, EffectiveReadFixture.GRAPH, "\"relation\":\"tension\"");
-        tensions.cache.clear();
+        tensions.coldStart();
         Work context = measured(tensions, EffectiveReadFixture.CONTEXT, "\"tensions\":[{" + pair);
         Work warmGraph = measured(
                 tensions,

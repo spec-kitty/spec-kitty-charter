@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.metering.WorkMeter;
 import ai.speckitty.charter.kernel.validation.ConstraintBreachException;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Reason;
@@ -317,7 +318,8 @@ final class FilesystemPackStore {
     /** The code of a violation of a companion the store refuses; the load seat reads it back to remap it. */
     static final ReasonCode COMPANION_KIND = StorageCodes.COMPANION;
 
-    private static final Rename ATOMIC = (temp, target) -> Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
+    /** The move step of an atomic write: a rename that replaces the target in one step. */
+    static final Rename ATOMIC = (temp, target) -> Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE);
 
     /** The store's read of a pack file: opened without following a link (D6, {@link PackFileSet#noFollowBytes}). */
     static final PayloadRead FILES = PackFileSet::noFollowBytes;
@@ -335,23 +337,12 @@ final class FilesystemPackStore {
      * @param strategy the format
      */
     FilesystemPackStore(Path root, SerializationStrategy strategy) {
-        this(root, strategy, ATOMIC);
+        this(root, strategy, ATOMIC, Companions.Rules.bundled(), FILES);
     }
 
     /**
-     * A store with an injected rename step; the seam for tests of write atomicity.
-     *
-     * @param root the directory that holds the pack directories
-     * @param strategy the format
-     * @param rename the move step
-     */
-    FilesystemPackStore(Path root, SerializationStrategy strategy, Rename rename) {
-        this(root, strategy, rename, Companions.Rules.bundled(), FILES);
-    }
-
-    /**
-     * A store whose pack files and companions are held to the given table and schemas: the seam a test uses to give a
-     * companion a structure schema of its own, or to retire a file family of its own (#194).
+     * A store whose pack files and companions are held to the given table and schemas: the whole-pack store's and the
+     * census's, and a table a test gives a companion structure schema or a retired file family of its own (#194).
      *
      * @param root the directory that holds the pack directories
      * @param strategy the format
@@ -363,17 +354,17 @@ final class FilesystemPackStore {
     }
 
     /**
-     * A store with an injected payload read; the seam for tests of a payload that is listed but cannot be read (#301).
+     * A store over every collaborator: the format, the move step of an atomic write, the table and schemas of the pack's
+     * files and companions, and the read of a payload's bytes.
      *
      * @param root the directory that holds the pack directories
      * @param strategy the format
+     * @param rename the move step of an atomic write
+     * @param companionRules the table that classifies the pack's files and companion paths, and the schemas of
+     *     Markdown companions
      * @param payloadRead the read of an asset file's or a template's bytes
      */
-    FilesystemPackStore(Path root, SerializationStrategy strategy, PayloadRead payloadRead) {
-        this(root, strategy, ATOMIC, Companions.Rules.bundled(), payloadRead);
-    }
-
-    private FilesystemPackStore(
+    FilesystemPackStore(
             Path root,
             SerializationStrategy strategy,
             Rename rename,
@@ -429,7 +420,8 @@ final class FilesystemPackStore {
     }
 
     /**
-     * Reads a pack with the given bindings in place of the registry: the seam a test uses to read a binding of its own.
+     * Reads a pack with the given bindings in place of the registry's: a reader of fewer kinds, or of a binding of its
+     * own.
      *
      * <p>Last it judges the edges of the pack's readable graph documents by {@link RelationshipEndpointRule} (FR-014,
      * ADR-0064 decision 13): each {@code overrides} edge whose source kind is not activatable, then each edge whose
@@ -496,7 +488,7 @@ final class FilesystemPackStore {
             List<KindBinding<?, ?>> kinds,
             GraphRead graphs,
             PackFileSet.@Nullable Walk walk) {
-        READS.increment();
+        WorkMeter.count(StoreWork.WHOLE_READ);
         Path directory = existingDirectory(pack);
         PackDescriptorDso descriptor = descriptorOf(directory, named);
         PackFileSet.Listing listing = walk == null
@@ -1452,39 +1444,13 @@ final class FilesystemPackStore {
         return directory;
     }
 
-    /** Files parsed by lookups by id, for the test that holds a bulk read to a bounded number of parses. */
-    private static final java.util.concurrent.atomic.LongAdder LOOKUP_PARSES =
-            new java.util.concurrent.atomic.LongAdder();
-
-    private static final java.util.concurrent.atomic.LongAdder READS = new java.util.concurrent.atomic.LongAdder();
-
-    /**
-     * How many whole reads of a pack ({@link #read(PackDirectory)} and its overloads) this JVM has made: the counter
-     * that tells a surface reads a pack once (#554, T028, {@code OneReadTest}).
-     *
-     * @return the count
-     */
-    static long reads() {
-        return READS.sum();
-    }
-
-    /**
-     * How many files lookups by id have parsed in this JVM. A lookup parses files until one declares the id, so a bulk
-     * read that looks every file up by id grows with the square of the pack; this is the counter that tells.
-     *
-     * @return the count
-     */
-    static long lookupParses() {
-        return LOOKUP_PARSES.sum();
-    }
-
     /**
      * The existing file of the kind whose id (under the kind's {@link KindBinding#idKey()}) is {@code elementId}; the
      * first in path order if several do.
      */
     private static Optional<Path> locate(Path directory, KindBinding<?, ?> kind, String elementId) {
         for (String file : PackFileSet.files(directory, kind.kind())) {
-            LOOKUP_PARSES.increment();
+            WorkMeter.count(StoreWork.LOOKUP_PARSE);
             ParsedYaml parsed =
                     ParsedYaml.parse(readText(directory.resolve(file)).orElse(""), file);
             if (parsed.document() instanceof java.util.Map<?, ?> map && elementId.equals(map.get(kind.idKey()))) {

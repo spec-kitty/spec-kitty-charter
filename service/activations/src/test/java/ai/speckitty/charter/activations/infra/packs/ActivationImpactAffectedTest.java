@@ -24,6 +24,8 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.fixtures.ClosureViews;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -72,14 +74,13 @@ class ActivationImpactAffectedTest {
                     new ConfiguredPack(new PackIdentifier(name), level), descriptor, List.of(), urns));
             facts.put(
                     name,
-                    new PackCompositionFacts(
-                            List.of(), urns, List.of(), List.of(), policy, List.of(), List.of(), Map.of()));
+                    CompositionFacts.of(List.of(), urns, List.of(), List.of(), policy, List.of(), List.of(), Map.of()));
             policies.put(FixtureUlids.ulid(name), policy);
             return this;
         }
 
         ClosureView view() {
-            return new ClosureView(
+            return ClosureViews.of(
                     List.of(),
                     Map.of(),
                     Map.of(),

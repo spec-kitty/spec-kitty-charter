@@ -15,6 +15,7 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.List;
 import java.util.Map;
@@ -122,8 +123,7 @@ class CompositeComponentResolverTest {
                                 new PackArtifactRepository() {
                                     @Override
                                     public PackCompositionFacts compositionFacts(PackIdentifier pack) {
-                                        return new PackCompositionFacts(
-                                                List.of(), held.get(pack), List.of(), List.of());
+                                        return CompositionFacts.of(List.of(), held.get(pack), List.of(), List.of());
                                     }
                                 },
                                 fixedDigest())

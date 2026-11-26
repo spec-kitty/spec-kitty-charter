@@ -175,7 +175,8 @@ class InterruptedCommitRepairTest {
                 lockHeldWhenRead.set(lock.isLocked());
             }
         };
-        PackCommitStore commits = new PackCommitStore(locations, strategy, PackCommitStore.moveAside(readInTheWindow));
+        PackCommitStore commits =
+                CommitStores.swappingWith(locations, strategy, PackCommitStore.moveAside(readInTheWindow));
         CommitStorePackWriteStore writeStore = new CommitStorePackWriteStore(locations, strategy, commits);
 
         assertTimeoutPreemptively(
@@ -431,7 +432,7 @@ class InterruptedCommitRepairTest {
 
     /** A commit of {@code lost} that dies between the swap's two renames. */
     private void crash(StorageRootLocations locations) {
-        assertThatThrownBy(() -> new PackCommitStore(locations, strategy, CRASH_AFTER_ASIDE)
+        assertThatThrownBy(() -> CommitStores.swappingWith(locations, strategy, CRASH_AFTER_ASIDE)
                         .commit(PACK, null, toolguide("lost"), SHARD))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class, r -> assertThat(r.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));

@@ -198,12 +198,10 @@ class ReadoutFactsTest {
     @DisplayName("one read: a readout with its facts walks the tree once and runs the store half once")
     void theFactsCostNoSecondRead(@TempDir Path host) {
         Path pack = ExamplePacks.copyOf(ExamplePacks.BUILT_IN, host);
-        ReadCounters before = ReadCounters.now();
+        ReadCounters.Measured<PackReadout> readout = ReadCounters.measured(() -> read(ExamplePacks.BUILT_IN, pack));
 
-        PackReadout readout = read(ExamplePacks.BUILT_IN, pack);
-
-        assertThat(readout.facts()).isInstanceOf(PackReadout.Built.class);
-        assertThat(ReadCounters.now().since(before)).isEqualTo(new ReadCounters(1, 1, 1));
+        assertThat(readout.value().facts()).isInstanceOf(PackReadout.Built.class);
+        assertThat(readout.read()).isEqualTo(new ReadCounters(1, 1, 1));
     }
 
     private static JsonNode recorded() {

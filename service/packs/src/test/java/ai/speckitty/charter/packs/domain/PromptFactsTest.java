@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.kernel.markdown.PromptSlots;
 import ai.speckitty.charter.kernel.markdown.SlotId;
+import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -59,12 +60,12 @@ class PromptFactsTest {
 
     @Test
     void theCompositionFactsCarryThemAndEveryShorterFormMeansNone() {
-        PackCompositionFacts shortest = new PackCompositionFacts(List.of(), List.of(), List.of(), List.of());
+        PackCompositionFacts shortest = CompositionFacts.of(List.of(), List.of(), List.of(), List.of());
         PromptFacts prompts = new PromptFacts(
                 Map.of(action("software-dev", "plan"), List.of(new PromptFacts.DeclaredSlot(REASONS, false))),
                 Map.of());
 
-        PackCompositionFacts full = new PackCompositionFacts(
+        PackCompositionFacts full = CompositionFacts.of(
                 List.of(),
                 List.of(),
                 List.of(),
@@ -77,7 +78,7 @@ class PromptFactsTest {
 
         assertThat(PackCompositionFacts.NONE.prompts()).isSameAs(PromptFacts.NONE);
         assertThat(shortest.prompts()).isSameAs(PromptFacts.NONE);
-        assertThat(new PackCompositionFacts(
+        assertThat(CompositionFacts.of(
                                 List.of(),
                                 List.of(),
                                 List.of(),
