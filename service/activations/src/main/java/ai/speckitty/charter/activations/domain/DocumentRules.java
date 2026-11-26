@@ -48,17 +48,17 @@ import java.util.stream.Collectors;
  * (IC-13, operator ruling Q9, research R12). Locked wins, since locked implies required, and no override satisfies a
  * lock. "Active" is the in-force resolution's own judgement of the document as it will be stored ({@link InForceFacts}:
  * an artifact it reports as satisfied by an artifact in force), never a rule of this class, so a deny entry accepted on
- * write is one the next read applies; an enhancement never satisfies. The facts are asked only when a write adds a
- * deny entry on a required artifact no pack locks, and a refusal of the closure's merge ({@code pack_unreadable})
- * reaches that write. Which entries a write judges: a create judges every deny entry of the body; a deactivate judges
- * the named target whether or not its deny entry is already stored; a replace and the other writes judge only the deny
- * entries they add. Removing the override later is not refused (no write judges a stored deny entry it does not add),
- * and the read lists it in {@code denyNotApplied}. Each
- * {@link RequiringPack} names the pack by the id it is configured under, and its {@code via} is the extends chain
+ * write is one the next read applies; an enhancement never satisfies. The facts are asked only when a write adds a deny
+ * entry on a required artifact no pack locks, and a refusal of the closure's merge (with the merge's code,
+ * {@code override_not_permitted} for a forbidden layer override) reaches that write. Which entries a write judges: a
+ * create judges every deny entry of the body; a deactivate judges the named target whether or not its deny entry is
+ * already stored; a replace and the other writes judge only the deny entries they add. Removing the override later is
+ * not refused (no write judges a stored deny entry it does not add), and the read lists it in {@code denyNotApplied}.
+ * Each {@link RequiringPack} names the pack by the id it is configured under, and its {@code via} is the extends chain
  * ({@link ClosureSnapshot#extendsChain}) from the first pack the document names, in its order, whose
- * {@code parent_pack} line reaches the requiring pack: empty when a pack the document names (or, without
- * {@code packs}, any configured pack) is the requiring pack itself, and empty as well when the requiring pack is
- * reached over {@code depends_on} only, which is no extends chain.
+ * {@code parent_pack} line reaches the requiring pack: empty when a pack the document names (or, without {@code packs},
+ * any configured pack) is the requiring pack itself, and empty as well when the requiring pack is reached over
+ * {@code depends_on} only, which is no extends chain.
  *
  * <p>A snapshot that is not {@linkplain ClosureSnapshot#resolved() resolved} holds no closure: a pack the document
  * names is configured as nothing (research R4). Only those packs are judged then, each an {@code unknown_pack}
@@ -317,9 +317,9 @@ public final class DocumentRules {
     /**
      * Writes every known spelling of an id (the declared id, its full URN, a case variant of either) as the declared
      * id, in the allow and deny lists as written and in the document, so that every spelling gives one stored document
-     * and one revision (ADR-0020 D4, operator ruling of 2026-11-06). A spelling that is unknown or ambiguous is left
-     * as written, for {@link #check(ActivationDocument.Built, ClosureSnapshot, InForceFacts)} to refuse at its position. A closure
-     * that did not compose normalizes nothing.
+     * and one revision (ADR-0020 D4, operator ruling of 2026-11-06). A spelling that is unknown or ambiguous is left as
+     * written, for {@link #check(ActivationDocument.Built, ClosureSnapshot, InForceFacts)} to refuse at its position. A
+     * closure that did not compose normalizes nothing.
      *
      * @param built the document as the request built it
      * @param snapshot the closure the document names
@@ -330,8 +330,8 @@ public final class DocumentRules {
     }
 
     /**
-     * {@link #normalize(ActivationDocument.Built, ClosureSnapshot)} for a replace: a spelling the closure holds no id for
-     * is read against the ids the stored document names for its kind (in either list), so that a stale id the body
+     * {@link #normalize(ActivationDocument.Built, ClosureSnapshot)} for a replace: a spelling the closure holds no id
+     * for is read against the ids the stored document names for its kind (in either list), so that a stale id the body
      * spells as a URN or in another case is written, and reported in {@code dropped}, as the stored document spells it
      * ({@code ActivationWrites.declared} reads a path id the same way).
      *

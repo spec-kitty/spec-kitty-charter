@@ -851,23 +851,35 @@ class PackRegistrationServiceTest {
     }
 
     @Test
-    void aRemovalIsAllowedOnAnExtendableArtifactAndRefusedOnALockedOne(@TempDir Path host) {
+    void theRemovalOfAnExtendableArtifactPassesTheWriteGate(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+        rig.install("derived", derived("1.0.0").directive("EXT_ONE", "Mine"));
+
+        assertThat(rig.register("derived", rig.stage(derived("2.0.0")), Preconditions.none())
+                        .outcome())
+                .as("REMOVE is within extendable, and the replacement keeps no layer override")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void theRemovalOfALockedArtifactIsRefusedAndKeepingItIsC21sFault(@TempDir Path host) {
         Rig rig = rigWithBase(host);
         rig.install("derived", derived("1.0.0").directive("LOCKED_ONE", "Mine").directive("EXT_ONE", "Mine"));
-        StagedPack dropsExtendable = rig.stage(derived("2.0.0").directive("LOCKED_ONE", "Mine"));
-
-        CharterRefusal kept = refusal(() -> rig.register("derived", dropsExtendable, Preconditions.none()));
-        assertThat(kept.code())
-                .as("REMOVE is within extendable, so the write gate passes it; the layer override of LOCKED_ONE it"
-                        + " keeps is C21's fault (#639, ruling Q-B)")
-                .isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
-        assertThat(kept.getMessage()).contains("directive:LOCKED_ONE").doesNotContain("EXT_ONE");
         Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
 
+        CharterRefusal kept = refusal(() -> rig.register(
+                "derived", rig.stage(derived("2.0.0").directive("LOCKED_ONE", "Mine")), Preconditions.none()));
+        assertThat(kept.code())
+                .as("dropping EXT_ONE passes the write gate; the layer override of LOCKED_ONE the pack keeps is C21's"
+                        + " fault (#639, ruling Q-B)")
+                .isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+        assertThat(kept.getMessage()).contains("directive:LOCKED_ONE").doesNotContain("EXT_ONE");
+
         assertThat(refusalOf(() -> rig.register("derived", rig.stage(derived("3.0.0")), Preconditions.none())))
+                .as("REMOVE of a locked artifact is refused by the write gate")
                 .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
         assertThat(rig.filesOf(rig.packs.resolve("derived")))
-                .as("nothing changed")
+                .as("nothing changed: a pack in this state is cleared only by its DELETE")
                 .isEqualTo(before);
     }
 

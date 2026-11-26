@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -12,6 +13,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
+import ai.speckitty.charter.packs.domain.Ledger;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
@@ -77,8 +79,16 @@ class RelationRulesTest {
                 Optional.empty());
     }
 
+    /** A closure's packs and the facts each was composed with. */
+    private record Closure(List<PackUnderResolution> packs, Map<String, PackCompositionFacts> facts) {}
+
     /** One org pack, acme, holding directives A to G and writing the edges. */
     private static List<ClosureFault> judged(List<String> held, Relationship... edges) {
+        Closure closure = acme(held, edges);
+        return RelationRulesTest.relationsOf(closure.packs(), closure.facts());
+    }
+
+    private static Closure acme(List<String> held, Relationship... edges) {
         PackDescriptor descriptor = new PackDescriptor(
                 FixtureUlids.of("acme"),
                 "1.0.0",
@@ -101,7 +111,7 @@ class RelationRulesTest {
                         MutabilityPolicySource.empty(),
                         List.of(),
                         List.of(edges)));
-        return RelationRulesTest.relationsOf(packs, facts);
+        return new Closure(packs, facts);
     }
 
     /**
@@ -109,20 +119,52 @@ class RelationRulesTest {
      * pack a root, as registration's relations phase judges a closure.
      */
     static List<ClosureFault> relationsOf(List<PackUnderResolution> packs, Map<String, PackCompositionFacts> facts) {
-        Function<PackUnderResolution, PackCompositionFacts> factsOf = member ->
-                Objects.requireNonNull(facts.get(member.configured().id().value()), "facts");
-        PackGraph graph = PackGraph.of(
-                packs.stream()
-                        .map(member -> new PackNode(member.configured(), member.descriptor()))
-                        .toList(),
-                pack -> Objects.requireNonNull(facts.get(pack.value()), "facts"));
-        return PackRulesets.relations(PackRulesets.relationsOf(packs, factsOf))
+        return PackRulesets.relations(PackRulesets.relationsOf(packs, factsOf(facts)))
                 .run(
-                        graph,
+                        graphOf(packs, facts),
                         Scope.of(packs.stream()
                                 .map(member -> member.configured().id())
                                 .toList()))
                 .faults();
+    }
+
+    private static Function<PackUnderResolution, PackCompositionFacts> factsOf(
+            Map<String, PackCompositionFacts> facts) {
+        return member ->
+                Objects.requireNonNull(facts.get(member.configured().id().value()), "facts");
+    }
+
+    private static PackGraph graphOf(List<PackUnderResolution> packs, Map<String, PackCompositionFacts> facts) {
+        return PackGraph.of(
+                packs.stream()
+                        .map(member -> new PackNode(member.configured(), member.descriptor()))
+                        .toList(),
+                pack -> Objects.requireNonNull(facts.get(pack.value()), "facts"));
+    }
+
+    @Test
+    @DisplayName("a relation fault is the answer, the merge, the own closure and its descriptor never read (review F4)")
+    void aRelationFaultIsReportedBeforeTheMergeOrTheOwnClosureIsRead() {
+        Closure closure = acme(HELD, selfOverride("A"));
+        CharterRefusal unreadable = new CharterRefusal(RefusalCode.PACK_UNREADABLE, "the store cannot be read");
+
+        Ledger ledger = PackRulesets.composedClosure(
+                        PackRulesets.relationsOf(closure.packs(), factsOf(closure.facts())),
+                        () -> {
+                            throw new AssertionError("the merge is read only once the relations pass");
+                        },
+                        () -> {
+                            throw unreadable;
+                        },
+                        () -> {
+                            throw unreadable;
+                        },
+                        (holder, id) -> Optional.empty(),
+                        Optional.empty())
+                .run(graphOf(closure.packs(), closure.facts()), PackRulesets.ownClosureOf(new PackIdentifier("acme")));
+
+        assertThat(ledger.faults()).extracting(ClosureFault::code).containsExactly(RefusalCode.SELF_OVERRIDE);
+        assertThat(ledger.gate()).contains("relations");
     }
 
     private static List<ClosureFault> judged(Relationship... edges) {

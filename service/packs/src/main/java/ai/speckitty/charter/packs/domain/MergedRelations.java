@@ -81,7 +81,8 @@ public final class MergedRelations {
     private final List<PackUnderResolution> packs;
     private final Function<PackUnderResolution, List<Relationship>> edgesOf;
     private final PerPackPolicy policy;
-    private final MergedClosure merged;
+    private final List<LayerOverride> layerOverrides;
+    private final boolean complete;
     private final List<PlacedEdge> written;
     private final List<PlacedEdge> placed;
     private final Map<PackUlid, PackUnderResolution> byDescriptor = new LinkedHashMap<>();
@@ -91,13 +92,15 @@ public final class MergedRelations {
             List<PackUnderResolution> packs,
             Function<PackUnderResolution, List<Relationship>> edgesOf,
             PerPackPolicy policy,
-            MergedClosure merged,
+            List<LayerOverride> layerOverrides,
+            boolean complete,
             List<PlacedEdge> written,
             List<PlacedEdge> placed) {
         this.packs = List.copyOf(packs);
         this.edgesOf = edgesOf;
         this.policy = policy;
-        this.merged = merged;
+        this.layerOverrides = List.copyOf(layerOverrides);
+        this.complete = complete;
         this.written = List.copyOf(written);
         this.placed = List.copyOf(placed);
         this.packs.forEach(pack -> {
@@ -130,7 +133,25 @@ public final class MergedRelations {
         Objects.requireNonNull(merged, "merged");
         Objects.requireNonNull(written, "written");
         Objects.requireNonNull(placed, "placed");
-        return new MergedRelations(packs, edgesOf, policy, merged, written, placed);
+        return new MergedRelations(packs, edgesOf, policy, merged.layerOverrides(), true, written, placed);
+    }
+
+    /**
+     * The merged relations of a closure whose merge refused before it ended (a step contest no entry settles,
+     * {@link LayerMerge#attempt}): only the layer overrides it placed first are judged, so the fault the merge met
+     * first is the answer, as when the merge refused at the first fault it met (#639); no edge is placed.
+     *
+     * @param packs the closure's packs, in merge order
+     * @param policy the closure's mutability policies, each scoped as the reads scope it (A15)
+     * @param overrides the layer overrides the merge placed before it refused, in the order it placed them
+     * @return the subject
+     */
+    public static MergedRelations stopped(
+            List<PackUnderResolution> packs, PerPackPolicy policy, List<LayerOverride> overrides) {
+        Objects.requireNonNull(packs, "packs");
+        Objects.requireNonNull(policy, "policy");
+        Objects.requireNonNull(overrides, "overrides");
+        return new MergedRelations(packs, pack -> List.of(), policy, overrides, false, List.of(), List.of());
     }
 
     /**
@@ -162,12 +183,21 @@ public final class MergedRelations {
     }
 
     /**
-     * The layer merge of the closure.
+     * The layer overrides the merge placed: every one when it ended, else those it placed before it refused.
      *
-     * @return the merge
+     * @return the overrides, in the order the merge placed them
      */
-    public MergedClosure merged() {
-        return merged;
+    public List<LayerOverride> layerOverrides() {
+        return layerOverrides;
+    }
+
+    /**
+     * Whether the merge ended; one that refused judges only the layer overrides it placed first.
+     *
+     * @return {@code true} when the merge answered
+     */
+    public boolean complete() {
+        return complete;
     }
 
     /**

@@ -572,15 +572,15 @@ class ClosureImpactCheckTest {
 
     // ---- the edge-index rules on the write path (#639, ADR-0082 slice 4, rulings D2, Q-B, Q-C; #667) --------------
 
+    private static final String OVERRIDES_OPEN_ONE_COPY =
+            "{source: 'directive:OPEN_ONE', target: 'base::directive:OPEN_ONE', relation: overrides}";
+
     /** Derived holds base's OPEN_ONE, a layer override, and writes an overrides edge from it onto base's copy. */
     private static Packs overridingItsOwnLayerOverride(String extraDescriptor) {
         return Packs.of(DERIVED_ID, "derived", "1.0.0", "project", DEPENDS_ON_BASE + extraDescriptor)
                 .directive("DERIVED_ONE", "Own")
                 .directive("OPEN_ONE", "Mine")
-                .file(
-                        "relations.graph.yaml",
-                        graph(
-                                "{source: 'directive:OPEN_ONE', target: 'base::directive:OPEN_ONE', relation: overrides}"));
+                .file("relations.graph.yaml", graph(OVERRIDES_OPEN_ONE_COPY));
     }
 
     @Test
@@ -744,7 +744,7 @@ class ClosureImpactCheckTest {
                 .file(
                         "relations.graph.yaml",
                         graph(
-                                "{source: 'directive:OPEN_ONE', target: 'base::directive:OPEN_ONE', relation: overrides}",
+                                OVERRIDES_OPEN_ONE_COPY,
                                 edge("DERIVED_ONE", "enhances", "SECOND_ONE"),
                                 edge("SECOND_ONE", "enhances", "DERIVED_ONE")));
 

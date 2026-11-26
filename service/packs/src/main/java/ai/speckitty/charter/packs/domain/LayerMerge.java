@@ -46,6 +46,35 @@ public final class LayerMerge {
     private LayerMerge() {}
 
     /**
+     * What merging a closure answered: the merge, or the refusal the merge met and the layer overrides it had placed
+     * before it, in the order it met them, so a caller judges the overrides it met first (C21) ahead of the refusal, as
+     * the merge met them (#639).
+     *
+     * @param merged the merge; empty when the merge refused
+     * @param overrides the layer overrides placed before the refusal; every one when the merge answered
+     * @param refused the refusal the merge met; empty when it answered
+     */
+    public record Attempt(
+            Optional<MergedClosure> merged, List<LayerOverride> overrides, Optional<CharterRefusal> refused) {
+
+        /**
+         * Checks and copies the fields.
+         *
+         * @param merged the merge
+         * @param overrides the overrides placed
+         * @param refused the refusal
+         */
+        public Attempt {
+            Objects.requireNonNull(merged, "merged");
+            overrides = List.copyOf(Objects.requireNonNull(overrides, "overrides"));
+            Objects.requireNonNull(refused, "refused");
+            if (merged.isPresent() == refused.isPresent()) {
+                throw new IllegalArgumentException("a merge either answers or refuses");
+            }
+        }
+    }
+
+    /**
      * Merges a composed closure.
      *
      * @param closure the composed closure, in closure order
@@ -53,8 +82,26 @@ public final class LayerMerge {
      * @param policy the mutability policies of the closure's packs
      * @return the winners and the layer overrides, every one of them: a layer override the overridden artifact's level
      *     forbids (C21) is the edge-index rules' fault ({@code PackRulesets.edgeIndex}), judged on what this answers
+     * @throws CharterRefusal as {@link #attempt} refuses
      */
     public static MergedClosure merge(
+            List<PackUnderResolution> closure,
+            Map<String, PackCompositionFacts> factsByConfiguredId,
+            PerPackPolicy policy) {
+        Attempt attempt = attempt(closure, factsByConfiguredId, policy);
+        return attempt.merged().orElseThrow(() -> attempt.refused().orElseThrow());
+    }
+
+    /**
+     * Merges a composed closure, and answers a refusal the merge meets beside the layer overrides it placed first: a
+     * step contest no entry settles ({@code pack_sibling_conflict}).
+     *
+     * @param closure the composed closure, in closure order
+     * @param factsByConfiguredId the facts each pack was read with, by configured identifier
+     * @param policy the mutability policies of the closure's packs
+     * @return the merge, or the refusal and the overrides placed before it
+     */
+    public static Attempt attempt(
             List<PackUnderResolution> closure,
             Map<String, PackCompositionFacts> factsByConfiguredId,
             PerPackPolicy policy) {
@@ -66,25 +113,32 @@ public final class LayerMerge {
         Map<Urn, MergedClosure.Winner> winners = new LinkedHashMap<>();
         List<LayerOverride> overrides = new ArrayList<>();
         Map<Urn, List<PackUnderResolution>> holdersByUrn = holdersByUrn(closure);
-        holdersByUrn.forEach((urn, holders) -> {
-            List<PackUnderResolution> byLevel = levelWinners(holders, settledBy(urn, closure, holdersByUrn));
+        for (Map.Entry<Urn, List<PackUnderResolution>> held : holdersByUrn.entrySet()) {
+            Urn urn = held.getKey();
+            List<PackUnderResolution> byLevel;
+            try {
+                byLevel = levelWinners(held.getValue(), settledBy(urn, closure, holdersByUrn));
+            } catch (CharterRefusal refused) {
+                return new Attempt(Optional.empty(), overrides, Optional.of(refused));
+            }
             if (byLevel.isEmpty()) {
                 // Every copy is a step of a mission type that lost its contest: none is in force (C15, #358).
-                return;
+                continue;
             }
             PackUnderResolution winner = byLevel.getLast();
             winners.put(urn, winnerOf(winner, urn, policy.levelIn(closurePackIds, urn)));
             for (PackUnderResolution loser : byLevel.subList(0, byLevel.size() - 1)) {
                 overrides.add(overrideOf(urn, winner, loser));
             }
-        });
+        }
         Map<String, MergedClosure.MergedPreset> presets = mergedPresets(closure, factsByConfiguredId);
-        return new MergedClosure(
+        MergedClosure merged = new MergedClosure(
                 winners,
                 overrides,
                 languagesOf(winners, closure, factsByConfiguredId),
                 presets,
                 floorOf(closure, factsByConfiguredId, winners.keySet()));
+        return new Attempt(Optional.of(merged), merged.layerOverrides(), Optional.empty());
     }
 
     private static RefusalPack refusalPack(PackUnderResolution pack) {

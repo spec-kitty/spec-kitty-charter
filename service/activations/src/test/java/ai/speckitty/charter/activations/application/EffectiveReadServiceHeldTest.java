@@ -262,13 +262,13 @@ class EffectiveReadServiceHeldTest {
     @Test
     void aRefusalOfTheMergeIsTheAnswerUnchanged() {
         packs.heldWinners(kind -> {
-            throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a layer override the lock forbids");
+            throw new CharterRefusal(RefusalCode.OVERRIDE_NOT_PERMITTED, "a layer override the lock forbids");
         });
 
         assertThatThrownBy(() -> service.heldWinner(ID, ArtifactKind.ASSET, "run", null))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED));
     }
 
     @Test

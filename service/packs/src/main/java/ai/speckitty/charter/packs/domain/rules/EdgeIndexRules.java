@@ -43,7 +43,7 @@ final class EdgeIndexRules {
                 .map(PackUnderResolution::descriptorId)
                 .toList();
         List<ClosureFault> faults = new ArrayList<>();
-        for (LayerOverride override : relations.merged().layerOverrides()) {
+        for (LayerOverride override : relations.layerOverrides()) {
             PackUnderResolution winner = relations.packOf(override.winner().packId());
             PackUnderResolution loser = relations.packOf(override.loser().packId());
             List<PackUlid> judging = closurePackIds.stream()
@@ -73,9 +73,13 @@ final class EdgeIndexRules {
 
     /**
      * Every enhancement of a step whose mission type is locked (C22 and C25 as amended, OD-2 (A)), judged as the
-     * relation rule judges it ({@link RelationRules#lockedSteps}) over the policies the merge reads.
+     * relation rule judges it ({@link RelationRules#lockedSteps}) over the policies the merge reads, once the merge
+     * ended: the read judged it after the merge.
      */
     static List<ClosureFault> lockedStepEnhanced(MergedRelations relations) {
+        if (!relations.complete()) {
+            return List.of();
+        }
         return RelationRules.lockedSteps(relations.packs(), relations::edgesOf, relations.policy());
     }
 

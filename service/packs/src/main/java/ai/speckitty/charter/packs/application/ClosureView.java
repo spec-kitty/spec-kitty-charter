@@ -171,6 +171,14 @@ public record ClosureView(
         }
 
         /**
+         * The union floor computed with no override judged, whether or not the merge was built: what the impact
+         * check's notices compare, so building the merge never changes them.
+         */
+        RequiredFloor floorJudgingNoOverride() {
+            return LayerMerge.floorOf(packs, facts);
+        }
+
+        /**
          * The layer merge, built once, and refused when the edge-index rules find a fault in it
          * ({@link PackRulesets#edgeIndexFaults}, #639, operator ruling D2): every fault, each with the code the
          * registration impact check answers for it, whatever the activation. They are a layer override the overridden
@@ -178,39 +186,61 @@ public record ClosureView(
          * without the enhancing pack's own policy (C22 and C25 as amended, OD-2 (A)), both
          * {@code override_not_permitted}; an {@code overrides} edge the merge re-points to its own source
          * ({@code self_override}); and another pack's step link that names no step of the type in force
-         * ({@code pack_reference_artifact_missing}).
+         * ({@code pack_reference_artifact_missing}). A merge that refuses before it ends (a step contest no entry
+         * settles) answers its own refusal, unless a layer override it placed first breaks C21: the fault the merge
+         * met first is the answer, as when C21 refused at the first artifact that broke it. A refused merge is not
+         * kept, so it is judged again on the next call.
          */
         synchronized MergedView merged(PerPackPolicy policy, EdgeIndex edges) {
-            MergedView view = built(policy, edges);
-            if (!faults.isEmpty()) {
-                throw PackRefusals.of(new ClosureVerdict(faults));
+            Judged judged = judged(policy, edges);
+            if (!judged.faults().isEmpty()) {
+                throw PackRefusals.of(new ClosureVerdict(judged.faults()));
             }
-            return view;
+            return judged.view().orElseThrow(() -> judged.refused().orElseThrow());
         }
 
-        /** The merged closure as the edge-index rules judge it, built with the merge and never refused. */
+        /**
+         * The merged closure as the edge-index rules judge it, never refused: built with the merge, or, for a merge
+         * that refused, the layer overrides it placed first ({@link MergedRelations#stopped}).
+         */
         synchronized MergedRelations relations(PerPackPolicy policy, EdgeIndex edges) {
-            built(policy, edges);
-            return Objects.requireNonNull(relations, "built with the merge");
+            return judged(policy, edges).relations();
         }
 
-        private MergedView built(PerPackPolicy policy, EdgeIndex edges) {
-            if (built == null) {
-                MergedClosure merged = LayerMerge.merge(packs, facts, policy);
-                EdgeIndex placed = edges.merged(merged);
-                MergedRelations judged = MergedRelations.of(
-                        packs,
-                        pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
-                                .edges(),
-                        policy,
-                        merged,
-                        edges.placedEdges(),
-                        placed.placedEdges());
-                faults = PackRulesets.edgeIndexFaults(judged);
-                relations = judged;
-                built = new MergedView(merged, placed);
+        /** The merge and its edge-index faults, or the refusal the merge met. */
+        private record Judged(
+                Optional<MergedView> view,
+                MergedRelations relations,
+                List<ClosureFault> faults,
+                Optional<CharterRefusal> refused) {}
+
+        private Judged judged(PerPackPolicy policy, EdgeIndex edges) {
+            if (built != null) {
+                return new Judged(
+                        Optional.of(built),
+                        Objects.requireNonNull(relations, "built with the merge"),
+                        faults,
+                        Optional.empty());
             }
-            return built;
+            LayerMerge.Attempt attempt = LayerMerge.attempt(packs, facts, policy);
+            if (attempt.merged().isEmpty()) {
+                MergedRelations stopped = MergedRelations.stopped(packs, policy, attempt.overrides());
+                return new Judged(Optional.empty(), stopped, PackRulesets.edgeIndexFaults(stopped), attempt.refused());
+            }
+            MergedClosure merged = attempt.merged().get();
+            EdgeIndex placed = edges.merged(merged);
+            MergedRelations judged = MergedRelations.of(
+                    packs,
+                    pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
+                            .edges(),
+                    policy,
+                    merged,
+                    edges.placedEdges(),
+                    placed.placedEdges());
+            faults = PackRulesets.edgeIndexFaults(judged);
+            relations = judged;
+            built = new MergedView(merged, placed);
+            return new Judged(Optional.of(built), judged, faults, Optional.empty());
         }
     }
 
@@ -498,6 +528,16 @@ public record ClosureView(
      */
     public RequiredFloor mergedFloor() {
         return mergeInputs.floor();
+    }
+
+    /**
+     * The union floor computed with no layer override judged, whether or not this view's merge was built: what the
+     * impact check's notices compare before and after a write, so judging the merge never changes them (#639).
+     *
+     * @return the union floor, with no override judged
+     */
+    RequiredFloor floorJudgingNoOverride() {
+        return mergeInputs.floorJudgingNoOverride();
     }
 
     /**
