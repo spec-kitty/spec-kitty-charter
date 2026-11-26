@@ -2,7 +2,6 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
-import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackOverride;
@@ -20,13 +19,11 @@ import ai.speckitty.charter.packs.domain.PackArtifactRepository;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.StepHolding;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -34,7 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
+import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -146,13 +143,9 @@ public final class InboundReferences {
             return facts.holds(urn);
         }
 
-        /** The descriptor {@code pack_id}s the pack builds on: its {@code parent_pack} and its {@code depends_on}. */
+        /** The {@code pack_id}s the pack builds on ({@link PackGraph#buildsOn}); none when it has no descriptor. */
         List<String> buildsOn() {
-            return descriptor.stream()
-                    .flatMap(declared -> Stream.concat(
-                            declared.parentPack().stream(),
-                            declared.dependencies().stream().map(PackDependency::packId)))
-                    .toList();
+            return descriptor.map(PackGraph::buildsOn).orElse(List.of());
         }
     }
 
@@ -325,26 +318,24 @@ public final class InboundReferences {
                 && closure.stream().filter(member -> !member.staged()).noneMatch(member -> member.defines(urn));
     }
 
-    /** The pack and every pack it builds on, transitively, the pack first, each once. */
+    /**
+     * The pack and every pack it builds on, transitively, the pack first, each once: {@link PackGraph#ancestorsOf} from
+     * the pack over the members' {@code depends_on} and {@code parent_pack}. Only a described member starts a closure
+     * or is reached by an edge.
+     */
     private static List<Member> closureOf(Member member, List<Member> members) {
         Map<String, Member> byPackId = new LinkedHashMap<>();
         members.forEach(candidate ->
                 candidate.descriptor().ifPresent(descriptor -> byPackId.putIfAbsent(descriptor.packId(), candidate)));
-        List<Member> closure = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        Deque<Member> pending = new ArrayDeque<>(List.of(member));
-        while (!pending.isEmpty()) {
-            Member next = pending.poll();
-            // only a described member starts a closure or is reached by an edge
-            if (seen.add(next.descriptor().orElseThrow().packId())) {
-                closure.add(next);
-                next.buildsOn().stream()
-                        .map(byPackId::get)
-                        .filter(Objects::nonNull)
-                        .forEach(pending::add);
-            }
-        }
-        return closure;
+        String start = member.descriptor().orElseThrow().packId();
+        Function<String, Optional<Member>> at =
+                packId -> packId.equals(start) ? Optional.of(member) : Optional.ofNullable(byPackId.get(packId));
+        return PackGraph.ancestorsOf(
+                        List.of(start),
+                        packId -> at.apply(packId).map(Member::buildsOn).orElse(List.of()))
+                .stream()
+                .flatMap(packId -> at.apply(packId).stream())
+                .toList();
     }
 
     private static List<Reference> referencesOf(Member member) {

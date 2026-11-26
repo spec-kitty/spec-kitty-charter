@@ -8,6 +8,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.PackGraph;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -51,7 +52,7 @@ final class SpecializationCycleRule {
                 }
             }
         }
-        return ImpactRelations.cyclesIn(graph).stream()
+        return PackGraph.cyclesIn(graph).stream()
                 .map(cycle -> violation(cycle, writers))
                 .toList();
     }

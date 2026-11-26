@@ -1,7 +1,6 @@
 package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
-import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
@@ -17,20 +16,18 @@ import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
+import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -266,7 +263,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
         composed.packs().stream()
                 .filter(member -> member.configured().id().equals(root))
                 .forEach(member -> judging.remove(member.descriptorId()));
-        Set<Urn> held = new HashSet<>();
+        Set<Urn> held = new LinkedHashSet<>();
         composed.packs().stream()
                 .filter(member -> !member.configured().id().equals(root))
                 .forEach(member -> held.addAll(held(member)));
@@ -304,9 +301,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
             PackCatalogRepository catalog,
             PackDescriptorRepository descriptors,
             Pack staged) {
-        Set<String> named =
-                new HashSet<>(staged.descriptor().parentPack().stream().toList());
-        staged.descriptor().dependencies().forEach(dependency -> named.add(dependency.packId()));
+        Set<String> named = new LinkedHashSet<>(PackGraph.buildsOn(staged.descriptor()));
         List<PackIdentifier> roots = catalog.configured().stream()
                 .map(ConfiguredPack::id)
                 .filter(candidate -> named.stream().anyMatch(packId -> declares(descriptors, candidate, packId)))
@@ -315,7 +310,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
             return new Judging(new LinkedHashMap<>(), Set.of());
         }
         OfferingReadService.ComposedClosure composed = offerings.composedWithFacts(roots);
-        Set<Urn> held = new HashSet<>();
+        Set<Urn> held = new LinkedHashSet<>();
         composed.packs().forEach(member -> held.addAll(held(member)));
         return new Judging(
                 scopedPolicies(
@@ -337,7 +332,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
             members.stream()
                     .filter(member -> member.configured().equals(pack.id()))
                     .forEach(member -> judging.remove(member.descriptorPackId()));
-            Set<Urn> held = new HashSet<>();
+            Set<Urn> held = new LinkedHashSet<>();
             members.stream()
                     .filter(member -> !member.configured().equals(pack.id()))
                     .forEach(member -> held.addAll(member.held()));
@@ -354,18 +349,14 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
         return scoped;
     }
 
-    /** What a pack and every pack it builds on, transitively, hold; a pack outside the closure holds nothing here. */
+    /**
+     * What a pack and every pack it builds on, transitively, hold; a pack outside the closure holds nothing here. The
+     * descent is {@link PackGraph#ancestorsOf}'s.
+     */
     private static Set<Urn> heldAlong(Scope from, Map<PackUlid, Scope> byId) {
-        Set<Urn> held = new HashSet<>();
-        Set<PackUlid> seen = new HashSet<>();
-        Deque<Scope> pending = new ArrayDeque<>(List.of(from));
-        while (!pending.isEmpty()) {
-            Scope next = pending.pop();
-            if (seen.add(next.packId())) {
-                held.addAll(next.held());
-                next.buildsOn().stream().map(byId::get).filter(Objects::nonNull).forEach(pending::push);
-            }
-        }
+        Set<Urn> held = new LinkedHashSet<>();
+        PackGraph.ancestorsOf(List.of(from.packId()), byId, Scope::buildsOn)
+                .forEach(packId -> Optional.ofNullable(byId.get(packId)).ifPresent(scope -> held.addAll(scope.held())));
         return held;
     }
 
@@ -384,18 +375,16 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
         return scoped.build();
     }
 
-    /** The descriptor {@code pack_id}s a pack builds on: its {@code depends_on} edges and its {@code parent_pack}. */
+    /** The descriptor {@code pack_id}s a pack builds on: {@link PackGraph#buildsOn}. */
     private static List<PackUlid> buildsOn(PackUnderResolution member) {
-        return Stream.concat(
-                        member.descriptor().dependencies().stream().map(PackDependency::packId),
-                        member.descriptor().parentPack().stream())
+        return PackGraph.buildsOn(member.descriptor()).stream()
                 .map(PackUlid::new)
                 .toList();
     }
 
     /** The artifacts a pack holds, as URNs. */
     private static Set<Urn> held(PackUnderResolution member) {
-        Set<Urn> held = new HashSet<>();
+        Set<Urn> held = new LinkedHashSet<>();
         member.referableArtifacts().forEach(referable -> Urn.parse(referable).ifPresent(held::add));
         return held;
     }

@@ -15,7 +15,6 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.rules.DescriptorChecks;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -410,7 +408,7 @@ public final class PackCompositionResolver {
                 .toList();
         // A twin pack_id is read as its first holder here too, so one cause is reported once.
         faults.addAll(siblingContests(distinct));
-        Ordering ordering = topologicalOrder(distinct, byId, edges);
+        OrderAndCycles ordering = orderAndCycles(distinct, byId, edges);
         faults.addAll(ordering.cycles());
         return new Composition(List.copyOf(faults), ordering.order(), List.copyOf(ordered));
     }
@@ -438,13 +436,13 @@ public final class PackCompositionResolver {
 
     /**
      * The compose rooted at a set of configured packs (#360), with every composition fault of its closure (#556,
-     * FR-006): every check {@link #resolve} runs, over the {@linkplain #compositionClosure composition closure} of the
-     * roots only, so a pack outside it is never judged. A duplicate {@code pack_id} or {@code name} outside the closure
-     * is no fault; one inside it is, naming both holders, because every pack declaring an id of the closure is
-     * selected. A {@code depends_on} or {@code parent_pack} target no available pack declares stays missing, and is a
-     * fault as {@link #resolve} refuses it. With every available pack a root, the order and the faults are those of
-     * {@link #faults}. The offering refuses the phase with all of them; a caller that answers one refusal takes
-     * {@link #refuseFirst}.
+     * FR-006): every check {@link #resolve} runs, over the {@linkplain PackGraph#compositionClosure composition
+     * closure} of the roots only, so a pack outside it is never judged. A duplicate {@code pack_id} or {@code name}
+     * outside the closure is no fault; one inside it is, naming both holders, because every pack declaring an id of the
+     * closure is selected. A {@code depends_on} or {@code parent_pack} target no available pack declares stays missing,
+     * and is a fault as {@link #resolve} refuses it. With every available pack a root, the order and the faults are
+     * those of {@link #faults}. The offering refuses the phase with all of them; a caller that answers one refusal
+     * takes {@link #refuseFirst}.
      *
      * @param available the configured packs with their descriptors
      * @param roots the configured identifiers the compose is rooted at
@@ -469,45 +467,13 @@ public final class PackCompositionResolver {
             }
             rootPackIds.add(packId);
         }
-        Set<String> closure = compositionClosure(rootPackIds, firstByPackId);
+        Set<String> closure = PackGraph.compositionClosure(
+                rootPackIds,
+                packId -> Optional.ofNullable(firstByPackId.get(packId)).map(PackUnderResolution::descriptor));
         Composition composition = compose(available.stream()
                 .filter(pack -> closure.contains(pack.descriptor().packId()))
                 .toList());
         return new Rooted(composition.order(), composition.faults());
-    }
-
-    /**
-     * The composition closure of a set of packs: the roots and every pack they reach over {@code depends_on} and
-     * {@code parent_pack}, by descriptor {@code pack_id}, in first-seen order. It is the one closure rule of a rooted
-     * compose. A target no pack of {@code byPackId} declares is recorded but not descended from: the walk tolerates it,
-     * and {@link #resolve} refuses it. A cycle terminates, since each id is walked once.
-     *
-     * @param rootPackIds the descriptor {@code pack_id}s of the roots
-     * @param byPackId the packs the walk may descend into, by descriptor {@code pack_id}
-     * @return the {@code pack_id}s of the closure, missing targets included
-     */
-    public static Set<String> compositionClosure(
-            Collection<String> rootPackIds, Map<String, PackUnderResolution> byPackId) {
-        Objects.requireNonNull(rootPackIds, "rootPackIds");
-        Objects.requireNonNull(byPackId, "byPackId");
-        Set<String> reached = new LinkedHashSet<>();
-        ArrayDeque<String> pending = new ArrayDeque<>(rootPackIds);
-        while (!pending.isEmpty()) {
-            String next = pending.removeFirst();
-            PackUnderResolution pack = byPackId.get(next);
-            if (reached.add(next) && pack != null) {
-                pending.addAll(successorsOf(pack));
-            }
-        }
-        return reached;
-    }
-
-    /** The packs one pack builds on: its {@code depends_on} targets, then its {@code parent_pack}, by {@code pack_id}. */
-    private static List<String> successorsOf(PackUnderResolution pack) {
-        List<String> successors = new ArrayList<>();
-        pack.descriptor().dependencies().forEach(dependency -> successors.add(dependency.packId()));
-        pack.descriptor().parentPack().ifPresent(successors::add);
-        return successors;
     }
 
     /**
@@ -612,7 +578,7 @@ public final class PackCompositionResolver {
         for (PackUnderResolution pack : packs) {
             byName.putIfAbsent(pack.descriptor().name(), pack);
         }
-        Set<String> closure = dependsOnClosure(referringPackId, byId);
+        Set<String> closure = PackGraph.dependsOnClosure(referringPackId, descriptorLookup(byId));
         PackUnderResolution referring = byId.get(referringPackId);
         if (referring == null) {
             throw new IllegalArgumentException("the referring pack " + referringPackId + " is no pack of the compose");
@@ -716,7 +682,7 @@ public final class PackCompositionResolver {
         Map<String, PackUnderResolution> byId = indexById(packs);
         Map<String, PackUnderResolution> byName = new HashMap<>();
         packs.forEach(pack -> byName.putIfAbsent(pack.descriptor().name(), pack));
-        Set<String> closure = dependsOnClosure(referringPackId, byId);
+        Set<String> closure = PackGraph.dependsOnClosure(referringPackId, descriptorLookup(byId));
         PackUnderResolution referring = byId.get(referringPackId);
         for (SubstepDelegationRule.QualifiedCandidate candidate : candidates) {
             PackUnderResolution target =
@@ -784,28 +750,9 @@ public final class PackCompositionResolver {
         return Optional.empty();
     }
 
-    /**
-     * The pack and every pack it reaches through {@code depends_on} only, by {@code pack_id}: the packs a qualified
-     * reference may name (FR-015), and the packs that may hold the step a step enhancement names (C37,
-     * {@link EnhancementCompose#targetFaults}). It is not the {@linkplain #compositionClosure composition closure}, which
-     * also follows {@code parent_pack}.
-     *
-     * @param packId the descriptor {@code pack_id} of the pack the walk starts at
-     * @param byId the packs of the compose, by descriptor {@code pack_id}
-     * @return the {@code pack_id}s reached, the start included; a target no pack of {@code byId} declares is included
-     *     and not descended from
-     */
-    static Set<String> dependsOnClosure(String packId, Map<String, PackUnderResolution> byId) {
-        Set<String> reached = new LinkedHashSet<>();
-        List<String> pending = new ArrayList<>(List.of(packId));
-        while (!pending.isEmpty()) {
-            String next = pending.remove(pending.size() - 1);
-            PackUnderResolution pack = byId.get(next);
-            if (reached.add(next) && pack != null) {
-                pack.descriptor().dependencies().forEach(dependency -> pending.add(dependency.packId()));
-            }
-        }
-        return reached;
+    /** The descriptor of a {@code pack_id} of the compose, the first holder's, for {@link PackGraph}'s walks. */
+    static Function<String, Optional<PackDescriptor>> descriptorLookup(Map<String, PackUnderResolution> byId) {
+        return packId -> Optional.ofNullable(byId.get(packId)).map(PackUnderResolution::descriptor);
     }
 
     /**
@@ -1092,29 +1039,15 @@ public final class PackCompositionResolver {
         boolean dependedOnAtTheContestsLevel = compose.stream()
                 .filter(other -> other.configured().level() == level)
                 .filter(other -> !other.descriptor().packId().equals(packId))
-                .anyMatch(other -> targetsOf(other).contains(packId));
+                .anyMatch(other -> PackGraph.buildsOn(other.descriptor()).contains(packId));
         return !dependedOnAtTheContestsLevel && reach(pack, byId).containsAll(contestants);
-    }
-
-    /** The {@code pack_id}s a pack names by {@code depends_on} and {@code parent_pack}. */
-    private static List<String> targetsOf(PackUnderResolution pack) {
-        List<String> targets = new ArrayList<>();
-        pack.descriptor().dependencies().forEach(dependency -> targets.add(dependency.packId()));
-        pack.descriptor().parentPack().ifPresent(targets::add);
-        return targets;
     }
 
     /** Every {@code pack_id} a pack reaches over {@code depends_on} and {@code parent_pack} within the compose. */
     private static Set<String> reach(PackUnderResolution pack, Map<String, PackUnderResolution> byId) {
-        Set<String> reached = new HashSet<>();
-        ArrayDeque<String> pending = new ArrayDeque<>(targetsOf(pack));
-        while (!pending.isEmpty()) {
-            String next = pending.poll();
-            PackUnderResolution target = byId.get(next);
-            if (target != null && reached.add(next)) {
-                pending.addAll(targetsOf(target));
-            }
-        }
+        Set<String> reached = new LinkedHashSet<>(PackGraph.ancestorsOf(
+                PackGraph.buildsOn(pack.descriptor()), byId, member -> PackGraph.buildsOn(member.descriptor())));
+        reached.retainAll(byId.keySet());
         return reached;
     }
 
@@ -1166,24 +1099,10 @@ public final class PackCompositionResolver {
         return faults;
     }
 
-    /** Whether one pack is on the other's {@code parent_pack} line. The walk visits each pack once, so a cycle ends it. */
+    /** Whether one pack is on the other's {@code parent_pack} line ({@link PackGraph#related}). */
     private static boolean related(
             PackUnderResolution first, PackUnderResolution second, Map<String, PackUnderResolution> byId) {
-        return extendsOnLine(first, second, byId) || extendsOnLine(second, first, byId);
-    }
-
-    private static boolean extendsOnLine(
-            PackUnderResolution child, PackUnderResolution ancestor, Map<String, PackUnderResolution> byId) {
-        Set<String> walked = new LinkedHashSet<>();
-        Optional<String> at = child.descriptor().parentPack();
-        while (at.isPresent() && walked.add(at.get())) {
-            if (at.get().equals(ancestor.descriptor().packId())) {
-                return true;
-            }
-            PackUnderResolution next = byId.get(at.get());
-            at = next == null ? Optional.empty() : next.descriptor().parentPack();
-        }
-        return false;
+        return PackGraph.related(first.descriptor(), second.descriptor(), descriptorLookup(byId));
     }
 
     /**
@@ -1362,46 +1281,30 @@ public final class PackCompositionResolver {
     }
 
     /** The packs Kahn's pass placed, in merge order, and a {@link Failure#CYCLE} for each cycle it left behind. */
-    private record Ordering(List<PackUnderResolution> order, List<Refusal> cycles) {}
+    private record OrderAndCycles(List<PackUnderResolution> order, List<Refusal> cycles) {}
 
-    private static Ordering topologicalOrder(
+    private static OrderAndCycles orderAndCycles(
             List<PackUnderResolution> packs,
             Map<String, PackUnderResolution> byId,
             Map<String, List<String>> dependenciesByPack) {
-        Map<String, Integer> outstanding = new LinkedHashMap<>();
-        Map<String, List<String>> dependents = new LinkedHashMap<>();
-        dependenciesByPack.keySet().forEach(id -> dependents.put(id, new ArrayList<>()));
-        dependenciesByPack.forEach((packId, dependencies) -> {
-            outstanding.put(packId, dependencies.size());
-            for (String dependency : dependencies) {
-                dependents.computeIfAbsent(dependency, key -> new ArrayList<>()).add(packId);
-            }
-        });
-
         // A priority queue on the stable order, not a FIFO: a pack whose dependency is met late would otherwise land
         // after a dependency-free pack of a nearer level. A dependency points only to the pack's own level or one
         // nearer built-in, so taking the smallest ready pack keeps each level contiguous.
-        PriorityQueue<PackUnderResolution> ready = new PriorityQueue<>(STABLE_ORDER);
-        packs.stream()
-                .filter(pack -> {
-                    Integer count = outstanding.get(pack.descriptor().packId());
-                    return count != null && count == 0;
-                })
-                .forEach(ready::add);
-        List<PackUnderResolution> ordered = new ArrayList<>(packs.size());
-        while (!ready.isEmpty()) {
-            PackUnderResolution pack = ready.poll();
-            ordered.add(pack);
-            for (String dependent : dependents.getOrDefault(pack.descriptor().packId(), List.of())) {
-                int remaining = outstanding.merge(dependent, -1, Integer::sum);
-                if (remaining == 0) {
-                    ready.add(byId.get(dependent));
-                }
-            }
-        }
+        PackGraph.Ordering<PackUnderResolution> ordering = PackGraph.topologicalOrder(
+                packs,
+                pack -> pack.descriptor().packId(),
+                dependenciesByPack,
+                STABLE_ORDER,
+                id -> Objects.requireNonNull(byId.get(id), "a dependent is in the compose"));
+        List<PackUnderResolution> ordered = ordering.placed();
         List<Refusal> cycles = new ArrayList<>();
-        if (ordered.size() != packs.size()) {
-            for (List<PackUnderResolution> cycle : cyclesOf(ordered, byId, dependenciesByPack)) {
+        if (!ordering.leftover().isEmpty()) {
+            Set<String> placed = new LinkedHashSet<>();
+            ordered.forEach(pack -> placed.add(pack.descriptor().packId()));
+            for (List<String> ids : PackGraph.leftoverCycles(placed, dependenciesByPack)) {
+                List<PackUnderResolution> cycle = ids.stream()
+                        .map(id -> Objects.requireNonNull(byId.get(id), "a leftover pack is in the compose"))
+                        .toList();
                 String path = cycle.stream()
                         .map(member -> "`" + member.descriptor().name() + "`")
                         .collect(java.util.stream.Collectors.joining(" -> "));
@@ -1412,93 +1315,7 @@ public final class PackCompositionResolver {
                                 + cycle.getFirst().descriptor().name() + "`"));
             }
         }
-        return new Ordering(List.copyOf(ordered), cycles);
-    }
-
-    /**
-     * The cycles Kahn's pass left behind, each starting at a pack on it. What the pass leaves is the cycles and
-     * everything downstream of them, and a leftover may be only downstream. Every leftover has an unplaced dependency,
-     * so walking from one along its first unplaced dependency must repeat a pack, and the walk from the first repeat back
-     * to it is a cycle. The walks start at each leftover in turn, in the order the packs were judged; a walk that reaches
-     * a pack an earlier walk visited finds no new cycle, so the first cycle is the one the resolver has always refused
-     * with. A walk follows one dependency only, so it can pass by a pack that lies on a cycle through another edge: each
-     * such pack is then named by the shortest cycle through it ({@link #shortestCycleThrough}), after the walks, so
-     * every pack on a cycle is named by at least one. A pack only downstream of a cycle lies on none, and is not named.
-     */
-    private static List<List<PackUnderResolution>> cyclesOf(
-            List<PackUnderResolution> placed,
-            Map<String, PackUnderResolution> byId,
-            Map<String, List<String>> dependenciesByPack) {
-        Set<String> done = new HashSet<>();
-        placed.forEach(pack -> done.add(pack.descriptor().packId()));
-        Set<String> visited = new HashSet<>();
-        List<List<String>> cycles = new ArrayList<>();
-        for (String start : dependenciesByPack.keySet()) {
-            if (done.contains(start) || visited.contains(start)) {
-                continue;
-            }
-            Set<String> walked = new LinkedHashSet<>();
-            String current = start;
-            while (!visited.contains(current) && walked.add(current)) {
-                current = dependenciesByPack.getOrDefault(current, List.of()).stream()
-                        .filter(id -> !done.contains(id))
-                        .findFirst()
-                        .orElseThrow();
-            }
-            if (walked.contains(current) && !visited.contains(current)) {
-                List<String> path = new ArrayList<>(walked);
-                cycles.add(List.copyOf(path.subList(path.indexOf(current), path.size())));
-            }
-            visited.addAll(walked);
-        }
-        Set<String> named = new HashSet<>();
-        cycles.forEach(named::addAll);
-        for (String pack : dependenciesByPack.keySet()) {
-            if (done.contains(pack) || named.contains(pack)) {
-                continue;
-            }
-            List<String> cycle = shortestCycleThrough(pack, done, dependenciesByPack);
-            if (!cycle.isEmpty()) {
-                cycles.add(cycle);
-                named.addAll(cycle);
-            }
-        }
-        return cycles.stream()
-                .map(cycle -> cycle.stream()
-                        .map(id -> Objects.requireNonNull(byId.get(id), "a leftover pack is in the compose"))
-                        .toList())
-                .toList();
-    }
-
-    /**
-     * The shortest cycle through one unplaced pack, starting at it: a breadth-first search over the unplaced packs'
-     * dependencies, each in its declared order, back to the pack.
-     *
-     * @return the {@code pack_id}s of the cycle, the pack first; empty when the pack is on no cycle
-     */
-    private static List<String> shortestCycleThrough(
-            String pack, Set<String> done, Map<String, List<String>> dependenciesByPack) {
-        Map<String, String> reachedFrom = new HashMap<>();
-        ArrayDeque<String> pending = new ArrayDeque<>(List.of(pack));
-        while (!pending.isEmpty()) {
-            String next = pending.removeFirst();
-            for (String dependency : dependenciesByPack.getOrDefault(next, List.of())) {
-                if (dependency.equals(pack)) {
-                    List<String> cycle = new ArrayList<>();
-                    for (String at = next; !at.equals(pack); ) {
-                        cycle.addFirst(at);
-                        at = Objects.requireNonNull(reachedFrom.get(at), "every pack the search reached has a source");
-                    }
-                    cycle.addFirst(pack);
-                    return List.copyOf(cycle);
-                }
-                if (!done.contains(dependency) && !reachedFrom.containsKey(dependency)) {
-                    reachedFrom.put(dependency, next);
-                    pending.addLast(dependency);
-                }
-            }
-        }
-        return List.of();
+        return new OrderAndCycles(ordered, cycles);
     }
 
     // ---- how a refusal names a pack -----------------------------------------------------------------------------
