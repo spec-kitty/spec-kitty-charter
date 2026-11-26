@@ -2,178 +2,200 @@
   "mission_slug": "service-test-reliability-01M8AAEG",
   "mission_number": "",
   "mission_type": "software-dev",
-  "overall_verdict": "pending",
+  "overall_verdict": "pass",
   "criteria": [
     {
       "criterion_id": "FR-001",
-      "description": "Verify FR-001 is satisfied",
+      "description": "Every state wait goes through Await.until, which fails naming the state after Await.LIMIT",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "Await (packs testFixtures); git grep finds only the two recorded stimulus sleeps; research.md \"Mutation notes\" wait rows (6da6cface)",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-002",
-      "description": "Verify FR-002 is satisfied",
+      "description": "Each absence test waits first for the state that settles it",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "research.md \"Mutation notes\": RegistrationAuditWiringTest, PackSourceRegistrationTest, RegistrationJobsTest.aJobIsNeverSeenEndedBeforeItsAuditEntry..., each red on a mutant that produces the absent thing",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-002a",
-      "description": "Verify FR-002a is satisfied",
+      "description": "The staging sweep test can fail",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "RegistrationWiringStagingTest.withoutAConfigRoot...; research.md \"Mutation notes\" WP02 row: no-root sweep mutant red",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-002b",
-      "description": "Verify FR-002b is satisfied",
+      "description": "The fetch-limit barrier passes the lookup",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "GitSourceFetcherTest.atMostTheConfiguredNumberOfFetchesRunAtOnce; research.md \"Mutation notes\" WP02 row: limit + 1 red",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-002c",
-      "description": "Verify FR-002c is satisfied",
+      "description": "Helper-thread failures surface on the test thread",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "ConsistentReadTest; research.md \"Mutation notes\" WP02 row: awaitIdle that never waits red, ender failure surfaced",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-003",
-      "description": "Verify FR-003 is satisfied",
+      "description": "close() test asserts its guarantee",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "RegistrationJobsTest.closingTheJobsEndsWhatWaitsRefusedBusyAndAuditsEachOnce; research.md \"Mutation notes\" WP02 row: close() stops no job red",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-004",
-      "description": "Verify FR-004 is satisfied",
+      "description": "Queued-end guard coverage",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "RegistrationJobsTest.aQueuedJobPastTheDeadline... and aWorkerThatTakesAJobEndedMeanwhile...; research.md \"Mutation notes\": expire-while-QUEUED and both-guards mutants red; equivalent mutant recorded",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-005",
-      "description": "Verify FR-005 is satisfied",
+      "description": "A meter bound around one call replaces the six static counters",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "WorkMeter (kernel.metering), WorkMeterTest; research.md \"Mutation notes\": every WorkMeterTest method red, retrofit B doubled-count mutants red",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-005a",
-      "description": "Verify FR-005a is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "description": "The meter lives outside packs.domain with truthful javadoc",
+      "proof_type": "code_inspection",
+      "evidence": "WorkMeter in kernel.metering; ADR-0006 names it; InForceResolution javadoc corrected; HexagonalArchitectureTest green",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-005b",
-      "description": "Verify FR-005b is satisfied",
+      "description": "Every budgeted unit is counted at least once",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "positive controls in OneReadTest and the budget tests; research.md \"Mutation notes\": TREE_WALK, WHOLE_READ and lookup count-point mutants red",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-005c",
-      "description": "Verify FR-005c is satisfied",
+      "description": "Cache counters are meter units; the counting getters left main",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "CacheWork units; EffectiveReadOperationBudgetTest, OfferingReadServiceCacheWiringTest; research.md \"Mutation notes\" WP01: HIT count dropped red",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-005d",
-      "description": "Verify FR-005d is satisfied",
+      "description": "No static counter returns to main",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "HexagonalArchitectureTest.noMainClassKeepsAStaticCounter with StaticCounterFixture; research.md \"Mutation notes\": a static LongAdder and a non-final static in main red",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-006",
-      "description": "Verify FR-006 is satisfied",
+      "description": "No job gate in main",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "JobGate and HoldableGate removed (91d706a24); git grep JobGate over main is empty; HeldRoom holds jobs; research.md \"Mutation notes\": pool of RUNNING_LIMIT + 1 and HeldRoom-never-holds red",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-007",
-      "description": "Verify FR-007 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "description": "No test-only constructors on the F3 classes",
+      "proof_type": "code_inspection",
+      "evidence": "95989552f moved them to CompositionFacts.of, ClosureViews.of, CommitStores, StoreSeams; main compiles without them; research.md \"Mutation notes\" compile-proof row",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-007a",
-      "description": "Verify FR-007a is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "description": "Constructor and seam javadoc tells the truth",
+      "proof_type": "code_inspection",
+      "evidence": "git grep of seam wording over main finds only WholePackStore, WholePackCensus, PackRemediation (recorded Not done) and PackMutabilityPolicy (#636 slice 5)",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-008",
-      "description": "Verify FR-008 is satisfied",
+      "description": "allConfigured left main; the kept F12 methods carry their reasons",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "evidence": "git grep allConfigured over main is empty; research.md \"Mutation notes\": ClosureQueries.loaded mutant red in 68 of 99 tests; retained(), hasQueuedThread and SwapPhases javadoc give reasons",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     },
     {
       "criterion_id": "FR-009",
-      "description": "Verify FR-009 is satisfied",
-      "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
-      "notes": "TODO: replace with a real acceptance criterion"
+      "description": "Documentation matches the code",
+      "proof_type": "manual",
+      "evidence": "ADR-0075 AA5 amendment (Proposed), ADR-0006, scenarios README, whole-pack-registration.feature, unification note, health-plan rows 8 and 9, changelog fragment; check_docs.py all, markdownlint and cspell green",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-26T00:00:00Z",
+      "notes": ""
     }
   ],
-  "negative_invariants": []
+  "negative_invariants": [
+    {
+      "invariant_id": "NI-001",
+      "description": "No registration job gate in main code",
+      "verification_method": "grep_absence",
+      "verification_command": "JobGate",
+      "scope": "service/activations/src/main service/artifacts-edge/src/main service/deployable/src/main service/kernel/src/main service/missions-edge/src/main service/missions/src/main service/pack-doctor/src/main service/pack-validation/src/main service/packs/src/main service/profiles-edge/src/main service/profiles/src/main service/routing-edge/src/main service/routing/src/main service/web-transport/src/main"
+    },
+    {
+      "invariant_id": "NI-002",
+      "description": "No ClosureQueries.allConfigured in main code",
+      "verification_method": "grep_absence",
+      "verification_command": "allConfigured(",
+      "scope": "service/activations/src/main service/artifacts-edge/src/main service/deployable/src/main service/kernel/src/main service/missions-edge/src/main service/missions/src/main service/pack-doctor/src/main service/pack-validation/src/main service/packs/src/main service/profiles-edge/src/main service/profiles/src/main service/routing-edge/src/main service/routing/src/main service/web-transport/src/main"
+    },
+    {
+      "invariant_id": "NI-003",
+      "description": "No test JobGate fixture left",
+      "verification_method": "grep_absence",
+      "verification_command": "HoldableGate",
+      "scope": "service"
+    }
+  ]
 }
