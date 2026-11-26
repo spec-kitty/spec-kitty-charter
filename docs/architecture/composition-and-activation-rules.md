@@ -174,7 +174,7 @@ Composition decides which packs one request sees, in what order, and which versi
 
 **C1 Closure.** `C(S) = lfp X. S ∪ ⋃ {succ(p) | p ∈ X}`.
 The composition closure is every pack reachable from the roots over `depends_on` and `parent_pack`.
-*Source:* ADR-0048 d8; ADR-0053 d6 (amended 2026-11-03); `PackCompositionResolver.compositionClosure`. **Built.**
+*Source:* ADR-0048 d8; ADR-0053 d6 (amended 2026-11-03); `PackGraph.compositionClosure`. **Built.**
 > ⚠ **Unclear:** ADR-0048 and ADR-0053 speak of the `depends_on` closure, and ADR-0048 d5 says `parent_pack` "sets no
 > load order". The built resolver walks `parent_pack` into the closure, orders by it and counts it as a cycle edge
 > (C5, C6); qualified references use the `depends_on`-only closure (C12). No ADR records that lineage widens the
@@ -195,13 +195,13 @@ An unrelated broken pack does not refuse an activation's closure.
 **C5 Order.** `C` is listed in a topological order of `succ` (dependencies first, a `parent_pack` before its child),
 ties broken by `lv` in merge order, then by `cid` in code points (a total order, so I1 holds; ADR-0048 d9).
 Each level stays contiguous, and the order never depends on how the packs were listed.
-*Source:* ADR-0048 d9; logical model (Composition); `PackCompositionResolver.topologicalOrder`, `dependenciesOf`,
-`STABLE_ORDER` (`service/packs/.../domain/PackCompositionResolver.java`). **Built.**
+*Source:* ADR-0048 d9; logical model (Composition); `PackGraph.topologicalOrder`,
+`PackCompositionResolver.dependenciesOf`, `STABLE_ORDER` (`service/packs/.../domain/PackCompositionResolver.java`). **Built.**
 
 **C6 No dependency cycle.** The graph of `succ` on `C` (`depends_on` and `parent_pack` edges) is acyclic, else
 `pack_dependency_cycle`; a pack that depends on itself or names itself as its `parent_pack` is a cycle.
 A dependency or lineage cycle refuses the compose.
-*Source:* ADR-0048 d4; `PackCompositionResolver.dependenciesOf`, `cyclesOf`. **Built.**
+*Source:* ADR-0048 d4; `PackCompositionResolver.dependenciesOf`, `PackGraph.leftoverCycles` (package-private). **Built.**
 
 **C7 Known dependency.** `∀p ∈ C, (q, ρ) ∈ deps(p): q ∈ P`, else `pack_dependency_unknown`.
 *Source:* ADR-0048 d4. **Built.**
@@ -225,7 +225,8 @@ A pack may build on, or derive from, only packs at its own level or one nearer b
 `pack_reference_pack_missing`; and `holds(q, u)`, else `pack_reference_artifact_missing`.
 A cross-pack reference must name the referring pack or a pack of its own `depends_on` closure (not its `parent_pack`
 line), and that pack must hold the artifact.
-*Source:* ADR-0053 d7 (amended 2026-11-03); `PackCompositionResolver.checkReferences`, `dependsOnClosure`. **Built.**
+*Source:* ADR-0053 d7 (amended 2026-11-03); `PackCompositionResolver.checkReferences`,
+`PackGraph.dependsOnClosure`. **Built.**
 
 **C13 Bare reference.** A bare `u` written in `p` resolves to `p` when `holds(p, u)`; it is refused
 `pack_reference_unqualified` when only another pack of `C` holds `u`; otherwise it has no holder.
@@ -1486,7 +1487,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | C9 Parent resolves | ADR-0048 d6 | Built |
 | C10 Level direction | ADR-0048 d7; ADR-0053 d8 | Built |
 | C11 Pack identity | ADR-0053 d6, d7 | Built |
-| C12 Qualified reference | ADR-0053 d7; `dependsOnClosure` | Built |
+| C12 Qualified reference | ADR-0053 d7; `PackGraph.dependsOnClosure` | Built |
 | C13 Bare reference | ADR-0053 d7 | Built |
 | C14 Sibling conflict | ADR-0048 d9; ADR-0053 d5, d21; A14 | Built (PR A0) |
 | C15 Sibling settlement | ADR-0053 d5; spec FR-012; A14; #358 | Built (PR B; the distribution pack only, #358) |
