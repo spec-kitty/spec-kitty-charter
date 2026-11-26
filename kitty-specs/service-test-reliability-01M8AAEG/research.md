@@ -98,12 +98,6 @@ checked clean. No PIT was run (C-004).
 - FR-004: ended() and markRunning's phase check mask each other; each alone is an equivalent mutant. The new test (aWorkerThatTakesAJobEndedMeanwhileDropsItAndWritesNothing) kills the mutant that lets an ended job reach its work (both guards gone: the stager runs, arrivals rise).
 - Not done (outside the operator-ruled F3/F12 scope; tidy-ups, not defects): javadoc "the seam a test uses" on PackFileSet.walk(table)/digested(kinds|table), WholePackCensus census(bindings)/retired, WholePackStore 4-arg constructor, PackRemediation move/delete seams, PolicyYaml.write, FilesystemPackStore.read(bindings); PackMutabilityPolicy (excluded, #636 slice 5).
 - CLI unsigned commits: operator ruling 2026-11-26: push as made; land one signed squash with the Co-Authored-By trailer.
-| WP02 | no-root wiring sweeps <tmpdir>/staging (null-safe) | RegistrationWiringStagingTest.withoutAConfigRoot... red | reverted |
-| WP02 | git fetch slot limit + 1 | GitSourceFetcherTest.atMostTheConfiguredNumberOfFetchesRunAtOnce red | reverted |
-| WP02 | awaitIdle answers at once, never waits | ConsistentReadTest.awaitIdle... red (ender failure surfaced) | reverted |
-| WP02 | close() stops no job | RegistrationJobsTest.closingTheJobs... red | reverted |
-| WP02 | both ended-job guards gone (ended(), markRunning phase) | RegistrationJobsTest.aWorkerThatTakesAJobEndedMeanwhile... red | reverted |
-| WP03 | removals only (allConfigured, CommitStores visibility move, unused fixture arities); allConfigured callers switched to the identical snapshot(Optional.empty()) | compile proof; lane-c suites 7388/7389 green, the one red is the first-pass closingTheJobs defect fixed in WP02 (lane-b) | n/a |
 - WP01 review, MEDIUM: `OfferingReadServiceCacheWiringTest` no longer starts cold, because the Spring cache is a shared
   singleton and a fresh one needs a new context. It proves the wiring (the second read is answered by the cache alone);
   the cold-start check lives in `EffectiveReadOperationBudgetTest`, whose fixture rebuilds the service over an empty
