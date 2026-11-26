@@ -1,7 +1,7 @@
 {
   "rows": {
     "#632": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "item 3 only (operator ruling D3); WP06",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,8 +9,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP06"
     },
     "#636": {
       "evidence_ref": "<auto-classified: no action required>",
