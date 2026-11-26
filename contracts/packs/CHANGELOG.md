@@ -21,6 +21,41 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
 
 ### Breaking
 
+- The classifier judges a letter-case variant of a file in lower case (#661, operator rulings 2026-11-25 and
+  2026-11-26; the cases of #645). Rule globs still match as written, but the rules are also run with the path and
+  the globs in lower case, precedence included, and that run decides where it reaches another rule: an
+  `exclusions` rule excludes the file whatever takes it as written, unless a `files` rule maps it; a `retired` rule
+  refuses its family wherever it stands; and a `files` rule judges its kind over a `payloads`, `exclusions` or other
+  `files` rule that takes it as written, so every spelling has its lower-case spelling's kind. Verdicts that change:
+  - `core/missions/plan/templates/sub/ReadMe.md`, `core/assets/logos/ReadMe.md`,
+    `core/templates/Plan-Field-Declaration.yaml` and `core/missions/plan/templates/Plan-Field-Declaration.yaml` were
+    `template` or `asset-payload` payloads, held as bytes; they are excluded under their exclusion, not held.
+  - `core/Assets/.DS_Store` was unmodelled (warned `file_not_held`); it is excluded under `*/assets/**/.*`.
+    `core/Missions/Mission-Steps/README.md`, `core/Assets/logos/README.md` and
+    `core/missions/plan/Templates/README.md` stay excluded, now under their exclusion's glob, no longer under the
+    `ignored` rule `**/*.md`.
+  - `core/assets/a.Step-Contract.yaml` was an asset payload; it is refused as retired under
+    `**/*.step-contract.yaml`. `core/assets/a.Directive.yaml` was an asset payload; it is judged as a directive,
+    against its schema.
+  - `core/missions/mission-steps/ReadMe.md` and `core/mission-steps/templates/Plan-Field-Declaration.yaml` were
+    refused as retired; they are excluded under their exclusion, as their lower-case spellings are.
+  - `core/assets/.X.Asset.yaml`, `core/templates/.A.Tactic.yaml`, `core/missions/plan/.A.Tactic.yaml` and
+    `core/missions/plan/steps/.X.Prompt.md` were excluded as hidden files; they are judged as their kind.
+  - `core/presets/a.Directive.yaml` was a preset; it is a directive. `core/PRESETS/a.guard.yaml` was a guard; it is a
+    preset.
+  - A file a `files` rule maps under a retired directory spelled in another letter case was read as its kind; it is
+    refused as retired, and the pack with it (`core/Mission-Steps/a.tactic.yaml`, `core/Mission_Types/a.directive.yaml`,
+    `core/Missions/mission-steps/a.skill.yaml`).
+  - `core/Mission_Step_Contract.graph.yaml` was read as a graph shard; it is refused as retired under
+    `**/mission_step_contract.graph.yaml`. `core/a.Step-Contract.yaml`, `core/glossaries/x.Glossary-Pack.yaml` and
+    `core/Mission-Steps/plan/specify.md` were unmodelled; they are refused as retired under their family's rule.
+
+  Unchanged: a file no rule takes as written that only a `files` rule takes in lower case stays unmodelled
+  (`core/toolguides/a.guide.MD`, `core/Missions/plan/steps/.x.prompt.md`), and a root case variant keeps the code
+  `case_variant`. Steps 3 and 5 of the header of `conformance/classifier-cases.yaml` and the "Letter case" section
+  of `file-kinds.yaml` state the rule. A consumer's classifier must follow (doc-kitty's port, open-packs'
+  pack-doctor). The spec-kitty-open-packs content at the pinned `1692a3b` and the charter's example packs hold no
+  file whose verdict changes.
 - The pack-name part of a reference is a pack id (#582, ADR-0075 decision 2): a kebab slug, lower-case letters and
   digits in hyphen-separated runs, at most 63 characters, the id a pack is registered under.
   - The `<pack>::` qualifier of `graph-shard.schema.json` and `org-fragment.schema.json` (edge `source`, `target` and
@@ -57,13 +92,6 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
 
 ### Changed
 
-- `conformance/classifier-cases.yaml` adds five cases for a case variant of a file that an `exclusions` rule matches
-  in lower case (#645): three are excluded under `**/*.md`, because in lower case the exclusion beats the payload or
-  retired rule that also matches, and two stay `unmodelled` (no `ignored` rule matches, or a `files` rule wins in
-  lower case). Step 4 of its header and the `ignored` comment of `file-kinds.yaml` say that the lower-cased run
-  applies the whole precedence of steps 1 and 2. The service already classified each path so, so this is not a
-  `### Breaking` entry. The old step 4 wording allowed a looser reading: a classifier that only asks whether a
-  `files`, `retired` or `payloads` glob matches in lower case fails the three excluded cases.
 - The README and the comments of `file-kinds.yaml` and `conformance/classifier-cases.yaml` say that a root case
   variant (`Pack.yaml`, `Readme.md`, `PROVENANCE.MD`) is refused under the violation code `case_variant`, no longer
   `retired` (#624). The code is the charter contract's (`CharterRefusalCode`), and its change is breaking there. This
