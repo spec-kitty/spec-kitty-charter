@@ -136,7 +136,7 @@ class ClosureViewMergedTest {
                     return facts.get(pack.value());
                 },
                 read);
-        return new ClosureQueries(offering, catalog, read).allConfigured();
+        return new ClosureQueries(offering, catalog, read).snapshot(Optional.empty());
     }
 
     /** built-in, org and project each hold directive D. */

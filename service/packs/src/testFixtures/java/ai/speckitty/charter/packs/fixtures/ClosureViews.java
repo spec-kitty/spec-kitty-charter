@@ -57,46 +57,7 @@ public final class ClosureViews {
                 heldPresets,
                 parents,
                 fingerprint,
-                EdgeIndex.empty());
-    }
-
-    /**
-     * A view with no merge input.
-     *
-     * @param packs the closure's packs
-     * @param heldIds the held ids per kind
-     * @param holderOf the holder of each held URN
-     * @param floor the required floor
-     * @param policy the per-pack policies
-     * @param closurePackIds the closure's {@code pack_id}s
-     * @param heldPresets the presets, each id once
-     * @param parents the parent of each pack that has one
-     * @param fingerprint the verified digest
-     * @param edges the closure's typed edges
-     * @return the view
-     */
-    public static ClosureView of(
-            List<OfferingReadService.OfferingEntry> packs,
-            Map<ArtifactKind, Set<String>> heldIds,
-            Map<Urn, PackUlid> holderOf,
-            RequiredFloor floor,
-            PerPackPolicy policy,
-            List<PackUlid> closurePackIds,
-            List<HeldPreset> heldPresets,
-            Map<PackUlid, PackUlid> parents,
-            String fingerprint,
-            EdgeIndex edges) {
-        return of(
-                packs,
-                heldIds,
-                holderOf,
-                floor,
-                policy,
-                closurePackIds,
-                heldPresets,
-                parents,
-                fingerprint,
-                edges,
+                EdgeIndex.empty(),
                 MergeInputs.none());
     }
 

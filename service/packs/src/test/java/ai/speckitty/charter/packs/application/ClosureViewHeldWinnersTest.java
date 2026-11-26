@@ -89,7 +89,7 @@ class ClosureViewHeldWinnersTest {
         PackCatalogRepository catalog = () -> List.copyOf(configured);
         OfferingReadService offering =
                 new OfferingReadService(catalog, repository, pack -> facts.get(pack.value()), read);
-        return new ClosureQueries(offering, catalog, read).allConfigured();
+        return new ClosureQueries(offering, catalog, read).snapshot(Optional.empty());
     }
 
     private static String described(MergedClosure.Winner winner) {
