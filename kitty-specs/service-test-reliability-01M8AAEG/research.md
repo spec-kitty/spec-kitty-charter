@@ -91,6 +91,46 @@ checked clean. No PIT was run (C-004).
 | WP02 | close() stops no job | RegistrationJobsTest.closingTheJobs... red | reverted |
 | WP02 | both ended-job guards gone (ended(), markRunning phase) | RegistrationJobsTest.aWorkerThatTakesAJobEndedMeanwhile... red | reverted |
 | WP03 | removals only (allConfigured, CommitStores visibility move, unused fixture arities); allConfigured callers switched to the identical snapshot(Optional.empty()) | compile proof; lane-c suites 7388/7389 green, the one red is the first-pass closingTheJobs defect fixed in WP02 (lane-b) | n/a |
+| 6da6cface | GitCommand: deadline = now + timeout + 1 s | GitCommandTest.aRunStartedAfterTheDeadlineIsNeverStarted and theDeadlineIsOverTheWholeFetchNotEachRun red | reverted |
+| 6da6cface | GuardedHttpsExchange: lookup thread never interrupted; lookup await deadline + 40 s | HttpsGuideFetcherTest$Deadline.aLookupThatOutrunsTheDeadline… red; aSlowLookupCountsAgainstTheSameDeadline red | reverted |
+| 6da6cface | CommitStorePackWriteStore.exclusivelyAt resolves the location before taking the registry lock | RegistryLockOrderTest.aWriterResolvesItsPackOnlyAfterAnotherWritersSwapEnded red | reverted |
+| 6da6cface | ConsistentRead.read refuses stale at once inside a swap (the load never starts inside it) | MixedReadConcurrencyTest.aSnapshotStartedInsideASwapRetries… red (the readBegun wait times out) | reverted |
+| 6da6cface | PackWriteGeneration.isSwapping always false | RegistrationConcurrencyTest.everyReadSeesOneCompleteVersion… red | reverted |
+| 6da6cface, 91d706a24 | RegistrationJobs.record never writes the audit entry | PackSourceRegistrationTest.aSourceIsAccepted… red | reverted |
+| 6da6cface, 91d706a24 | PackRegistrationController.spool writes one byte short | StreamedUploadTest.theControllerIsEnteredWithTheBodyUnread… red | reverted |
+| 6da6cface, 91d706a24 | UPSTREAM_TIMEOUT and UPSTREAM_FAILED swapped; CharterRefusal mapped to FAILED | RegistrationJobsUpstreamTest: both upstream cases and aRefusalOfTheSourceStaysACodedRefusal… red | reverted |
+| 6da6cface | unexpected failure becomes BUSY, not FAILED | ActivationListingFaultTest.aListingThatFails… red | reverted |
+| 6da6cface | Job.end writes the audit after the end is visible, after a 500 ms park | RegistrationAuditWiringTest.anUnauthenticatedPut… red (3 entries of 4) | reverted |
+| 91d706a24 | requireForRun moved after the stager; start's RESERVED check off | RegistrationJobsUploadTest.theJobChecksTheRoomForTheSizeThatWasSpooled and startingAJobThatIsRunningIsStillAnError red | reverted |
+| 91d706a24 | OwnerOnly directory mode rwxr-x--- | StagingPermissionsTest.theStagingRoot… red | reverted |
+| 91d706a24 | Job.expire returns while RUNNING | ExampleCoverageTest.everyRaisedRefusalCode… red (the held job never times out) | reverted |
+| 91d706a24, 6da6cface | RegistrationJobs pool of RUNNING_LIMIT + 1, re-run by method | RegistrationJobsTest: aJobIsPendingThenRunningThenSucceeded, twoRunAndEightWait…, atMostTheRunningLimit…, theIfMatchIsJudgedAgainUnderTheLock…, aJobEndedByTheDeadlineKeepsItsSlot… red | reverted |
+| 91d706a24, 6da6cface | evict at MAX_RETAINED - 1; expire returns while QUEUED; owned() leaves out job directories; audit written outside the job lock; Job.end commit exemption off | RegistrationJobsTest: endedStatusesAreKept…, aQueuedJobPastTheDeadline…, theStagingDirectoryIsOwned…, aJobIsNeverSeenEndedBeforeItsAuditEntry…, aDeadlineThatReachesTheJobAsItsCommitBegins… red, one mutant each | reverted |
+| 91d706a24 | beginCommit phase check and the deadline's worker interrupt both off | RegistrationJobsTest.aJobStuckStagingTimesOut… red | reverted |
+| 91d706a24, 6da6cface | pool of RUNNING_LIMIT + 1; HeldRoom.requireForRun never holds | CharterContractSuite: pending/running/succeeded and queue-full 503 red on the pool mutant; those two and the 412 scenario red on the HeldRoom mutant | reverted |
+| 002bf92b1 | RegistryWriteLock.exclusively never locks | RemovalConcurrencyTest.aDeleteAndARelationshipPutOntoItNeverBothSucceed red | reverted |
+| 002bf92b1 | ClosureQueries.loaded: empty roots compose no packs instead of every configured pack | ClosureQueriesTest 9, ClosureViewGovernanceTest 12, ClosureViewMergedTest 13, ClosureViewTest 34 red (68 of 99) | reverted |
+| 002bf92b1 | CompositionFactsCache LRU evicts at capacity + 1 | CompositionFactsCacheTest.moreDistinctPacksThanTheCap… red | reverted |
+| 002bf92b1 | TREE_WALK count skipped in PackFileSet.walk; WHOLE_READ count skipped in the store | OneReadTest positive controls (theStripAndTheStampReadNothing, theFactsBuilderReadsNothing) red | reverted |
+| 002bf92b1 | WorkMeter.count ignores the bound meter; measure reuses one static meter; an unbound count reaches the next meter; measure wraps a failure | WorkMeterTest: every method red on at least one mutant | reverted |
+| 002bf92b1 | a guarded WorkMeter.measure call and a static final LongAdder in CompositionFactsCache (main); the test rules' target name and counter-type check broken | HexagonalArchitectureTest: noMainClassMeasuresWork, noMainClassKeepsAStaticCounter, theMeasureRuleFails…, theStaticCounterRuleFails… red | reverted |
+| archfixtures | MeasuringFixture, StaticCounterFixture | positive-control fixtures: the rule tests above assert each trips its rule | n/a |
+| 95989552f, 91d706a24, 002bf92b1 | none: compile proof (constructor move or `JobGate.OPEN` dropped, no assertion change) | ActivationImpactAdapterTest, ActivationImpactAffectedTest, ArtifactReadServiceTest, AssetStoreTest, CaseOnlyRulesTest, ChunkedArchiveBodyTest, ClosureViewHeldWinnersTest, ClosureViewSessionArtifactTest, ClosureViewSessionStepRefsTest, CompositeComponentResolverTest, CompositionFactsBuilderTest, CompositionGoldenTest, CompositionRulesTest, DocumentRulesTest, EdgeIndexTest, EffectivePromptQueryTest, EffectiveSetTest, ForeignArtifactReadTest, ImpactRelationsEnhancementTest, ImpactRelationsTest, InboundReferencesTest, InterruptedCommitRepairTest, LayerMergeTest, LinkSwapReadTest, LinkedEntriesTest, LinkedPackCommitTest, MissionTypeBindingTest, PackCodesCoverageTest, PackCommitStoreTest, PackMutabilityPolicyTest, PackRulesetsClosureTest, PacksAvailabilityTest, PacksProfileSourceTest, PackWriteSafetyTest, PerArtifactImpactTest, PerPackGenerationKeyTest, PresetItemRulesTest, PromptFactsTest, RegistrationAcceptanceTimingTest, SlotComposeTest, SlowUploadTest, StorageRoomAdmissionTest, SwapWindowReadTest, TacticSaveContractTest, WriteFactsLanguagesTest, WriteFactsTest; the gate-only methods of RegistrationJobsUploadTest and RegistrationJobsTest.anAbandonedReservation…; the ClosureViews.of / CompositionFacts.of call sites | n/a |
+| fixtures | Await, HeldRoom, HoldableGate, ClosureViews, CommitStores, CompositionFacts, StoreSeams, ReadCounters, SinglePackCompose, EffectiveReadFixture, CucumberSpringConfiguration | exercised by the mutants above (HeldRoom by the cucumber and RegistrationJobs rows, ReadCounters by OneReadTest, Await by every wait row) | n/a |
+
+Equivalent mutants found on the way (a single mutant left the test green; the row above names the one that turns it
+red):
+
+- `GitCommandTest.aRunStartedAfterTheDeadlineIsNeverStarted`: dropping the run-start deadline check alone stays green,
+  because the watchdog kills git at the passed deadline before the shim records a call. The test pins the deadline, not
+  the run-start check on its own; that check is pre-existing behaviour this Mission did not change.
+- `MixedReadConcurrencyTest.aSnapshotStartedInsideASwapRetries…`: turning off the stale checks leaves this method green
+  (two sibling methods go red); the refuse-inside-a-swap mutant reddens it through the new `readBegun` wait.
+- `RegistrationConcurrencyTest`: dropping the `Await.within` hold stays green on this runner; the readers overlap a swap
+  without it. The hold makes the overlap likely on a slow runner; the assertion that readers ran inside a swap is what
+  the `isSwapping` mutant breaks.
+- `RegistrationJobsTest.aJobStuckStagingTimesOut…`: the `beginCommit` guard and the deadline's interrupt mask each other.
+- Cucumber 412 scenario: the pool mutant leaves it green by timing; the `HeldRoom` mutant reddens it.
 
 ## Decisions taken during implementation
 
