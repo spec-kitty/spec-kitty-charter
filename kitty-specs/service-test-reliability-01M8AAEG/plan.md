@@ -49,7 +49,7 @@ kitty-specs/service-test-reliability-01M8AAEG/
 
 ### Source Code (repository root)
 
-```
+```text
 service/kernel/src/main/java/ai/speckitty/charter/kernel/metering/   WorkMeter, WorkUnit (new)
 service/packs/src/main/java/.../packs/domain/                         ReadWork units; InForceResolution
 service/packs/src/main/java/.../packs/infra/storage/                  StoreWork units; FilesystemPackStore, PackFileSet, StoreRead
