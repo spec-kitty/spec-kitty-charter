@@ -1,7 +1,7 @@
 {
   "rows": {
     "#632": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "item 3 only (operator ruling D3); WP06",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,8 +9,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP06"
     },
     "#636": {
       "evidence_ref": "<auto-classified: no action required>",
@@ -25,7 +25,7 @@
       "wp": null
     },
     "#637": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "lane-a kitty/mission-adr-0082-graph-walk-slices-01M8A867-lane-a; PR #665",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -33,11 +33,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP01"
     },
     "#638": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP02+WP03; branch refactor/638-graph-walker dc10633df",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,11 +45,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP03"
     },
     "#639": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP04+WP05 (relations phase, edge-index rules)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -57,11 +57,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP05"
     },
     "#648": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "another runner's issue; coordination constraint C-005, no edits here",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -69,11 +69,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#658": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "another runner's issue; coordination constraint C-005, no edits here",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -81,11 +81,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#659": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "another runner's issue; coordination constraint C-005, no edits here",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -93,11 +93,11 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#662": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "another runner's issue; coordination constraint C-005, no edits here",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -105,7 +105,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "not-applicable",
       "wp": null
     },
     "#665": {
@@ -119,6 +119,18 @@
       "title": "<auto-classified: pr_or_commit_ref>",
       "verdict": "not-applicable",
       "wp": null
+    },
+    "#667": {
+      "evidence_ref": "WP05 edge-index rules fix the 500 pack_unreadable",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "in-mission",
+      "wp": "WP05"
     }
   },
   "schema_version": 1
