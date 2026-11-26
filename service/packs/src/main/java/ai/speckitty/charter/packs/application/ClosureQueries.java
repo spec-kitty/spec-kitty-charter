@@ -251,7 +251,7 @@ public final class ClosureQueries {
                 presets,
                 parentsOf(packs),
                 fingerprint,
-                EdgeIndex.of(packs, composed.facts()).orRefuse(),
+                EdgeIndex.of(packs, composed.facts()),
                 new ClosureView.MergeInputs(packs, composed.facts(), winnerSource(packs, closureFingerprint)),
                 closureFingerprint);
     }

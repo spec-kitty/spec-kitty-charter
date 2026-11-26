@@ -118,7 +118,11 @@ public enum RefusalCode {
     PACK_REFERENCE_UNQUALIFIED("pack_reference_unqualified"),
     /** A pack-qualified reference names a pack outside the referring pack's {@code depends_on} closure. */
     PACK_REFERENCE_PACK_MISSING("pack_reference_pack_missing"),
-    /** A pack-qualified reference names a pack of the closure that does not hold the artifact. */
+    /**
+     * A pack-qualified reference names a pack of the closure that does not hold the artifact; also another pack's
+     * {@code requires} edge at a mission type in force that names no step of the type, with the violation
+     * {@code mission_step_unlinked} (#639, operator ruling Q-C).
+     */
     PACK_REFERENCE_ARTIFACT_MISSING("pack_reference_artifact_missing"),
 
     /**
@@ -157,8 +161,10 @@ public enum RefusalCode {
      */
     PACK_SOURCE_UNAVAILABLE("pack_source_unavailable"),
     /**
-     * A registration or {@code DELETE} would leave an {@code overrides} edge onto a target that is not open (IC-15).
-     * Answered as 422, naming the packs.
+     * An {@code overrides} edge onto a target that is not open (IC-15), an enhancement of a step whose mission type is
+     * locked, or a layer override the overridden artifact's level forbids (C21). Answered as 500 on a composing read
+     * and as 422 by a registration and the impact-checked writes (#639, operator rulings D2, Q-A and Q-B), naming the
+     * packs.
      */
     OVERRIDE_NOT_PERMITTED("override_not_permitted"),
     /**
@@ -172,8 +178,9 @@ public enum RefusalCode {
      */
     CONFLICTING_RELATIONS("conflicting_relations"),
     /**
-     * A registration or {@code DELETE} would leave an {@code overrides} edge that resolves to its own source (IC-15).
-     * Answered as 422, naming the packs.
+     * An {@code overrides} edge that resolves to its own source, judged once the layer merge re-points it (IC-15, C36).
+     * Answered as 500 on a composing read and as 422 by a registration and the impact-checked writes (#639, operator
+     * rulings D2 and Q-A), naming the packs.
      */
     SELF_OVERRIDE("self_override"),
     /**

@@ -192,7 +192,9 @@ class ClosureViewMergedTest {
 
         assertThat(view.holderOf()).containsKey(D);
         assertThatThrownBy(view::merged).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refusal.code())
+                    .as("ruling Q-B: C21 answers the registration's code on the read")
+                    .isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
             assertThat(refusal.getMessage()).contains("directive:D", "locked");
         });
     }
@@ -220,7 +222,7 @@ class ClosureViewMergedTest {
         assertThatThrownBy(view::merged)
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED));
     }
 
     @Test

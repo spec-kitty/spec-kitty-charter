@@ -7,6 +7,7 @@ import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ComposedRelations;
 import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.GraphCheck;
+import ai.speckitty.charter.packs.domain.MergedRelations;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
@@ -19,12 +20,12 @@ import ai.speckitty.charter.packs.domain.ValidationWalker;
 import ai.speckitty.charter.packs.domain.graph.PackGraphNode;
 import ai.speckitty.charter.packs.domain.graph.PackNode;
 import ai.speckitty.charter.packs.domain.graph.Scope;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -62,10 +63,15 @@ public final class PackRulesets {
     /** One of {@code REFERENCES}' checks, by name. */
     private record NamedCheck(String name, MemberCheck check) {}
 
-    /** The name of the own-closure phase: the closure walk's name, which ruling R-u keeps free for it. */
-    private static final String OWN_CLOSURE = "closure_walk";
+    /**
+     * The name of the own-closure phase: the closure walk's name, which ruling R-u keeps free for it. A caller reads it
+     * from a {@link ai.speckitty.charter.packs.domain.Ledger#gate()} to place the own-closure breaches apart from the closure's other faults.
+     */
+    public static final String OWN_CLOSURE_PHASE = "closure_walk";
 
     private static final String RELATIONS_PHASE = "relations";
+
+    private static final String EDGE_INDEX_PHASE = "edge_index";
 
     /**
      * {@code REFERENCES}' checks, in registration's phase order (its phases 2 to 4): the substep delegations, the
@@ -199,37 +205,36 @@ public final class PackRulesets {
      */
     public static GraphCheck ownClosure(
             ClosureFacts closure, ProfileReader profiles, Optional<ProfileEnhancementGateway> merge) {
+        return new GraphCheck(PackGraph.Walk.PACKS, List.of(ownClosurePhase(closure, profiles, merge)));
+    }
+
+    private static ValidationWalker.Phase<PackGraphNode> ownClosurePhase(
+            ClosureFacts closure, ProfileReader profiles, Optional<ProfileEnhancementGateway> merge) {
         Objects.requireNonNull(closure, "closure");
         Objects.requireNonNull(profiles, "profiles");
         Objects.requireNonNull(merge, "merge");
-        return new GraphCheck(
-                PackGraph.Walk.PACKS,
-                List.of(new ValidationWalker.Phase<PackGraphNode>(
-                        OWN_CLOSURE,
-                        List.of(
-                                new ValidationWalker.OnNode<PackGraphNode, PackNode>(
-                                        "fallback_profile",
-                                        PackNode.class,
-                                        node -> node.descriptor()
-                                                .fallbackProfile()
-                                                .isPresent(),
-                                        node -> FallbackProfileRule.check(
-                                                node.pack(),
-                                                node.descriptor()
-                                                        .fallbackProfile()
-                                                        .orElseThrow(),
-                                                closure,
-                                                profiles)),
-                                new ValidationWalker.OnNode<PackGraphNode, PackNode>(
-                                        "role_pins",
-                                        PackNode.class,
-                                        node -> true,
-                                        node -> RolePinRule.ownPins(node.pack(), closure, profiles)),
-                                new ValidationWalker.OnClose<PackGraphNode>(
-                                        "role_pin_conflicts", nodes -> RolePinRule.conflicts(closure)),
-                                new ValidationWalker.OnClose<PackGraphNode>(
-                                        "profile_enhancements",
-                                        nodes -> ProfileEnhancementRule.check(closure, profiles, merge))))));
+        return new ValidationWalker.Phase<PackGraphNode>(
+                OWN_CLOSURE_PHASE,
+                List.of(
+                        new ValidationWalker.OnNode<PackGraphNode, PackNode>(
+                                "fallback_profile",
+                                PackNode.class,
+                                node -> node.descriptor().fallbackProfile().isPresent(),
+                                node -> FallbackProfileRule.check(
+                                        node.pack(),
+                                        node.descriptor().fallbackProfile().orElseThrow(),
+                                        closure,
+                                        profiles)),
+                        new ValidationWalker.OnNode<PackGraphNode, PackNode>(
+                                "role_pins",
+                                PackNode.class,
+                                node -> true,
+                                node -> RolePinRule.ownPins(node.pack(), closure, profiles)),
+                        new ValidationWalker.OnClose<PackGraphNode>(
+                                "role_pin_conflicts", nodes -> RolePinRule.conflicts(closure)),
+                        new ValidationWalker.OnClose<PackGraphNode>(
+                                "profile_enhancements",
+                                nodes -> ProfileEnhancementRule.check(closure, profiles, merge))));
     }
 
     /**
@@ -242,28 +247,29 @@ public final class PackRulesets {
      * run only when the closure writes an {@code enhances} or {@code overrides} edge; the specialization rule runs
      * regardless. Each rule reads the subject, since where an edge's ends are placed is a fact of the closure, so the
      * answer does not depend on the elements the walk hands over; the {@code RELATIONS} mode names what the check is
-     * about. {@link #relationFaults} runs it over a closure.
+     * about. {@link #composedClosure} runs it ahead of the edge-index rules.
      *
      * @param relations the closure's typed edges, placed
      * @return the check: the relations walk and the one phase
      */
     public static GraphCheck relations(ComposedRelations relations) {
+        return new GraphCheck(PackGraph.Walk.RELATIONS, List.of(relationsPhase(relations)));
+    }
+
+    private static ValidationWalker.Phase<PackGraphNode> relationsPhase(ComposedRelations relations) {
         Objects.requireNonNull(relations, "relations");
-        return new GraphCheck(
-                PackGraph.Walk.RELATIONS,
-                List.of(new ValidationWalker.Phase<PackGraphNode>(
-                        RELATIONS_PHASE,
-                        List.of(
-                                relation("self_override", relations, RelationRules::selfOverride),
-                                relation("conflicting_relations", relations, RelationRules::conflicting),
-                                relation("override_not_permitted", relations, RelationRules::notPermitted),
-                                relation("locked_step_enhanced", relations, RelationRules::lockedStepEnhanced),
-                                relation("override_cycle", relations, RelationRules::overrideCycle),
-                                relation("enhances_cycle", relations, RelationRules::enhancesCycle),
-                                relation("ungrounded_enhancer", relations, RelationRules::ungroundedEnhancer),
-                                new ValidationWalker.OnClose<PackGraphNode>(
-                                        "specialization_cycle",
-                                        nodes -> RelationRules.specializationCycle(relations))))));
+        return new ValidationWalker.Phase<PackGraphNode>(
+                RELATIONS_PHASE,
+                List.of(
+                        relation("self_override", relations, RelationRules::selfOverride),
+                        relation("conflicting_relations", relations, RelationRules::conflicting),
+                        relation("override_not_permitted", relations, RelationRules::notPermitted),
+                        relation("locked_step_enhanced", relations, RelationRules::lockedStepEnhanced),
+                        relation("override_cycle", relations, RelationRules::overrideCycle),
+                        relation("enhances_cycle", relations, RelationRules::enhancesCycle),
+                        relation("ungrounded_enhancer", relations, RelationRules::ungroundedEnhancer),
+                        new ValidationWalker.OnClose<PackGraphNode>(
+                                "specialization_cycle", nodes -> RelationRules.specializationCycle(relations))));
     }
 
     /** A relation rule, judged only when the closure writes an {@code enhances} or {@code overrides} edge. */
@@ -274,39 +280,136 @@ public final class PackRulesets {
     }
 
     /**
-     * Every relation fault of a composed closure (#639): {@link #relations} over the closure's subject, run by the
-     * walker over the closure's graph, every pack a root. The policies are scoped as the mutability check scopes them
-     * ({@link ScopedPolicies}). A closure with no pack has no fault.
+     * The relations of a composed closure, as the relation rules judge them: its packs, the typed edges each writes and
+     * the policy each declares, scoped as the mutability check scopes them ({@link ScopedPolicies}).
      *
      * @param packs the closure's packs, in merge order
      * @param factsOf each pack's composition facts, as the closure was composed with them
-     * @return the faults, rule by rule; empty when the closure is sound
+     * @return the subject
      */
-    public static List<ClosureFault> relationFaults(
+    public static ComposedRelations relationsOf(
             List<PackUnderResolution> packs, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
         Objects.requireNonNull(packs, "packs");
         Objects.requireNonNull(factsOf, "factsOf");
-        if (packs.isEmpty()) {
-            return List.of();
-        }
-        ComposedRelations relations = ComposedRelations.of(
+        return ComposedRelations.of(
                 packs,
                 member -> factsOf.apply(member).edges(),
                 member -> factsOf.apply(member).policy());
-        Map<PackIdentifier, PackUnderResolution> members = new LinkedHashMap<>();
-        packs.forEach(member -> members.putIfAbsent(member.configured().id(), member));
+    }
+
+    /**
+     * The edge-index rules of a composed closure (#639, ADR-0082 slice 4, operator rulings D2, Q-B and Q-C): one phase
+     * over the merged closure, so a read and a registration of one closure answer each fault with one code. In order,
+     * the order the merge met them before the move: a layer override the overridden artifact's level forbids (C21,
+     * {@code override_not_permitted}), an enhancement of a step whose mission type is locked
+     * ({@code override_not_permitted}), an {@code overrides} edge that the merge re-points to its own source (C36, A12,
+     * {@code self_override}), and another pack's step link at a mission type in force that names no step of it
+     * ({@code pack_reference_artifact_missing}, with the violation {@value
+     * ai.speckitty.charter.packs.domain.MissionStepLinkRule#CODE}). Every fault of each rule is reported. Each rule
+     * reads the subject, so the answer does not depend on the elements the walk hands over; the subject is read only
+     * when the phase runs, and once. The reads run it through {@link #edgeIndexFaults}, registration and every write
+     * after the relation rules ({@link #composedClosure}).
+     *
+     * @param merged the merged closure's subject, read when the phase runs
+     * @return the check: the packs walk and the one phase
+     */
+    public static GraphCheck edgeIndex(Supplier<MergedRelations> merged) {
+        return new GraphCheck(PackGraph.Walk.PACKS, List.of(edgeIndexPhase(merged)));
+    }
+
+    private static ValidationWalker.Phase<PackGraphNode> edgeIndexPhase(Supplier<MergedRelations> merged) {
+        Objects.requireNonNull(merged, "merged");
+        Supplier<MergedRelations> once = once(merged);
+        return new ValidationWalker.Phase<PackGraphNode>(
+                EDGE_INDEX_PHASE,
+                List.of(
+                        new ValidationWalker.OnClose<PackGraphNode>(
+                                "forbidden_layer_override", nodes -> EdgeIndexRules.forbiddenLayerOverride(once.get())),
+                        new ValidationWalker.OnClose<PackGraphNode>(
+                                "locked_step_enhanced", nodes -> EdgeIndexRules.lockedStepEnhanced(once.get())),
+                        new ValidationWalker.OnClose<PackGraphNode>(
+                                "self_override", nodes -> EdgeIndexRules.selfOverride(once.get())),
+                        new ValidationWalker.OnClose<PackGraphNode>(
+                                "stray_step_link", nodes -> EdgeIndexRules.strayStepLink(once.get()))));
+    }
+
+    /**
+     * Every edge-index fault of a merged closure ({@link #edgeIndex}), run by the walker over the closure's packs, every
+     * pack a root: what a read refuses when it merges. A closure with no pack has no fault.
+     *
+     * @param merged the merged closure's subject
+     * @return the faults, rule by rule; empty when the merge is sound
+     */
+    public static List<ClosureFault> edgeIndexFaults(MergedRelations merged) {
+        Objects.requireNonNull(merged, "merged");
+        if (merged.packs().isEmpty()) {
+            return List.of();
+        }
         PackGraph graph = PackGraph.of(
-                packs.stream()
+                merged.packs().stream()
                         .map(member -> new PackNode(member.configured(), member.descriptor()))
                         .toList(),
-                pack -> factsOf.apply(Objects.requireNonNull(members.get(pack), "a pack of the closure")));
-        return relations(relations)
+                pack -> {
+                    throw new IllegalStateException("the packs walk reads no pack's facts: " + pack.value());
+                });
+        return edgeIndex(() -> merged)
                 .run(
                         graph,
-                        Scope.of(packs.stream()
+                        Scope.of(merged.packs().stream()
                                 .map(member -> member.configured().id())
+                                .distinct()
                                 .toList()))
                 .faults();
+    }
+
+    /**
+     * The checks of one composed closure that registration and every write judge (#639, ADR-0082 slice 4, FR-009,
+     * FR-010): the relation rules ({@link #relations}), then, only when they pass, the edge-index rules
+     * ({@link #edgeIndex}), one walker over the closure's relations walk; the phase gate is the relations gate. Run it
+     * over {@code Scope.of} the closure's roots.
+     *
+     * @param relations the closure's typed edges, placed
+     * @param merged the merged closure's subject, read only when the edge-index phase runs, and once
+     * @return the check
+     */
+    public static GraphCheck composedClosure(ComposedRelations relations, Supplier<MergedRelations> merged) {
+        return new GraphCheck(PackGraph.Walk.RELATIONS, List.of(relationsPhase(relations), edgeIndexPhase(merged)));
+    }
+
+    /**
+     * The checks of one declaring pack's own composed closure (#638, #639, ADR-0082 slice 4): the relation rules, the
+     * edge-index rules, then, only when both pass, the own-closure rules ({@link #ownClosure}), one walker over the
+     * closure's relations walk; the own-closure rules read the merge only once the edge-index rules found it sound, so
+     * a fallback or a pin never meets a refused merge (#667). Run it over {@link #ownClosureOf} of the declaring pack:
+     * the relation and edge-index rules read their subjects, so the selection does not change their answer.
+     *
+     * @param relations the closure's typed edges, placed
+     * @param merged the merged closure's subject, read only when the edge-index phase runs, and once
+     * @param closure the declaring pack's own closure, as the reads compose it
+     * @param profiles where a winning profile's entity is read
+     * @param merge the profiles slice's merge, which judges an enhancement; empty when the deployment has none
+     * @return the check
+     */
+    public static GraphCheck composedClosure(
+            ComposedRelations relations,
+            Supplier<MergedRelations> merged,
+            ClosureFacts closure,
+            ProfileReader profiles,
+            Optional<ProfileEnhancementGateway> merge) {
+        return new GraphCheck(
+                PackGraph.Walk.RELATIONS,
+                List.of(relationsPhase(relations), edgeIndexPhase(merged), ownClosurePhase(closure, profiles, merge)));
+    }
+
+    /** The supplier read once, on first use; a walker runs one traversal at a time, so it is never read twice. */
+    private static <T> Supplier<T> once(Supplier<T> supplier) {
+        List<T> held = new ArrayList<>(1);
+        return () -> {
+            if (held.isEmpty()) {
+                held.add(Objects.requireNonNull(supplier.get(), "the subject"));
+            }
+            return held.getFirst();
+        };
     }
 
     /**

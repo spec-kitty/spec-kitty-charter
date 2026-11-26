@@ -245,7 +245,7 @@ class ActivationImpactAdapterTest {
                 List.of(),
                 Map.of(),
                 "sha256:merged",
-                EdgeIndex.of(packs, facts).orRefuse(),
+                EdgeIndex.of(packs, facts),
                 new ClosureView.MergeInputs(packs, facts),
                 "sha256:closure");
     }

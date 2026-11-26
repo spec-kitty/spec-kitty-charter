@@ -163,6 +163,6 @@ class ClosureViewHeldWinnersTest {
         assertThatThrownBy(() -> view.heldWinners(ArtifactKind.ASSET))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED));
     }
 }

@@ -45,6 +45,8 @@ class RefusalHandlerTest {
         "ARTIFACT_LOCKED, 409",
         "MISSION_TYPE_NOT_IN_FORCE, 409",
         "PACK_UNREADABLE, 500",
+        "SELF_OVERRIDE, 500",
+        "OVERRIDE_NOT_PERMITTED, 500",
         "DRG_SCHEMA_ERROR, 500",
         "UNRESOLVED_EDGE_ENDPOINT, 500",
         "PACK_LEVEL_MISMATCH, 500",
@@ -227,6 +229,8 @@ class RefusalHandlerTest {
 
         void putPackToolguide() {}
 
+        void deletePack() {}
+
         void deletePackArtifact() {}
 
         void deletePackRelationship() {}
@@ -336,6 +340,43 @@ class RefusalHandlerTest {
                 .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(
+            strings = {
+                "registerPackDirective",
+                "putPackDirective",
+                "registerPackParadigm",
+                "putPackParadigm",
+                "registerPackStyleguide",
+                "putPackStyleguide",
+                "registerPackToolguide",
+                "putPackToolguide",
+                "putPackRelationship",
+                "deletePack",
+                "deletePackArtifact",
+                "deletePackRelationship"
+            })
+    @DisplayName("ruling Q-A: self_override and override_not_permitted are 422 on every impact-checked write")
+    void theTwoEdgeIndexCodesAre422OnTheImpactCheckedWrites(String operation) throws NoSuchMethodException {
+        for (RefusalCode code : List.of(RefusalCode.SELF_OVERRIDE, RefusalCode.OVERRIDE_NOT_PERMITTED)) {
+            ResponseEntity<CharterRefusal> refused = refusedIn(operation, code);
+
+            assertThat(refused.getStatusCode()).as(code.token()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+            assertThat(refused.getBody().getStatus()).as(code.token()).isEqualTo(422);
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"getOffering", "listEffectiveArtifacts", "getEffectiveGraph", "selectActivationArtifact"})
+    @DisplayName("ruling Q-A: the twin: a read or an activation write answers the two codes 500, their own status")
+    void theTwoEdgeIndexCodesAre500OnAReadAndAnActivationWrite(String operation) throws NoSuchMethodException {
+        for (RefusalCode code : List.of(RefusalCode.SELF_OVERRIDE, RefusalCode.OVERRIDE_NOT_PERMITTED)) {
+            assertThat(refusedIn(operation, code).getStatusCode())
+                    .as(code.token())
+                    .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @Test
     @DisplayName("the twin: an activation write keeps the composition codes' own status, 500")
     void anActivationWriteKeepsTheCompositionCodesAs500() throws NoSuchMethodException {
@@ -361,6 +402,7 @@ class RefusalHandlerTest {
         "REGISTRATION_CONFLICT, 409",
         "VALIDATION_FAILED, 422",
         "OVERRIDE_NOT_PERMITTED, 422",
+        "SELF_OVERRIDE, 422",
         "PROMPT_SLOT_MISSING, 422",
         "PACK_STORAGE_FULL, 503",
         "REGISTRATION_TIMED_OUT, 504",

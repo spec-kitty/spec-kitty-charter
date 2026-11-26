@@ -839,8 +839,14 @@ class PackRegistrationServiceTest {
         assertThat(rig.filesOf(rig.packs.resolve("derived"))).isEqualTo(before);
 
         StagedPack kept = rig.stage(derived("2.0.0").directive("EXT_ONE", "First"));
-        assertThat(rig.register("derived", kept, Preconditions.none()).outcome())
-                .as("the control: EXT_ONE kept as it was")
+        assertThat(refusalOf(() -> rig.register("derived", kept, Preconditions.none())))
+                .as("EXT_ONE kept as it was passes the write gate, and its layer override of an extendable artifact is"
+                        + " C21's fault on the write as on the read (#639, ruling Q-B)")
+                .isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+
+        assertThat(rig.register("derived", rig.stage(derived("2.0.0")), Preconditions.none())
+                        .outcome())
+                .as("the control: dropping EXT_ONE is within extendable and leaves no layer override")
                 .isEqualTo(Outcome.REPLACED);
     }
 
@@ -850,10 +856,12 @@ class PackRegistrationServiceTest {
         rig.install("derived", derived("1.0.0").directive("LOCKED_ONE", "Mine").directive("EXT_ONE", "Mine"));
         StagedPack dropsExtendable = rig.stage(derived("2.0.0").directive("LOCKED_ONE", "Mine"));
 
-        assertThat(rig.register("derived", dropsExtendable, Preconditions.none())
-                        .outcome())
-                .as("REMOVE is within extendable")
-                .isEqualTo(Outcome.REPLACED);
+        CharterRefusal kept = refusal(() -> rig.register("derived", dropsExtendable, Preconditions.none()));
+        assertThat(kept.code())
+                .as("REMOVE is within extendable, so the write gate passes it; the layer override of LOCKED_ONE it"
+                        + " keeps is C21's fault (#639, ruling Q-B)")
+                .isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+        assertThat(kept.getMessage()).contains("directive:LOCKED_ONE").doesNotContain("EXT_ONE");
         Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
 
         assertThat(refusalOf(() -> rig.register("derived", rig.stage(derived("3.0.0")), Preconditions.none())))
@@ -933,9 +941,10 @@ class PackRegistrationServiceTest {
                 .isEqualTo(before);
 
         StagedPack keeps = rig.stage(derived("2.0.0").directive("LOCKED_ONE", "Mine"));
-        assertThat(rig.register("derived", keeps, Preconditions.none()).outcome())
-                .as("the control: the fixed upload keeps the locked artifact and repairs the pack")
-                .isEqualTo(Outcome.REPLACED);
+        assertThat(refusalOf(() -> rig.register("derived", keeps, Preconditions.none())))
+                .as("the upload that keeps the locked artifact passes the write gate, and its layer override of a"
+                        + " locked artifact is C21's fault on the write as on the read (#639, ruling Q-B)")
+                .isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
     }
 
     @Test

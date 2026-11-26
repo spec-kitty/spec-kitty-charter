@@ -101,8 +101,9 @@ public class RefusalHandler {
      * The refusal codes an operation answers with a status other than the code's own, by the operation's
      * {@code operationId} (the name of its controller method): the {@code operations} map of the code's entry in the
      * contract's {@code x-refusal}, which the contract scenarios hold this table to. A refused registration, and each
-     * write that is judged over the closures its pack joins, answers the eleven composition codes as 422 where a read
-     * is refused by packs that do not compose (500): the request is what leaves them unable to. Each of them, and each
+     * write that is judged over the closures its pack joins, answers the eleven composition codes, and the two codes of a
+     * closure's layer merge, as 422 where a read is refused by packs that do not compose (500): the request is what
+     * leaves them unable to. Each of them, and each
      * activation write, answers {@code prompt_slot_missing} as 422 (OD-4 (i), squad R4): the request is what would leave
      * a step enhancement in force without its slot, where a composing read is refused 500.
      */
@@ -126,14 +127,17 @@ public class RefusalHandler {
     }
 
     /**
-     * A registration's and each impact-checked write's: the eleven composition codes, the slot check and the profile
-     * enhancement merge (ruling D5), all 422.
+     * A registration's and each impact-checked write's: the eleven composition codes, the slot check, the profile
+     * enhancement merge (ruling D5) and the two codes a read and a registration share for the faults of a closure's
+     * layer merge, {@code self_override} and {@code override_not_permitted} (#639, rulings D2 and Q-A), all 422.
      */
     private static Map<RefusalCode, HttpStatus> impactCheckedStatusCodes() {
         Map<RefusalCode, HttpStatus> codes = new java.util.EnumMap<>(RefusalCode.class);
         codes.putAll(registrationStatusCodes());
         codes.put(RefusalCode.PROMPT_SLOT_MISSING, HttpStatus.UNPROCESSABLE_CONTENT);
         codes.put(RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD, HttpStatus.UNPROCESSABLE_CONTENT);
+        codes.put(RefusalCode.SELF_OVERRIDE, HttpStatus.UNPROCESSABLE_CONTENT);
+        codes.put(RefusalCode.OVERRIDE_NOT_PERMITTED, HttpStatus.UNPROCESSABLE_CONTENT);
         return Map.copyOf(codes);
     }
 
@@ -392,10 +396,8 @@ public class RefusalHandler {
                 RefusalCode.VALIDATION_FAILED,
                 RefusalCode.ACTIVATION_INVALID,
                 RefusalCode.PACK_SOURCE_REFUSED,
-                RefusalCode.OVERRIDE_NOT_PERMITTED,
                 RefusalCode.ENHANCES_CYCLE,
                 RefusalCode.CONFLICTING_RELATIONS,
-                RefusalCode.SELF_OVERRIDE,
                 RefusalCode.OVERRIDE_CYCLE,
                 RefusalCode.FALLBACK_PROFILE_UNKNOWN,
                 RefusalCode.FALLBACK_PROFILE_NOT_LOCKED,
@@ -449,6 +451,10 @@ public class RefusalHandler {
                 RefusalCode.PROMPT_FRAGMENT_INVALID,
                 RefusalCode.PROMPT_SLOT_MISSING,
                 RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
+                // A read and a registration answer the edge-index faults of a closure's merge with one code (#639,
+                // ruling D2): the read 500, as the packs are what is broken; the impact-checked writes 422 (Q-A).
+                RefusalCode.SELF_OVERRIDE,
+                RefusalCode.OVERRIDE_NOT_PERMITTED,
                 RefusalCode.INTERNAL_ERROR,
                 RefusalCode.STALE_INPUT);
 

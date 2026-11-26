@@ -5,6 +5,7 @@ import ai.speckitty.charter.kernel.domain.PackUlid;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
+import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ComposedRelations;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * The relation rules of a composed closure (IC-15, C28, C36, A6, A8, A11, A12, the lock a step inherits from its
@@ -110,13 +112,25 @@ final class RelationRules {
     /**
      * Every enhancement of a step whose mission type is locked (C22 and C25 as amended, OD-2 (A)): a step takes its
      * mission type's level, judged along the closure with the enhancing pack's own policy left out, as
-     * {@link #notPermitted} leaves out the source's pack. The read refuses the same closure {@code pack_unreadable}
-     * from the merge.
+     * {@link #notPermitted} leaves out the source's pack. The read refuses the same closure with the same code, from
+     * the edge-index phase over the merge.
      */
     static List<ClosureFault> lockedStepEnhanced(ComposedRelations relations) {
-        return EnhancementCompose.lockedTargets(
-                        relations.packs(), relations::edgesOf, new PerPackPolicy(relations.scopedPolicies()))
-                .stream()
+        return lockedSteps(relations.packs(), relations::edgesOf, new PerPackPolicy(relations.scopedPolicies()));
+    }
+
+    /**
+     * Every enhancement of a step whose mission type is locked along the closure, the enhancing pack's own policy left
+     * out ({@link EnhancementCompose#lockedTargets}): the one body of the rule, which the relations phase judges over
+     * the declared edges and the edge-index phase over the merged closure ({@link EdgeIndexRules#lockedStepEnhanced}),
+     * so a read and a registration answer it alike. Each fault names the enhancing pack, then the pack that locks the
+     * mission type.
+     */
+    static List<ClosureFault> lockedSteps(
+            List<PackUnderResolution> packs,
+            Function<PackUnderResolution, ? extends Collection<Relationship>> edgesOf,
+            PerPackPolicy policy) {
+        return EnhancementCompose.lockedTargets(packs, edgesOf, policy).stream()
                 .map(locked -> {
                     List<PackUnderResolution> involved = new ArrayList<>(List.of(locked.enhancingPack()));
                     locked.lockedBy()

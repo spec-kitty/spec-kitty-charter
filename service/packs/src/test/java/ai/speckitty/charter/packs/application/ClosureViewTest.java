@@ -12,6 +12,7 @@ import ai.speckitty.charter.kernel.domain.PackPaths;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
+import ai.speckitty.charter.kernel.domain.RefusalViolation;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
@@ -302,11 +303,13 @@ class ClosureViewTest {
     }
 
     @Test
-    void anEnhancementOfAStepWhoseMissionTypeIsLockedMakesTheMergeUnreadableWhateverIsSelected() {
+    void anEnhancementOfAStepWhoseMissionTypeIsLockedRefusesTheMergeWhateverIsSelected() {
+        // Ruling D2: the read answers the code the registration answers, override_not_permitted.
         anEnhancerOfPlanUnder(MutabilityLevel.LOCKED);
 
         assertThatThrownBy(() -> select()).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refused.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+            assertThat(refused.violations()).as("one fault").isEmpty();
             assertThat(refused.getMessage())
                     .contains("step_enhancement:x")
                     .contains("mission_type:M")
@@ -314,6 +317,30 @@ class ClosureViewTest {
             assertThat(refused.packs())
                     .extracting(pack -> pack.packId().value())
                     .containsExactly("enhancer", "base");
+        });
+    }
+
+    @Test
+    void everyEnhancementOfAStepWhoseMissionTypeIsLockedIsAFaultOfTheOneRefusal() {
+        // Ruling D2: the read reports every fault, as the registration does, not only the first.
+        anEnhancerOfPlanUnder(MutabilityLevel.LOCKED);
+        pack(
+                "second",
+                PackLevel.ORG,
+                List.of("base"),
+                List.of("step_enhancement:y"),
+                edge("step_enhancement:y", RelationType.ENHANCES, "base::action:M/s"));
+
+        assertThatThrownBy(() -> select()).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
+            assertThat(refused.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+            assertThat(refused.violations())
+                    .extracting(RefusalViolation::code)
+                    .containsExactly("override_not_permitted", "override_not_permitted");
+            assertThat(refused.violations().get(0).detail()).contains("step_enhancement:x");
+            assertThat(refused.violations().get(1).detail()).contains("step_enhancement:y");
+            assertThat(refused.packs())
+                    .extracting(pack -> pack.packId().value())
+                    .containsExactly("enhancer", "base", "second");
         });
     }
 
