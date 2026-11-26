@@ -37,7 +37,7 @@
       "wp": "WP01"
     },
     "#638": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP02+WP03; branch refactor/638-graph-walker dc10633df",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,8 +45,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP03"
     },
     "#639": {
       "evidence_ref": "<link or commit>",
