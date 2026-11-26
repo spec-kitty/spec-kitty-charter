@@ -1,13 +1,13 @@
 {
-  "event_count": 28,
-  "last_event_id": "01M8CFGYFAN3WGT4P9CEWQGYJ1",
-  "materialized_at": "2026-11-26T17:47:46.866091+00:00",
+  "event_count": 33,
+  "last_event_id": "01M8CJXWRMB9Q0X8CVNH1X2TN1",
+  "materialized_at": "2026-11-26T18:47:16.839841+00:00",
   "mission_number": "",
   "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 2,
+    "approved": 3,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 1,
     "in_review": 0,
-    "planned": 3
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -90,43 +90,54 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude::reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude::java-jenny",
-      "lane": "in_progress",
-      "last_event_id": "01M8CFGYFAN3WGT4P9CEWQGYJ1",
-      "last_transition_at": "2026-11-26T17:47:46.866091+00:00",
+      "lane": "approved",
+      "last_event_id": "01M8CHBSCX7ZJ5JNP6BWDDM5CQ",
+      "last_transition_at": "2026-11-26T18:19:55.165668+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP03 on lane-c (bee30da5b): ValidationWalker (per-check buckets, OnNode/OnClose, VIOLATION gate, one run at a time), Ledger, GraphCheck; own-closure rules moved to packs.domain.rules behind PackRulesets.ownClosure/ownClosureOf; REFERENCES runs on the walker; ClosureWalk and OwnClosureWalk deleted; determinism guard amended (Proposed, D1). verifyAll, check_docs, markdownlint and cspell green on lane-c. The code equals refactor/638-graph-walker (3119fb476). The in-session adversarial review found no behaviour difference and 13 LOW/NIT findings, all folded (70fcac5f9). Out-of-map: the ledger is Ledger.java, not Findings.java (renamed in the review); the changelog fragment is 2026-11-25-one-walker-runs-the-own-closure-rules.md, not ...-own-closure-rules-from-the-factory.md; the rules moved to domain/rules; ProfileEnhancers' Javadoc link; PackUninstallServiceTest and QualifierLoadTest (constructor change); bee30da5b folds WP02's two cycle-2 NITs in PackGraph and PackGraphWalkTest (WP01/WP02-owned, both approved)."
+        "WP03 on lane-c (bee30da5b): ValidationWalker (per-check buckets, OnNode/OnClose, VIOLATION gate, one run at a time), Ledger, GraphCheck; own-closure rules moved to packs.domain.rules behind PackRulesets.ownClosure/ownClosureOf; REFERENCES runs on the walker; ClosureWalk and OwnClosureWalk deleted; determinism guard amended (Proposed, D1). verifyAll, check_docs, markdownlint and cspell green on lane-c. The code equals refactor/638-graph-walker (3119fb476). The in-session adversarial review found no behaviour difference and 13 LOW/NIT findings, all folded (70fcac5f9). Out-of-map: the ledger is Ledger.java, not Findings.java (renamed in the review); the changelog fragment is 2026-11-25-one-walker-runs-the-own-closure-rules.md, not ...-own-closure-rules-from-the-factory.md; the rules moved to domain/rules; ProfileEnhancers' Javadoc link; PackUninstallServiceTest and QualifierLoadTest (constructor change); bee30da5b folds WP02's two cycle-2 NITs in PackGraph and PackGraphWalkTest (WP01/WP02-owned, both approved).",
+        "Review cycle 1 folded in aed22d1ce (lane-c); verifyAll green there. MEDIUM: four ClosureImpactCheckTest cases through the rewired walkFaults: closure-major across two closures (discriminating: the first closure's pin breach before the second's fallback breach), a preset item beside a breach (with its violation at the item), the census keeps ' (packs ...)', and the census reaches the own-closure rules. All pass on c6b948e46 too (identity). LOW: the no-merge ISE test (T014); the WARNING-gate reason recorded in ValidationWalkerTest; Ledger.rationale's reason recorded. NIT: non-null presetItemFaults, the ISE message, data-model.md says Ledger (mission branch). Out-of-map, added to the earlier list: RolePinImpactTest (no WP owns it).",
+        "Review cycle 2 passed (reviewer-renata). aed22d1ce folds every cycle-1 finding: MEDIUM closed by four ClosureImpactCheckTest cases through the rewired walkFaults (closure-major across a-pins then b-falls-back with ordered codes and closure prefixes; preset item beside a pin breach, ordered pointer/code tuples; census ' (packs acme)'; census reaches the own-closure rules); LOW: enhancementsWithoutAMergeThrow (ISE), WARNING-gate reason in ValidationWalkerTest Javadoc, Ledger.rationale reason in its Javadoc, RolePinImpactTest in the out-of-map list; NIT: presetItemFaults non-null and @Nullable import gone (behaviour-neutral: composed always holds a judged closure), ISE says 'does not hold', data-model.md names Ledger (f08538746). Production change in aed22d1ce is behaviour-neutral. Sync merge 8a71d825b brings kitty-specs only. Lane test results after aed22d1ce: packs/pack-validation/pack-doctor 0 failures, the new cases present and passing; verifyAll not rerun by me (no Gradle). Not verifiable: the c6b948e46 runs (worktree removed). Open LOW: CLI commits after aed22d1ce (c650159b6, 586ad0d9a, 937c67f47, 7a8914b07, 8337939f2 and this verdict) are unsigned; re-sign before pushing. Anti-pattern checklist all PASS."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/adr-0082-graph-walk-slices-01M8A867-coord/kitty-specs/adr-0082-graph-walk-slices-01M8A867/tasks/WP03-walker-and-own-closure-rules/review-cycle-1.md",
-        "reference": "review-cycle://adr-0082-graph-walk-slices-01M8A867/WP03-walker-and-own-closure-rules/review-cycle-1.md",
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/adr-0082-graph-walk-slices-01M8A867-coord/kitty-specs/adr-0082-graph-walk-slices-01M8A867/tasks/WP03-walker-and-own-closure-rules/review-cycle-2.md",
+        "reference": "review-cycle://adr-0082-graph-walk-slices-01M8A867/WP03-walker-and-own-closure-rules/review-cycle-2.md",
         "reviewer": "claude::reviewer-renata",
-        "verdict": "changes_requested"
+        "verdict": "approved"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 24202,
+      "shell_pid_created_at": "1795717122.79",
       "subtasks": {
-        "T012": "planned",
-        "T013": "planned",
-        "T014": "planned",
-        "T015": "planned",
-        "T016": "planned"
+        "T012": "done",
+        "T013": "done",
+        "T014": "done",
+        "T015": "done",
+        "T016": "done"
       }
     },
     "WP04": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M8AA84XB00QYVN38PASPSCMX",
-      "last_transition_at": "2026-11-25T21:37:06.987151+00:00"
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "in_progress",
+      "last_event_id": "01M8CJXWRMB9Q0X8CVNH1X2TN1",
+      "last_transition_at": "2026-11-26T18:47:16.839841+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 30640,
+      "shell_pid_created_at": "1795718827.48"
     },
     "WP05": {
       "actor": "finalize-tasks",
