@@ -484,8 +484,10 @@ class ClosureViewMergedTest {
     void aMergeThatRefusesWithItsOwnCodeGivesTheWritesNoEdgeIndexFault() {
         // Review F1: what registration and the impact-checked writes judge is the merged relations, never refused. A
         // merge that refuses with a code no ruling covers (an unsettled step contest) has no edge-index fault there, so
-        // the write is judged as before the edge-index phase; the read still answers the merge's refusal. With real
-        // packs the compose refuses every such contest first; the fixture reaches the merge directly.
+        // the write is judged as before the edge-index phase; the read still answers the merge's refusal. The compose
+        // keeps every action out of the sibling contest (contestableDefinitions), so only the merge judges this one.
+        // The fixture gives both packs the step as held; a stored pack holds a step only with its mission type
+        // (PackCompositionFacts.referable), so a sibling that merely declares the step's node holds nothing.
         pack("org-a", PackLevel.ORG, List.of(), holding("action:M/s"));
         pack("org-b", PackLevel.ORG, List.of(), holding("action:M/s"));
         ClosureView view = snapshot();
@@ -539,9 +541,11 @@ class ClosureViewMergedTest {
     }
 
     @Test
-    void theFloorTheNoticesCompareIsTheSameWhetherOrNotTheMergeWasBuilt() {
-        // Review F3: the impact check compares this floor before and after a write; building the after view's merge,
-        // which the edge-index phase does, never changes it.
+    void theFloorTheNoticesCompareIsTheMergedFloorOfASoundMerge() {
+        // Review F3 and N2: the notices compare the floor judged with no override on both sides of a write, and that
+        // floor is the merged one for a merge that passes, so judging the after view's merge leaves the notices as
+        // they were. A preset item names an artifact kind, never an action, so it cannot name the one kind of held
+        // URN a sound merge leaves without a winner (a step of a mission type that lost its contest).
         pack(
                 "org",
                 PackLevel.ORG,
@@ -561,11 +565,13 @@ class ClosureViewMergedTest {
                         List.of()));
         pack("project", PackLevel.PROJECT, List.of("org"), holding("directive:D"));
         ClosureView view = snapshot();
-        RequiredFloor before = view.floorJudgingNoOverride();
+        RequiredFloor unmerged = view.floorJudgingNoOverride();
 
         view.merged();
 
-        assertThat(view.floorJudgingNoOverride()).isEqualTo(before);
-        assertThat(before.requiredBy()).containsOnlyKeys(D, new Urn(NodeKind.DIRECTIVE, "E"));
+        assertThat(view.mergedFloor())
+                .as("the merged floor, now that the merge is built")
+                .isEqualTo(unmerged);
+        assertThat(unmerged.requiredBy()).containsOnlyKeys(D, new Urn(NodeKind.DIRECTIVE, "E"));
     }
 }
