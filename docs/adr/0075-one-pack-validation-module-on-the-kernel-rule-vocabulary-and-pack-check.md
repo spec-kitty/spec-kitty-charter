@@ -569,10 +569,14 @@ gone. Each counting point counts a unit on `kernel.metering.WorkMeter`, which a 
 - **Kept on purpose.** The meter is a measurement point of the read budgets (#554, NFR-003), not production
   telemetry: only tests call `WorkMeter.measure`. It holds no state between two measurements, so two tests that measure
   at once never see each other's work. With no meter bound, a count does nothing.
-- **Its limit.** It counts on the thread that bound it. Work handed to another thread is not counted, so each budget
-  asserts every unit it bounds at least once.
+- **Its limit.** It counts on the thread that bound it, and on the forks of a structured task scope opened there. Work
+  handed to any other thread is not counted, so each budget asserts every unit it bounds at least once.
 - **Guarded.** `HexagonalArchitectureTest.noMainClassKeepsAStaticCounter` refuses a static field that is not final, or
-  that holds an atomic or an adder, in any main class, except three named fields that count no work.
+  that holds an atomic or an adder, in any main class. It exempts the test fixtures and four named fields, none a
+  count of a read's work: `PackCommitStore.COUNTER` (it makes temporary names unique),
+  `GlobalAddressResolverProvider.ALLOWLIST` and `LOADED_BY_JDK` (the JDK loads that resolver as a service provider,
+  outside any wiring), and `PackSchemas.bundled` (the bundled schemas, built once on first use and built again after a
+  failed build).
 
 ### Amends, as each slice lands
 
