@@ -35,4 +35,5 @@ Actions 8 and 9 of the [codebase health summary of 2026-11-25](/plans/codebase-h
 
 Kept on purpose, each with the reason it stays given in its javadoc: the meter itself, `RegistrationJobs.retained()`
 (the one count of the statuses held), `RegistryWriteLock.hasQueuedThread` (the one exact sign of a writer waiting on
-the registry) and `PackCommitStore.SwapPhases` (the one way to run a reader between the two moves of a swap). Production behavior does not change.
+the registry) and `PackCommitStore.SwapPhases` (the one way to run a reader between the two moves of a swap).
+Production behavior does not change.
