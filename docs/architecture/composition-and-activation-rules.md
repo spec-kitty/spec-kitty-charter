@@ -332,7 +332,7 @@ refuses its own write.
 a step whose mission type is `locked` along `C({p}) ∖ {p}` is refused `422 override_not_permitted`, not
 `409 governance_policy_violation`: it is the inherited lock of C22, judged by the impact check (G8) on the registration
 and on every impact-checked write. And an `overrides` edge from a kind outside `Kₐ` is refused before the gate is
-asked (C27, #447). **Built (slice C).** *Pinned by:* `ImpactRelationsEnhancementTest`
+asked (C27, #447). **Built (slice C).** *Pinned by:* `RelationRulesEnhancementTest`
 (`anEnhancementOfAStepWhoseMissionTypeIsLockedIsOverrideNotPermittedNamingBothPacks`,
 `theTwinAnExtendableMissionTypeTakesTheEnhancement`, `theEnhancingPacksOwnLockOnTheMissionTypeIsLeftOut`) and the
 scenarios of `step-enhancement-compose.feature` `A registration that enhances a step whose mission type is locked is

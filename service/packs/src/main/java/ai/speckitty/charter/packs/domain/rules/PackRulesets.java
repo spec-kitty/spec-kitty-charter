@@ -4,6 +4,7 @@ import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import ai.speckitty.charter.packs.domain.ClosureFacts;
 import ai.speckitty.charter.packs.domain.ClosureFault;
+import ai.speckitty.charter.packs.domain.ComposedRelations;
 import ai.speckitty.charter.packs.domain.EnhancementCompose;
 import ai.speckitty.charter.packs.domain.GraphCheck;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -60,6 +61,8 @@ public final class PackRulesets {
 
     /** The name of the own-closure phase: the closure walk's name, which ruling R-u keeps free for it. */
     private static final String OWN_CLOSURE = "closure_walk";
+
+    private static final String RELATIONS = "relations";
 
     /**
      * {@code REFERENCES}' checks, in registration's phase order (its phases 2 to 4): the substep delegations, the
@@ -224,6 +227,56 @@ public final class PackRulesets {
                                 new ValidationWalker.OnClose<PackGraphNode>(
                                         "profile_enhancements",
                                         nodes -> ProfileEnhancementRule.check(closure, profiles, merge))))));
+    }
+
+    /**
+     * The relation rules of a composed closure (#639, ADR-0082 slice 4): one phase over the closure's relations walk,
+     * judging the subject's placed edges, in the order the rules were judged before the move. In order: a self-override
+     * ({@code self_override}), an artifact that both enhances and overrides one target ({@code conflicting_relations}),
+     * an override of a target that is not open and an enhancement of a step whose mission type is locked
+     * ({@code override_not_permitted}), an override cycle ({@code override_cycle}), an enhances cycle and an ungrounded
+     * enhancer ({@code enhances_cycle}), then a specialization cycle ({@code specialization_cycle}). The relation rules
+     * run only when the closure writes an {@code enhances} or {@code overrides} edge; the specialization rule runs
+     * regardless. Each rule reads the subject, since where an edge's ends are placed is a fact of the closure; run them
+     * over {@link #closureOf} the closure's packs.
+     *
+     * @param relations the closure's typed edges, placed
+     * @return the check: the relations walk and the one phase
+     */
+    public static GraphCheck relations(ComposedRelations relations) {
+        Objects.requireNonNull(relations, "relations");
+        return new GraphCheck(
+                PackGraph.Walk.RELATIONS,
+                List.of(new ValidationWalker.Phase<PackGraphNode>(
+                        RELATIONS,
+                        List.of(
+                                relation("self_override", relations, RelationRules::selfOverride),
+                                relation("conflicting_relations", relations, RelationRules::conflicting),
+                                relation("override_not_permitted", relations, RelationRules::notPermitted),
+                                relation("locked_step_enhanced", relations, RelationRules::lockedStepEnhanced),
+                                relation("override_cycle", relations, RelationRules::overrideCycle),
+                                relation("enhances_cycle", relations, RelationRules::enhancesCycle),
+                                relation("ungrounded_enhancer", relations, RelationRules::ungroundedEnhancer),
+                                new ValidationWalker.OnClose<PackGraphNode>(
+                                        "specialization_cycle",
+                                        nodes -> RelationRules.specializationCycle(relations))))));
+    }
+
+    /** A relation rule, judged only when the closure writes an {@code enhances} or {@code overrides} edge. */
+    private static ValidationWalker.Check<PackGraphNode> relation(
+            String name, ComposedRelations relations, Function<ComposedRelations, List<ClosureFault>> rule) {
+        return new ValidationWalker.OnClose<>(
+                name, nodes -> relations.edges().isEmpty() ? List.of() : rule.apply(relations));
+    }
+
+    /**
+     * The scope of a whole closure: every pack of it a root, every element selected.
+     *
+     * @param packs the closure's packs
+     * @return the scope
+     */
+    public static Scope closureOf(List<PackUnderResolution> packs) {
+        return Scope.of(packs.stream().map(pack -> pack.configured().id()).toList());
     }
 
     /**

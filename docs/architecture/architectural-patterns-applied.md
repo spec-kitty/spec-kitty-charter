@@ -310,6 +310,11 @@ generic functional interfaces such as `Predicate<T>`.
 - *Built (slice 3, #638):* `PackRulesets.ownClosure(closureFacts, profiles, merge)` hands out a `GraphCheck` (the
   `PACKS` mode, one phase: fallback profile, own role pins, pin conflicts, profile enhancements), run over
   `ownClosureOf(declaring)`; `references(..)` runs its three checks as three phases of the walker.
+- *Built (slice 4, #639):* `PackRulesets.relations(composedRelations)` hands out a `GraphCheck` (the `RELATIONS` mode,
+  one phase of eight whole-closure checks in the old order), run over `closureOf(packs)`. `ComposedRelations` in
+  `packs.domain` is the subject: the placed `enhances` and `overrides` edges, the `specializes_from` graph, the enhances
+  cycles computed once, and the scoped policies the application hands in. `ImpactRelations` and
+  `SpecializationCycleRule` are deleted.
 
 Reference: Bloch, *Effective Java*, 3rd edition, Item 1.
 
