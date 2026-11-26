@@ -9,6 +9,9 @@ requirement_refs:
 planning_base_branch: test/659-state-waits-and-main-hooks
 merge_target_branch: test/659-state-waits-and-main-hooks
 branch_strategy: Planning artifacts for this mission were generated on test/659-state-waits-and-main-hooks. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into test/659-state-waits-and-main-hooks unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-service-test-reliability-01M8AAEG
+base_commit: 9f033e1c9c199f4eb44323835a0985186dc5ff2e
+created_at: '2026-11-26T05:19:53.151175+00:00'
 subtasks:
 - T015
 - T016
