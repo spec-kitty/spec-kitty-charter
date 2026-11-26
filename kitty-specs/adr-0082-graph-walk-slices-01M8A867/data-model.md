@@ -15,5 +15,5 @@ All types are in `ai.speckitty.charter.packs.domain` unless named otherwise. Not
 | `ValidationWalker<N>` | final class, `GraphWalker<N, N>` | phases of checks | one traversal per phase; one bucket per check, joined in check order; a phase that records a `VIOLATION` stops the later ones |
 | `Check` (`OnNode`, `OnClose`) | sealed | name, node kind, predicate, rule | an `OnNode` sees only its kind; an `OnClose` sees the selected nodes in visit order |
 | `GraphCheck` | record | walk mode, phases | what the factory hands out; the caller passes a graph and a scope |
-| `Findings` | record | the ledger (`List<ClosureFault>`) | keeps ledger order; `rationale()` projects it |
+| `Ledger` | record | the ledger (`List<ClosureFault>`) | keeps ledger order; `rationale()` projects it |
 | `ProfileReader` (rules) | interface | `read(holder, id)` | replaces `ClosureWalk.Profiles` |
