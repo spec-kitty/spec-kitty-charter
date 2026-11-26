@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -656,8 +657,7 @@ class PackCompositionResolverTest {
             PackUnderResolution second =
                     withParent("01SECNZND00000000000000000", "second", "01FHZRST000000000000000000");
 
-            assertThat(PackCompositionResolver.compositionClosure(
-                            List.of("01FHZRST000000000000000000"), byPackId(first, second)))
+            assertThat(PackGraph.compositionClosure(List.of("01FHZRST000000000000000000"), byPackId(first, second)))
                     .containsExactly("01FHZRST000000000000000000", "01SECNZND00000000000000000");
             assertThat(refusalOf(() -> rooted(List.of(first, second, gamma), "01FHZRST000000000000000000"))
                             .failure())
@@ -740,8 +740,7 @@ class PackCompositionResolverTest {
                     PackLevel.ORG,
                     List.of(new PackDependency("01FHZRST000000000000000000", ">=1.0")));
 
-            assertThat(PackCompositionResolver.compositionClosure(
-                            List.of("01FHZRST000000000000000000"), byPackId(first, second)))
+            assertThat(PackGraph.compositionClosure(List.of("01FHZRST000000000000000000"), byPackId(first, second)))
                     .containsExactly("01FHZRST000000000000000000", "01SECNZND00000000000000000");
             assertThat(refusalOf(() -> rooted(List.of(first, second, gamma), "01FHZRST000000000000000000"))
                             .failure())
@@ -753,7 +752,7 @@ class PackCompositionResolverTest {
             PackUnderResolution orphan =
                     withParent("01NZRPH0000000000000000000", "orphan", "01MHZSSHZNG000000000000000");
 
-            assertThat(PackCompositionResolver.compositionClosure(
+            assertThat(PackGraph.compositionClosure(
                             List.of("01AKZPHA000000000000000000", "01NZRPH0000000000000000000"),
                             byPackId(alpha, beta, orphan)))
                     .containsExactly(
@@ -785,11 +784,11 @@ class PackCompositionResolverTest {
                             packId, "1.0.0", Optional.empty(), name, Optional.of(PackLevel.ORG), Optional.empty()));
         }
 
-        private Map<String, PackUnderResolution> byPackId(PackUnderResolution... packs) {
+        private Function<String, Optional<PackDescriptor>> byPackId(PackUnderResolution... packs) {
             Map<String, PackUnderResolution> index = new LinkedHashMap<>();
             Arrays.stream(packs)
                     .forEach(each -> index.putIfAbsent(each.descriptor().packId(), each));
-            return index;
+            return packId -> Optional.ofNullable(index.get(packId)).map(PackUnderResolution::descriptor);
         }
 
         private Collection<PackIdentifier> configuredIds(String... ids) {
