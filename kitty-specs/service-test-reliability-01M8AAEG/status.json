@@ -1,20 +1,20 @@
 {
-  "event_count": 29,
-  "last_event_id": "01M8BS7F4XD8REGKRTB2F7QB9X",
-  "materialized_at": "2026-11-26T11:18:07.773265+00:00",
+  "event_count": 30,
+  "last_event_id": "01M8BS7HHNC192FEWS8R5801YW",
+  "materialized_at": "2026-11-26T11:18:10.229596+00:00",
   "mission_number": "",
   "mission_slug": "service-test-reliability-01M8AAEG",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 4,
+    "approved": 5,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
+    "in_review": 0,
     "planned": 0
   },
   "work_packages": {
@@ -159,14 +159,19 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude::reviewer-renata",
-      "lane": "in_review",
-      "last_event_id": "01M8BS7F4XD8REGKRTB2F7QB9X",
-      "last_transition_at": "2026-11-26T11:18:07.773265+00:00",
+      "lane": "approved",
+      "last_event_id": "01M8BS7HHNC192FEWS8R5801YW",
+      "last_transition_at": "2026-11-26T11:18:10.229596+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Gates run and attributed; NFR-003 met (+0.7 %)"
       ],
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "review-cycle://service-test-reliability-01M8AAEG/WP05-gates-and-evidence/review-cycle-1.md",
+        "reviewer": "claude::architect-alphonso",
+        "verdict": "approved"
+      },
       "role": "reviewer",
       "shell_pid": 15303,
       "shell_pid_created_at": "1795674302.57",
