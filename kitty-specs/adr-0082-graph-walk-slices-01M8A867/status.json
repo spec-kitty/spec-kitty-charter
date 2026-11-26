@@ -64,6 +64,9 @@
       "last_event_id": "01M8CBA4TMT4R9PYNXRWCT1KMA",
       "last_transition_at": "2026-11-26T16:34:09.876919+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP02 on lane-b (8d3d30cd5): GraphWalker<N,E>, the graph node types and Scope, PackGraph.of and walk with PACKS and RELATIONS (research R-2). verifyAll green on lane-b. Content equals refactor/638-graph-walker's WP02 part (4217f0a53 plus the review fold dc10633df). The adversarial review found no behaviour difference; all findings folded. Out-of-map: PackGraph.java (WP01-owned, WP01 approved) gains the instance driver."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 231,
