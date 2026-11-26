@@ -1,7 +1,7 @@
 {
-  "event_count": 8,
-  "last_event_id": "01M8ACJ9VAK1P3QSAE84HNC2C6",
-  "materialized_at": "2026-11-25T22:17:36.874880+00:00",
+  "event_count": 9,
+  "last_event_id": "01M8BKT5E2CJA8RWN35AFRZWCG",
+  "materialized_at": "2026-11-26T09:43:28.962376+00:00",
   "mission_number": "",
   "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
   "mission_type": "software-dev",
@@ -12,20 +12,20 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 0,
-    "in_progress": 1,
+    "for_review": 1,
+    "in_progress": 0,
     "in_review": 0,
     "planned": 5
   },
   "work_packages": {
     "WP01": {
-      "actor": "user",
+      "actor": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "in_progress",
-      "last_event_id": "01M8ACJ9VAK1P3QSAE84HNC2C6",
-      "last_transition_at": "2026-11-25T22:17:36.874880+00:00",
+      "lane": "for_review",
+      "last_event_id": "01M8BKT5E2CJA8RWN35AFRZWCG",
+      "last_transition_at": "2026-11-26T09:43:28.962376+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "WP01 is PR #665 (refactor/637-pack-graph), built and reviewed before the lane worktrees existed",
