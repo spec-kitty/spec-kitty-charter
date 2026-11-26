@@ -5,14 +5,9 @@ import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
-import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import ai.speckitty.charter.packs.domain.PackGraph;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,7 +22,8 @@ import java.util.function.Function;
  * packs only one activation lists together). Distinct closures are judged once each, however they were found.
  *
  * <p>The work is linear in the packs and their edges: the descriptors are read once, the index is one pass over them and
- * one walk upward from the written pack, and each root set costs one walk of its closure.
+ * one walk upward from the written pack, and each root set costs one walk of its closure. Both walks are
+ * {@link PackGraph}'s (ADR-0082, #637).
  */
 final class ClosureRoots {
 
@@ -126,23 +122,7 @@ final class ClosureRoots {
 
     /** The written pack's {@code pack_id} and every {@code pack_id} that reaches it over {@code depends_on} or lineage. */
     private Set<String> dependents() {
-        Map<String, List<String>> reverse = new HashMap<>();
-        for (PackDescriptor descriptor : readable.values()) {
-            List<String> targets = new ArrayList<>();
-            descriptor.dependencies().forEach(dependency -> targets.add(dependency.packId()));
-            descriptor.parentPack().ifPresent(targets::add);
-            targets.forEach(target -> reverse.computeIfAbsent(target, ignored -> new ArrayList<>())
-                    .add(descriptor.packId()));
-        }
-        Set<String> reached = new LinkedHashSet<>();
-        ArrayDeque<String> pending = new ArrayDeque<>(List.of(writtenPackId));
-        while (!pending.isEmpty()) {
-            String next = pending.removeFirst();
-            if (reached.add(next)) {
-                pending.addAll(reverse.getOrDefault(next, List.of()));
-            }
-        }
-        return reached;
+        return PackGraph.dependentsClosure(writtenPackId, readable.values());
     }
 
     /**
@@ -187,6 +167,8 @@ final class ClosureRoots {
                 .map(id ->
                         Objects.requireNonNull(readable.get(id), "read above").packId())
                 .toList();
-        return new HashSet<>(PackCompositionResolver.compositionClosure(rootPackIds, firstByPackId));
+        return PackGraph.compositionClosure(
+                rootPackIds,
+                packId -> Optional.ofNullable(firstByPackId.get(packId)).map(PackUnderResolution::descriptor));
     }
 }
