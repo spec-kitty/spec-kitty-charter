@@ -1,13 +1,13 @@
 {
-  "event_count": 18,
-  "last_event_id": "01M8CBN707V6FS3D2P8DYJCCWT",
-  "materialized_at": "2026-11-26T16:40:12.369005+00:00",
+  "event_count": 23,
+  "last_event_id": "01M8CE3JV389W9NRRFJQ8QXJF9",
+  "materialized_at": "2026-11-26T17:23:00.408542+00:00",
   "mission_number": "",
   "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 1,
+    "approved": 2,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 1,
     "in_review": 0,
-    "planned": 4
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -55,43 +55,54 @@
     },
     "WP02": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude::reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
       "implementer_of_record": "claude::java-jenny",
-      "lane": "in_progress",
-      "last_event_id": "01M8CBN707V6FS3D2P8DYJCCWT",
-      "last_transition_at": "2026-11-26T16:40:12.369005+00:00",
+      "lane": "approved",
+      "last_event_id": "01M8CE1T0BFK0GRA0XM0FTSJP4",
+      "last_transition_at": "2026-11-26T17:22:02.379574+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP02 on lane-b (8d3d30cd5): GraphWalker<N,E>, the graph node types and Scope, PackGraph.of and walk with PACKS and RELATIONS (research R-2). verifyAll green on lane-b. Content equals refactor/638-graph-walker's WP02 part (4217f0a53 plus the review fold dc10633df). The adversarial review found no behaviour difference; all findings folded. Out-of-map: PackGraph.java (WP01-owned, WP01 approved) gains the instance driver."
+        "WP02 on lane-b (8d3d30cd5): GraphWalker<N,E>, the graph node types and Scope, PackGraph.of and walk with PACKS and RELATIONS (research R-2). verifyAll green on lane-b. Content equals refactor/638-graph-walker's WP02 part (4217f0a53 plus the review fold dc10633df). The adversarial review found no behaviour difference; all findings folded. Out-of-map: PackGraph.java (WP01-owned, WP01 approved) gains the instance driver.",
+        "Review cycle 1 folded in d0abcc62d (lane-b). MEDIUM: four RELATIONS tests (edge selection, an unselected pack's edges, STOP on an edge, SKIP on an edge); both named mutants now fail a test (checked by applying each). LOW: every holder of a shared pack_id is followed (red first); the thread-confinement Javadoc; the out-of-map PackGraph edit is in the commit message. NITs folded or recorded in the commit message. verifyAll green on lane-b at d0abcc62d.",
+        "Review cycle 2 passed. d0abcc62d folds cycle 1: four RELATIONS tests (theSelectionFiltersEdges, anUnselectedPacksEdgesAreHandedOver, stopOnAnEdgeEndsTheWalk, skipOnAnEdgeContinues) kill the edge-filter, pack-selection-prune and STOP-on-edge mutants; the closure follows every holder of a shared pack_id via ancestorsOf, pinned by everyHolderOfAPackIdIsWalked (red against the old getFirst code); thread confinement documented on the class and of; the out-of-map record (PackGraph.java is WP01-owned, WP01 approved; WP02 adds the instance driver) and the NITs are in the commit message. PackGraphWalkTest 14/14 green on lane-b after d0abcc62d, checkstyle 0 errors. Remaining NITs (not blocking): PackGraph.java:100 Javadoc line is 128 chars (the reflow put the overflow on a new line); the PackGraphWalkTest constants OVERRIDES/ENHANCES are declared mid-class. CLI commits after d0abcc62d are unsigned until re-signed before push."
       ],
       "provider": "__resolved_provider_absent__",
       "review": null,
       "review_result": {
-        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/adr-0082-graph-walk-slices-01M8A867-coord/kitty-specs/adr-0082-graph-walk-slices-01M8A867/tasks/WP02-graph-nodes-and-driver/review-cycle-1.md",
-        "reference": "review-cycle://adr-0082-graph-walk-slices-01M8A867/WP02-graph-nodes-and-driver/review-cycle-1.md",
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/adr-0082-graph-walk-slices-01M8A867-coord/kitty-specs/adr-0082-graph-walk-slices-01M8A867/tasks/WP02-graph-nodes-and-driver/review-cycle-2.md",
+        "reference": "review-cycle://adr-0082-graph-walk-slices-01M8A867/WP02-graph-nodes-and-driver/review-cycle-2.md",
         "reviewer": "claude::reviewer-renata",
-        "verdict": "changes_requested"
+        "verdict": "approved"
       },
-      "role": "implementer",
-      "shell_pid": null,
-      "shell_pid_created_at": null,
+      "role": "reviewer",
+      "shell_pid": 15191,
+      "shell_pid_created_at": "1795713661.39",
       "subtasks": {
-        "T007": "planned",
-        "T008": "planned",
-        "T009": "planned",
-        "T010": "planned",
-        "T011": "planned"
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done",
+        "T011": "done"
       }
     },
     "WP03": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M8AA836M4HBK9VFKAYMG018Z",
-      "last_transition_at": "2026-11-25T21:37:05.236347+00:00"
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "in_progress",
+      "last_event_id": "01M8CE3JV389W9NRRFJQ8QXJF9",
+      "last_transition_at": "2026-11-26T17:23:00.408542+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 19209,
+      "shell_pid_created_at": "1795713770.49"
     },
     "WP04": {
       "actor": "finalize-tasks",

@@ -14,6 +14,9 @@ requirement_refs:
 planning_base_branch: feat/adr-0082-graph-walk-slices
 merge_target_branch: feat/adr-0082-graph-walk-slices
 branch_strategy: Planning artifacts for this mission were generated on feat/adr-0082-graph-walk-slices. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/adr-0082-graph-walk-slices unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-adr-0082-graph-walk-slices-01M8A867
+base_commit: 7d286df12d799a1618f51b8a047b3ddb48b0c417
+created_at: '2026-11-26T17:22:58.995179+00:00'
 subtasks:
 - T012
 - T013
