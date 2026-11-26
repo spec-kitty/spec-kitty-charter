@@ -153,21 +153,52 @@ class RelationshipTest {
     }
 
     @Test
-    void nullFieldsAreRejected() {
-        assertThatThrownBy(() -> new Relationship(null, B, RelationType.REQUIRES, Optional.empty(), Optional.empty()))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new Relationship(A, null, RelationType.REQUIRES, Optional.empty(), Optional.empty()))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new Relationship(A, B, null, Optional.empty(), Optional.empty()))
-                .isInstanceOf(IllegalArgumentException.class);
+    void aNullRefusalNamesTheField() {
+        // The contract the requireArg comment states: an IllegalArgumentException naming the field (#658, planted
+        // break 2). A type-only check stays green when the name is dropped or the wrong field is named.
+        Optional<String> none = Optional.empty();
+        RelationType requires = RelationType.REQUIRES;
+        assertThatThrownBy(() -> new Relationship(null, none, B, none, requires, none, none))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("from must not be null");
+        assertThatThrownBy(() -> new Relationship(A, null, B, none, requires, none, none))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("fromPack must not be null");
+        assertThatThrownBy(() -> new Relationship(A, none, null, none, requires, none, none))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("to must not be null");
+        assertThatThrownBy(() -> new Relationship(A, none, B, null, requires, none, none))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("toPack must not be null");
+        assertThatThrownBy(() -> new Relationship(A, none, B, none, null, none, none))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("type must not be null");
+        assertThatThrownBy(() -> new Relationship(A, none, B, none, requires, null, none))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("when must not be null");
+        assertThatThrownBy(() -> new Relationship(A, none, B, none, requires, none, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("rationale must not be null");
+        // The bare constructor delegates to the qualified one.
+        assertThatThrownBy(() -> new Relationship(A, null, requires, none, none))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("to must not be null");
     }
 
     @Test
-    void nullOptionalsAreRejected() {
-        assertThatThrownBy(() -> new Relationship(A, B, RelationType.REQUIRES, null, Optional.empty()))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new Relationship(A, B, RelationType.REQUIRES, Optional.empty(), null))
-                .isInstanceOf(IllegalArgumentException.class);
+    void theFactoryNamesTheFieldTooBeforeItBindsTheEndpoints() {
+        // Relationship.of is the route from parsed YAML; it checks type, from and to before EndpointRule.bind reads
+        // them.
+        Optional<String> none = Optional.empty();
+        assertThatThrownBy(() -> Relationship.of(null, none, B, none, RelationType.REQUIRES, none, none))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("from must not be null");
+        assertThatThrownBy(() -> Relationship.of(A, none, null, none, RelationType.REQUIRES, none, none))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("to must not be null");
+        assertThatThrownBy(() -> Relationship.of(A, none, B, none, null, none, none))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("type must not be null");
     }
 
     @Test
