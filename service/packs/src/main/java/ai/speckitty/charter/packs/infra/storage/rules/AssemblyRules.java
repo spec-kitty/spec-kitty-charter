@@ -14,8 +14,10 @@ import ai.speckitty.charter.packs.domain.rules.Findings;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -128,9 +130,10 @@ public final class AssemblyRules {
         if (!(read.contents().assembly() instanceof Assembly.Assembled held)) {
             return List.of();
         }
+        Stated index = new Stated(stated);
         List<Reason> out = new ArrayList<>();
         for (PackElementViolation violation : held.storeOnly()) {
-            if (stated.stream().noneMatch(reason -> sameFault(violation, reason))) {
+            if (!index.states(violation)) {
                 out.add(
                         StorageCodes.COMPANION.equals(violation.kind())
                                 ? fault(
@@ -141,11 +144,73 @@ public final class AssemblyRules {
             }
         }
         for (PackElementViolation selfJoin : held.selfJoins()) {
-            if (stated.stream().noneMatch(reason -> sameFault(selfJoin, reason))) {
+            if (!index.states(selfJoin)) {
                 out.add(Findings.of(selfJoin));
             }
         }
         return out;
+    }
+
+    /**
+     * The violations a read states, indexed by where they stand, so that asking whether one of them states a store fault
+     * costs no pass over them all (#648): a graph document of self-joins beside other files' schema violations cost their
+     * product. It answers exactly as {@link #sameFault} over every one of them does: every mapping there asks for a
+     * violation at the store fault's own file, or at its companion's, so it looks only there, and the plain mapping
+     * (same file, code and place) only at that place.
+     */
+    static final class Stated {
+
+        private final Map<String, List<Reason>> byFile = new HashMap<>();
+        private final Map<Place, List<Reason>> byPlace = new HashMap<>();
+
+        /** A file, a code and, unless the store names none, a place in the file. */
+        private record Place(String file, ReasonCode code, Optional<String> pointer) {}
+
+        Stated(List<Reason> stated) {
+            for (Reason reason : stated) {
+                String file = reason.location().file();
+                byFile.computeIfAbsent(file, k -> new ArrayList<>()).add(reason);
+                byPlace.computeIfAbsent(new Place(file, reason.code(), Optional.empty()), k -> new ArrayList<>())
+                        .add(reason);
+                byPlace.computeIfAbsent(
+                                new Place(
+                                        file,
+                                        reason.code(),
+                                        Optional.of(reason.location().pointer())),
+                                k -> new ArrayList<>())
+                        .add(reason);
+            }
+        }
+
+        /** Whether a stated violation states the same fault as the store's {@code violation} ({@link #sameFault}). */
+        boolean states(PackElementViolation violation) {
+            List<Reason> candidates;
+            if (StorageCodes.COMPANION.equals(violation.kind())) {
+                candidates = new ArrayList<>(at(violation.file()));
+                candidates.addAll(at(companionOf(violation.file(), violation.reason())));
+            } else if ((PackCodes.PROMPT_FRAGMENT_INVALID.equals(violation.kind())
+                            && namesCompanion(violation.reason()))
+                    || mayStateMissionTypeRefusal(violation)) {
+                candidates = at(violation.file());
+            } else {
+                // A store fault with no place matches a violation at any place in its file: the empty key, which holds
+                // them all. It is not Optional.of(""), which holds only the violations at the whole file.
+                Optional<String> pointer =
+                        violation.pointer().isEmpty() ? Optional.empty() : Optional.of(violation.pointer());
+                candidates = byPlace.getOrDefault(new Place(violation.file(), violation.kind(), pointer), List.of());
+            }
+            return candidates.stream().anyMatch(reason -> sameFault(violation, reason));
+        }
+
+        private List<Reason> at(String file) {
+            return byFile.getOrDefault(file, List.of());
+        }
+    }
+
+    /** Whether {@link #statesMissionTypeRefusal} can hold for {@code violation} at all, judged from the store's side. */
+    private static boolean mayStateMissionTypeRefusal(PackElementViolation violation) {
+        return violation.file().endsWith(MISSION_TYPE_FILE)
+                && violation.reason().endsWith(STEP_STANDS_ONCE);
     }
 
     /**
@@ -165,6 +230,9 @@ public final class AssemblyRules {
      *       names one (two equal edges of one document are two faults), with the same code whose words end with the
      *       store's.
      * </ul>
+     *
+     * <p>{@link Stated#states} copies this method's choice of candidates: a new mapping here must update it, and
+     * {@code AssemblyRulesTest} asserts that the two agree.
      *
      * @param violation the store's fault
      * @param reason a violation the read already states
@@ -203,8 +271,7 @@ public final class AssemblyRules {
      */
     static boolean statesMissionTypeRefusal(PackElementViolation violation, Reason reason) {
         String file = violation.file();
-        if (!file.endsWith(MISSION_TYPE_FILE)
-                || !violation.reason().endsWith(STEP_STANDS_ONCE)
+        if (!mayStateMissionTypeRefusal(violation)
                 || !reason.location().file().equals(file)
                 || !PackCodes.ARTIFACT_SCHEMA_ERROR.equals(reason.code())) {
             return false;
