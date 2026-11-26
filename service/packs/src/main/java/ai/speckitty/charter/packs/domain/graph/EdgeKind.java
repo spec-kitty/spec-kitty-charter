@@ -1,6 +1,10 @@
 package ai.speckitty.charter.packs.domain.graph;
 
-/** The kinds of edge the pack graph holds. Which a walk follows is the domain's choice, never the caller's. */
+/**
+ * The kinds of edge the pack graph holds. Which a walk follows is the domain's choice, never the caller's. The
+ * relations walk emits {@link #OVERRIDES}, {@link #ENHANCES}, {@link #SPECIALIZES} and {@link #STEP_LINK}; no mode
+ * emits the others yet.
+ */
 public enum EdgeKind {
     /** A descriptor's {@code depends_on} entry. */
     DEPENDS_ON,

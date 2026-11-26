@@ -183,38 +183,6 @@ class PackGraphWalkTest {
     }
 
     @Test
-    @DisplayName("COMPOSE: a pack's depends_on entries, then its parent_pack, from its descriptor")
-    void composeEmitsTheDescriptorEdges() {
-        Recorder walker = new Recorder();
-        graph(
-                        List.of(
-                                pack("b", Optional.empty()),
-                                pack("c", Optional.empty()),
-                                pack("a", Optional.of("c"), "b")),
-                        pack -> {
-                            throw new AssertionError("COMPOSE reads no facts");
-                        })
-                .walk(
-                        new Scope(List.of(id("a")), node -> node.pack().value().equals("a")),
-                        PackGraph.Walk.COMPOSE,
-                        walker);
-
-        assertThat(walker.seen).containsExactly("pack:a", "edge:DEPENDS_ON:a", "edge:PARENT_PACK:a");
-    }
-
-    @Test
-    @DisplayName("ARTIFACTS: each artifact a pack declares, marked when it holds a file for it")
-    void artifactsEmitTheDeclaredNodes() {
-        Recorder walker = new Recorder();
-        graph(
-                        List.of(pack("p", Optional.empty())),
-                        pack -> facts(List.of("directive:A"), List.of("directive:A", "tactic:B"), List.of()))
-                .walk(Scope.of(List.of(id("p"))), PackGraph.Walk.ARTIFACTS, walker);
-
-        assertThat(walker.seen).containsExactly("pack:p", "artifact:directive:A:held", "artifact:tactic:B");
-    }
-
-    @Test
     @DisplayName("SKIP on a pack skips its edges; the walk goes on with the next pack")
     void skipSkipsAPacksEdges() {
         Relationship overrides = Relationship.of(u("directive:C"), u("directive:D"), RelationType.OVERRIDES);
@@ -240,7 +208,7 @@ class PackGraphWalkTest {
     }
 
     @Test
-    @DisplayName("PACKS never reads a pack's facts, and the other modes read each pack's once")
+    @DisplayName("PACKS never reads a pack's facts, and RELATIONS reads each pack's once, however often it walks")
     void factsAreReadOnlyWhenNeededAndOnce() {
         List<String> reads = new ArrayList<>();
         PackGraph graph = graph(List.of(pack("a", Optional.empty()), pack("b", Optional.empty(), "a")), pack -> {
@@ -252,7 +220,7 @@ class PackGraphWalkTest {
         assertThat(reads).isEmpty();
 
         graph.walk(Scope.of(List.of(id("b"))), PackGraph.Walk.RELATIONS, new Recorder());
-        graph.walk(Scope.of(List.of(id("b"))), PackGraph.Walk.ARTIFACTS, new Recorder());
+        graph.walk(Scope.of(List.of(id("b"))), PackGraph.Walk.RELATIONS, new Recorder());
         assertThat(reads).containsExactly("a", "b");
     }
 

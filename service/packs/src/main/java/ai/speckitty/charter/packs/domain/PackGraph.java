@@ -6,8 +6,6 @@ import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.Relationship;
-import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.domain.graph.ArtifactNode;
 import ai.speckitty.charter.packs.domain.graph.EdgeKind;
 import ai.speckitty.charter.packs.domain.graph.EdgeNode;
 import ai.speckitty.charter.packs.domain.graph.PackGraphNode;
@@ -40,7 +38,7 @@ import java.util.function.Function;
  * ({@link #onParentLine}), the dependency order ({@link #topologicalOrder}) and the cycles it leaves
  * ({@link #leftoverCycles}).
  *
- * <p>A graph built once per judge ({@link #of}) is also the one driver of the kernel's visitor contract over the pack
+ * <p>A graph built over a closure's packs ({@link #of}) is also the one driver of the kernel's visitor contract over the pack
  * graph ({@link #walk}): a {@link Scope} narrows it, and the domain's {@link Walk} mode decides which edges it emits.
  *
  * <p>Every walk is iterative, so a long chain cannot exhaust the stack, and every answer is in a stable order: the
@@ -56,16 +54,10 @@ public final class PackGraph {
     public enum Walk {
         /** The packs alone; no pack's facts are read. */
         PACKS,
-        /** Each pack, then its {@code depends_on} entries and its {@code parent_pack}, from its descriptor. */
-        COMPOSE,
-        /** Each pack, then each artifact it declares, held or not. */
-        ARTIFACTS,
         /**
          * Each pack, then its {@code overrides}, {@code enhances}, {@code specializes_from} and own step-link edges.
          */
-        RELATIONS,
-        /** Each pack, then the references and the qualified substep delegations it writes. */
-        REFERENCES
+        RELATIONS
     }
 
     private final List<PackNode> packs;
@@ -85,7 +77,7 @@ public final class PackGraph {
     }
 
     /**
-     * The pack graph of a set of packs, built once per judge: the packs in the caller's merge order, and where each
+     * The pack graph of a set of packs: the packs in the caller's merge order, and where each
      * pack's composition facts are read. Facts are read lazily, once per pack, and only by a walk whose mode needs
      * them.
      *
@@ -104,9 +96,9 @@ public final class PackGraph {
      * Walks the composition closure of the scope's roots (ADR-0082 decision 2): every pack whose {@code pack_id} the
      * closure holds, once each, in the graph's order; after each pack, the elements the mode emits for it, in declared
      * order. The visitor is handed only what the scope selects; an element it does not select is still walked through,
-     * so its pack's elements are visited. {@link Descent#SKIP} on a pack skips its elements; {@link Descent#STOP} ends
-     * the walk. The walk is iterative and visits each pack once, so a cycle ends and a long chain cannot exhaust the
-     * stack.
+     * so its pack's elements are visited. {@link Descent#SKIP} on a pack skips its elements; on an element it is
+     * {@link Descent#CONTINUE}, since nothing is walked beneath an element. {@link Descent#STOP} ends the walk. The
+     * walk is iterative and visits each pack once, so a cycle ends and a long chain cannot exhaust the stack.
      *
      * @param scope the roots and the selection
      * @param walk the mode: which elements are emitted beyond the packs
@@ -166,41 +158,11 @@ public final class PackGraph {
     private List<PackGraphNode> elementsOf(PackNode pack, Walk walk) {
         PackIdentifier id = pack.pack();
         List<PackGraphNode> elements = new ArrayList<>();
-        switch (walk) {
-            case COMPOSE -> {
-                pack.descriptor()
-                        .dependencies()
-                        .forEach(dependency -> elements.add(
-                                new EdgeNode(EdgeKind.DEPENDS_ON, id, new EdgeNode.DependsOn(dependency))));
-                pack.descriptor()
-                        .parentPack()
-                        .ifPresent(parent ->
-                                elements.add(new EdgeNode(EdgeKind.PARENT_PACK, id, new EdgeNode.ParentPack(parent))));
-            }
-            case ARTIFACTS -> {
-                PackCompositionFacts held = factsOf(id);
-                Set<String> files = new LinkedHashSet<>(held.held());
-                held.declared()
-                        .forEach(declared -> Urn.parse(declared)
-                                .ifPresent(urn -> elements.add(new ArtifactNode(id, urn, files.contains(declared)))));
-            }
-            case RELATIONS ->
-                factsOf(id)
-                        .edges()
-                        .forEach(edge -> relationKind(pack, edge)
-                                .ifPresent(kind -> elements.add(new EdgeNode(kind, id, new EdgeNode.Related(edge)))));
-            case REFERENCES -> {
-                PackCompositionFacts written = factsOf(id);
-                written.references()
-                        .forEach(reference -> elements.add(
-                                new EdgeNode(EdgeKind.REFERENCES, id, new EdgeNode.Referenced(reference))));
-                written.delegations()
-                        .forEach(candidate ->
-                                elements.add(new EdgeNode(EdgeKind.DELEGATES, id, new EdgeNode.Delegated(candidate))));
-            }
-            default -> {
-                // PACKS: the packs alone, nothing beyond them.
-            }
+        if (walk == Walk.RELATIONS) {
+            factsOf(id)
+                    .edges()
+                    .forEach(edge -> relationKind(pack, edge)
+                            .ifPresent(kind -> elements.add(new EdgeNode(kind, id, new EdgeNode.Related(edge)))));
         }
         return elements;
     }

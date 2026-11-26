@@ -7,7 +7,8 @@ import ai.speckitty.charter.packs.domain.PackOrigins;
 import java.util.Objects;
 
 /**
- * An artifact a pack declares as a graph node or holds as a file.
+ * An artifact a pack declares as a graph node or holds as a file. No walk mode emits one yet: the first artifact rule
+ * on the graph adds its mode (data model of the ADR-0082 mission).
  *
  * @param pack the declaring pack, by configured identifier
  * @param urn the artifact
