@@ -33,9 +33,12 @@ audience:
     `PackCompositionResolver.holderOf`;
   - the `specializes_from` graph;
   - the enhances cycles, computed once;
-  - the closure's mutability policies, scoped as the mutability check scopes them.
-- `ImpactRelations` and `SpecializationCycleRule` are deleted. Their tests move to `packs.domain.rules` unchanged. A new
-  case pins that a rule's findings come in rule order, not in the order the edges are written.
+  - the closure's mutability policies, scoped by `ScopedPolicies`, which moved into `packs.domain` from
+    `PackMutabilityPolicy`; the mutability check and the read side's locks call it there.
+- `PackRulesets.relationFaults(packs, factsOf)` runs the check over a closure; `ClosureImpactCheck` calls it.
+- `ImpactRelations` and `SpecializationCycleRule` are deleted. `ImpactRelations`' tests move to `packs.domain.rules`
+  unchanged; `SpecializationCycleImpactTest` stays where it is, since it judges through registration. A new case pins
+  that a rule's findings come in rule order, not in the order the edges are written.
 
 No refusal code, detail, origin, order of findings or exception changes, on registration, a write, removal or the
-census.
+census. Every closure judged holds at least the written pack; a closure with no pack has no fault, as before.

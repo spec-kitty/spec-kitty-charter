@@ -305,15 +305,16 @@ generic functional interfaces such as `Predicate<T>`.
 
 - *Exists:* `{@link ai.speckitty.charter.packs.domain.rules.PackRulesets}` with `content()` and `closure()`;
   `ModularRuleset.of` builds a ruleset.
-- *Proposed:* `PackRulesets` grows `relations()`, `ownClosure()`, `mutability(policies)` and `dependents()`, and the
-  scopes `activeSet(..)`, `selection(..)`, `ancestorsOf(..)` and `closuresHolding(..)`.
+- *Proposed:* `PackRulesets` grows `mutability(policies)` and `dependents()`, and the scopes `activeSet(..)`,
+  `selection(..)`, `ancestorsOf(..)` and `closuresHolding(..)`. `ownClosure(..)` and `relations(..)` are built (below).
 - *Built (slice 3, #638):* `PackRulesets.ownClosure(closureFacts, profiles, merge)` hands out a `GraphCheck` (the
   `PACKS` mode, one phase: fallback profile, own role pins, pin conflicts, profile enhancements), run over
   `ownClosureOf(declaring)`; `references(..)` runs its three checks as three phases of the walker.
 - *Built (slice 4, #639):* `PackRulesets.relations(composedRelations)` hands out a `GraphCheck` (the `RELATIONS` mode,
-  one phase of eight whole-closure checks in the old order), run over `closureOf(packs)`. `ComposedRelations` in
-  `packs.domain` is the subject: the placed `enhances` and `overrides` edges, the `specializes_from` graph, the enhances
-  cycles computed once, and the scoped policies the application hands in. `ImpactRelations` and
+  one phase of eight whole-closure checks in the old order); `PackRulesets.relationFaults(packs, factsOf)` runs it over
+  a closure, every pack a root. `ComposedRelations` in `packs.domain` is the subject: the placed `enhances` and
+  `overrides` edges, the `specializes_from` graph, the enhances cycles computed once, and the policies scoped by
+  `ScopedPolicies`, which moved into `packs.domain` from `PackMutabilityPolicy`. `ImpactRelations` and
   `SpecializationCycleRule` are deleted.
 
 Reference: Bloch, *Effective Java*, 3rd edition, Item 1.

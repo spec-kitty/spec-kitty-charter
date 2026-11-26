@@ -28,10 +28,11 @@ import java.util.Set;
 
 /**
  * The relation rules of a composed closure (IC-15, C28, C36, A6, A8, A11, A12, the lock a step inherits from its
- * mission type, OD-2 (A), and the specialization rule of ruling D2), moved from the application ring onto the walker
- * (#639, ADR-0082 slice 4). They are pure checks over the typed edges the packs write, never over {@code GraphWalk},
- * which sees derived relations only (#397). Each reads the subject's placed edges ({@link ComposedRelations}); the
- * cycles and the grounding are {@link PackGraph}'s walks, iterative, so a long chain cannot exhaust the stack.
+ * mission type, OD-2 (A), and the specialization rule of ruling D2; #639, ADR-0082 slice 4). They are pure checks over
+ * the typed edges the packs write, never over {@code GraphWalk}, which sees derived relations only (#397). Each reads
+ * the subject ({@link ComposedRelations}): the relation rules its placed {@code enhances} and {@code overrides} edges,
+ * the specialization rule its {@code specializes_from} graph. The cycles and the grounding are {@link PackGraph}'s
+ * walks, iterative, so a long chain cannot exhaust the stack.
  * {@link PackRulesets#relations} declares them, each with every fault it finds, in the order of the edges. A fault an
  * earlier rule implies is not found again: a self-override is no override cycle, and an enhancer on or leading into a
  * reported enhances cycle is not judged ungrounded.
@@ -79,9 +80,9 @@ final class RelationRules {
     }
 
     /**
-     * Every {@code overrides} edge onto a target that is not open (A6): the level is the strictest any pack of the closure
-     * declares for it, each policy scoped to what its pack and the packs it builds on hold (A15), the source's own pack
-     * left out as it is by the mutability check (B8).
+     * Every {@code overrides} edge onto a target that is not open (A6): the level is the strictest any pack of the
+     * closure declares for it, each policy scoped to what its pack and the packs it builds on hold (A15), the source's
+     * own pack left out as it is by the mutability check (B8).
      */
     static List<ClosureFault> notPermitted(ComposedRelations relations) {
         Map<PackUlid, MutabilityPolicySource> scoped = relations.scopedPolicies();
@@ -104,9 +105,10 @@ final class RelationRules {
     }
 
     /**
-     * Every enhancement of a step whose mission type is locked (C22 and C25 as amended, OD-2 (A)): a step takes its mission
-     * type's level, judged along the closure with the enhancing pack's own policy left out, as {@link #notPermitted}
-     * leaves out the source's pack. The read refuses the same closure {@code pack_unreadable} from the merge.
+     * Every enhancement of a step whose mission type is locked (C22 and C25 as amended, OD-2 (A)): a step takes its
+     * mission type's level, judged along the closure with the enhancing pack's own policy left out, as
+     * {@link #notPermitted} leaves out the source's pack. The read refuses the same closure {@code pack_unreadable}
+     * from the merge.
      */
     static List<ClosureFault> lockedStepEnhanced(ComposedRelations relations) {
         return EnhancementCompose.lockedTargets(
@@ -172,9 +174,9 @@ final class RelationRules {
 
     /**
      * Every enhancer none of whose {@code enhances} chains reaches an artifact that enhances nothing (A8): an
-     * enhancement never stands alone, and a chain that ends at an artifact nothing holds ends nowhere. Grounding spreads
-     * from each edge onto a held non-enhancer to its enhancers, one pass over the reverse edges; an enhancer that is on,
-     * or reaches, an enhances cycle is that cycle's fault and is not found again here.
+     * enhancement never stands alone, and a chain that ends at an artifact nothing holds ends nowhere. Grounding
+     * spreads from each edge onto a held non-enhancer to its enhancers, one pass over the reverse edges; an enhancer
+     * that is on, or reaches, an enhances cycle is that cycle's fault and is not found again here.
      */
     static List<ClosureFault> ungroundedEnhancer(ComposedRelations relations) {
         Set<Place> enhancers = new LinkedHashSet<>();
@@ -208,12 +210,13 @@ final class RelationRules {
                 .toList();
     }
 
-    private static ClosureFault specialization(List<Urn> cycle, Map<List<Urn>, PackUnderResolution> writers) {
+    private static ClosureFault specialization(
+            List<Urn> cycle, Map<ComposedRelations.Link, PackUnderResolution> writers) {
         List<String> ids = new ArrayList<>(cycle.stream().map(Urn::id).toList());
         ids.add(ids.getFirst());
         Set<PackUnderResolution> involved = new LinkedHashSet<>();
         for (int i = 0; i < cycle.size(); i++) {
-            List<Urn> edge = List.of(cycle.get(i), cycle.get((i + 1) % cycle.size()));
+            ComposedRelations.Link edge = new ComposedRelations.Link(cycle.get(i), cycle.get((i + 1) % cycle.size()));
             Optional.ofNullable(writers.get(edge)).ifPresent(involved::add);
         }
         return fault(

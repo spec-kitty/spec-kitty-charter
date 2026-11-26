@@ -11,7 +11,6 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureVerdict;
-import ai.speckitty.charter.packs.domain.ComposedRelations;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.Pack;
@@ -45,9 +44,9 @@ import org.springframework.stereotype.Component;
  * closure that holds it, and no other. Those are the closure of every pack that builds on it, found from a reverse
  * {@code depends_on}/lineage index, and the root set of every stored activation whose closure holds it, which the
  * index alone misses (a sibling conflict between packs only one activation lists together). A closure that does not
- * compose, or breaks a relation rule ({@link PackRulesets#relations}), refuses the write with its code, naming the closure's
- * roots and the packs involved, and nothing is written. PR A stays strict (DM-01M6TQ67C9ZTNGZB9CY28JS54F): a pack
- * already broken is not repaired by a write that leaves a closure broken.
+ * compose, or breaks a relation rule ({@link PackRulesets#relations}), refuses the write with its code, naming the
+ * closure's roots and the packs involved, and nothing is written. PR A stays strict (DM-01M6TQ67C9ZTNGZB9CY28JS54F): a
+ * pack already broken is not repaired by a write that leaves a closure broken.
  *
  * <p>It composes through {@code OfferingReadService} and {@code ClosureQueries}, built over {@link StagedPackViews}, so the
  * compose rules are the reads' own and none is copied. It runs under the registry lock and the pack's own, so the stored
@@ -430,26 +429,10 @@ public final class ClosureImpactCheck implements ImpactCheck {
 
     /**
      * Every relation fault of a composed closure: the relation rules, then the specialization cycles (#556, FR-003),
-     * from the factory ({@link PackRulesets#relations}) and run by the one walker over the closure's graph (#639). The
-     * closure's policies are scoped as the mutability check scopes them (A15).
+     * from the factory ({@link PackRulesets#relationFaults}), run by the one walker over the closure's graph (#639).
      */
     private static List<ClosureFault> relationFaults(OfferingReadService.ComposedClosure composed) {
-        ComposedRelations relations = ComposedRelations.of(
-                composed.packs(),
-                member -> composed.factsOf(member).edges(),
-                () -> PackMutabilityPolicy.scopedPolicies(
-                        composed.packs(), member -> composed.factsOf(member).policy()));
-        Map<PackIdentifier, PackUnderResolution> members = new LinkedHashMap<>();
-        composed.packs()
-                .forEach(member -> members.putIfAbsent(member.configured().id(), member));
-        PackGraph graph = PackGraph.of(
-                composed.packs().stream()
-                        .map(member -> new PackNode(member.configured(), member.descriptor()))
-                        .toList(),
-                pack -> composed.factsOf(Objects.requireNonNull(members.get(pack), "a pack of the closure")));
-        return PackRulesets.relations(relations)
-                .run(graph, PackRulesets.closureOf(composed.packs()))
-                .faults();
+        return PackRulesets.relationFaults(composed.packs(), composed::factsOf);
     }
 
     /**

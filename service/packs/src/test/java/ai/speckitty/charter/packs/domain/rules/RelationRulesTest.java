@@ -10,22 +10,17 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.application.PackMutabilityPolicy;
 import ai.speckitty.charter.packs.domain.ClosureFault;
-import ai.speckitty.charter.packs.domain.ComposedRelations;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
-import ai.speckitty.charter.packs.domain.PackGraph;
-import ai.speckitty.charter.packs.domain.graph.PackNode;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -104,26 +99,12 @@ class RelationRulesTest {
         return RelationRulesTest.relationsOf(packs, facts);
     }
 
-    /**
-     * The factory's relation check over a closure's packs and facts, run by the walker as registration runs it: the
-     * policies scoped as the mutability check scopes them (A15).
-     */
+    /** The factory's relation faults over a closure's packs and facts, as registration judges a closure. */
     static List<ClosureFault> relationsOf(List<PackUnderResolution> packs, Map<String, PackCompositionFacts> facts) {
-        Function<PackUnderResolution, PackCompositionFacts> factsOf = member ->
-                Objects.requireNonNull(facts.get(member.configured().id().value()), "facts");
-        ComposedRelations relations = ComposedRelations.of(
+        return PackRulesets.relationFaults(
                 packs,
-                member -> factsOf.apply(member).edges(),
-                () -> PackMutabilityPolicy.scopedPolicies(
-                        packs, member -> factsOf.apply(member).policy()));
-        PackGraph graph = PackGraph.of(
-                packs.stream()
-                        .map(member -> new PackNode(member.configured(), member.descriptor()))
-                        .toList(),
-                pack -> Objects.requireNonNull(facts.get(pack.value()), "facts"));
-        return PackRulesets.relations(relations)
-                .run(graph, PackRulesets.closureOf(packs))
-                .faults();
+                member -> Objects.requireNonNull(
+                        facts.get(member.configured().id().value()), "facts"));
     }
 
     private static List<ClosureFault> judged(Relationship... edges) {

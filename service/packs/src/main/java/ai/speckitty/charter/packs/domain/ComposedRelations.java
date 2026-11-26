@@ -10,6 +10,7 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -25,11 +25,12 @@ import org.jspecify.annotations.Nullable;
  * {@code enhances} and {@code overrides} edges in writer-then-declared order, each endpoint placed through
  * {@link PackCompositionResolver#holderOf}, the one owner of which pack a reference means; the {@code specializes_from}
  * edges between agent profiles; and the closure's mutability policies, each scoped to what its pack and the packs it
- * builds on hold (A15). The enhances cycles are computed once here, so the grounding rule reads them from the subject
- * and never from a field another rule filled.
+ * builds on hold (A15, {@link ScopedPolicies}). The enhances cycles are computed once here, so the grounding rule reads
+ * them from the subject and never from a field another rule filled.
  *
- * <p>The edges are collected when the subject is built; the graphs, the cycles and the scoped policies are read once,
- * on first use. A subject is confined to the thread that judges it.
+ * <p>The edges are collected when the subject is built. The {@code enhances} graph, its cycles, the specializations
+ * and the scoped policies are read once, on first use, and handed out unmodifiable; {@link #graphOf} builds a graph on
+ * each call. A subject is confined to the thread that judges it.
  */
 public final class ComposedRelations {
 
@@ -80,18 +81,40 @@ public final class ComposedRelations {
     }
 
     /**
+     * One {@code specializes_from} edge between two agent profiles, by its two ends.
+     *
+     * @param from the specializing profile
+     * @param to the profile it specializes from
+     */
+    public record Link(Urn from, Urn to) {}
+
+    /**
      * The {@code specializes_from} graph between agent profiles, and the first pack that writes each of its edges.
      *
      * @param graph each profile and the profiles it specializes from, in the order the edges are written
-     * @param writers the first pack writing each edge, by its two ends
+     * @param writers the first pack writing each edge
      */
-    public record Specializations(Map<Urn, List<Urn>> graph, Map<List<Urn>, PackUnderResolution> writers) {}
+    public record Specializations(Map<Urn, List<Urn>> graph, Map<Link, PackUnderResolution> writers) {
+
+        /**
+         * Copies the fields.
+         *
+         * @param graph the graph
+         * @param writers the writers
+         */
+        public Specializations {
+            Map<Urn, List<Urn>> copied = new LinkedHashMap<>();
+            graph.forEach((from, to) -> copied.put(from, List.copyOf(to)));
+            graph = Collections.unmodifiableMap(copied);
+            writers = Collections.unmodifiableMap(new LinkedHashMap<>(writers));
+        }
+    }
 
     private final List<PackUnderResolution> packs;
     private final Function<PackUnderResolution, List<Relationship>> edgesOf;
-    private final Supplier<Map<PackUlid, MutabilityPolicySource>> scopedPolicies;
+    private final Function<PackUnderResolution, MutabilityPolicySource> policyOf;
     private final Map<PackIdentifier, PackUnderResolution> byConfigured = new LinkedHashMap<>();
-    private final List<Edge> edges = new ArrayList<>();
+    private final List<Edge> edges;
     private @Nullable Map<PackUlid, MutabilityPolicySource> scoped;
     private @Nullable Map<Place, List<Place>> enhances;
     private @Nullable List<List<Place>> enhancesCycles;
@@ -100,35 +123,35 @@ public final class ComposedRelations {
     private ComposedRelations(
             List<PackUnderResolution> packs,
             Function<PackUnderResolution, List<Relationship>> edgesOf,
-            Supplier<Map<PackUlid, MutabilityPolicySource>> scopedPolicies) {
+            Function<PackUnderResolution, MutabilityPolicySource> policyOf) {
         this.packs = List.copyOf(packs);
         this.edgesOf = edgesOf;
-        this.scopedPolicies = scopedPolicies;
+        this.policyOf = policyOf;
         this.packs.forEach(pack -> byConfigured.put(pack.configured().id(), pack));
-        collect();
+        this.edges = collect();
     }
 
     /**
      * The relations of a composed closure. The {@code enhances} and {@code overrides} edges are collected and placed
-     * now; the scoped policies are read the first time a rule needs them.
+     * now; the policies are read and scoped the first time a rule needs them.
      *
      * @param packs the closure's packs, in merge order
      * @param edgesOf the typed edges each pack writes, in declared order
-     * @param scopedPolicies the closure's mutability policies, each scoped to what its pack and the packs it builds on
-     *     hold (A15)
+     * @param policyOf each pack's declared mutability policy
      * @return the subject
      */
     public static ComposedRelations of(
             List<PackUnderResolution> packs,
             Function<PackUnderResolution, List<Relationship>> edgesOf,
-            Supplier<Map<PackUlid, MutabilityPolicySource>> scopedPolicies) {
+            Function<PackUnderResolution, MutabilityPolicySource> policyOf) {
         Objects.requireNonNull(packs, "packs");
         Objects.requireNonNull(edgesOf, "edgesOf");
-        Objects.requireNonNull(scopedPolicies, "scopedPolicies");
-        return new ComposedRelations(packs, edgesOf, scopedPolicies);
+        Objects.requireNonNull(policyOf, "policyOf");
+        return new ComposedRelations(packs, edgesOf, policyOf);
     }
 
-    private void collect() {
+    private List<Edge> collect() {
+        List<Edge> edges = new ArrayList<>();
         for (PackUnderResolution writer : packs) {
             for (Relationship edge : edgesOf.apply(writer)) {
                 if (edge.type() == RelationType.ENHANCES || edge.type() == RelationType.OVERRIDES) {
@@ -138,6 +161,7 @@ public final class ComposedRelations {
                 }
             }
         }
+        return List.copyOf(edges);
     }
 
     /** The place an edge starts at: the writing pack's own artifact, or the holder of the qualified source. */
@@ -173,7 +197,7 @@ public final class ComposedRelations {
      * @return the edges, in writer-then-declared order
      */
     public List<Edge> edges() {
-        return List.copyOf(edges);
+        return edges;
     }
 
     /**
@@ -189,11 +213,11 @@ public final class ComposedRelations {
     /**
      * The closure's mutability policies, each scoped to what its pack and the packs it builds on hold (A15), read once.
      *
-     * @return the policies, by descriptor {@code pack_id}
+     * @return the policies, by descriptor {@code pack_id}, in closure order
      */
     public Map<PackUlid, MutabilityPolicySource> scopedPolicies() {
         if (scoped == null) {
-            scoped = Objects.requireNonNull(scopedPolicies.get(), "scopedPolicies");
+            scoped = Collections.unmodifiableMap(ScopedPolicies.of(packs, policyOf));
         }
         return scoped;
     }
@@ -244,7 +268,10 @@ public final class ComposedRelations {
      */
     public Map<Place, List<Place>> enhancesGraph() {
         if (enhances == null) {
-            enhances = graphOf(RelationType.ENHANCES, edge -> true);
+            Map<Place, List<Place>> copied = new LinkedHashMap<>();
+            graphOf(RelationType.ENHANCES, edge -> true)
+                    .forEach((source, targets) -> copied.put(source, List.copyOf(targets)));
+            enhances = Collections.unmodifiableMap(copied);
         }
         return enhances;
     }
@@ -256,7 +283,9 @@ public final class ComposedRelations {
      */
     public List<List<Place>> enhancesCycles() {
         if (enhancesCycles == null) {
-            enhancesCycles = PackGraph.cyclesIn(enhancesGraph());
+            enhancesCycles = PackGraph.cyclesIn(enhancesGraph()).stream()
+                    .map(List::copyOf)
+                    .toList();
         }
         return enhancesCycles;
     }
@@ -270,7 +299,7 @@ public final class ComposedRelations {
     public Specializations specializations() {
         if (specializations == null) {
             Map<Urn, List<Urn>> graph = new LinkedHashMap<>();
-            Map<List<Urn>, PackUnderResolution> writers = new LinkedHashMap<>();
+            Map<Link, PackUnderResolution> writers = new LinkedHashMap<>();
             for (PackUnderResolution writer : packs) {
                 for (Relationship edge : edgesOf.apply(writer)) {
                     if (edge.type() == RelationType.SPECIALIZES_FROM
@@ -278,7 +307,7 @@ public final class ComposedRelations {
                             && edge.to().kind() == PROFILE) {
                         graph.computeIfAbsent(edge.from(), ignored -> new ArrayList<>())
                                 .add(edge.to());
-                        writers.putIfAbsent(List.of(edge.from(), edge.to()), writer);
+                        writers.putIfAbsent(new Link(edge.from(), edge.to()), writer);
                     }
                 }
             }

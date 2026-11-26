@@ -14,11 +14,14 @@ import ai.speckitty.charter.packs.domain.PackContents;
 import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
+import ai.speckitty.charter.packs.domain.ScopedPolicies;
 import ai.speckitty.charter.packs.domain.ValidationWalker;
 import ai.speckitty.charter.packs.domain.graph.PackGraphNode;
 import ai.speckitty.charter.packs.domain.graph.PackNode;
 import ai.speckitty.charter.packs.domain.graph.Scope;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -62,7 +65,7 @@ public final class PackRulesets {
     /** The name of the own-closure phase: the closure walk's name, which ruling R-u keeps free for it. */
     private static final String OWN_CLOSURE = "closure_walk";
 
-    private static final String RELATIONS = "relations";
+    private static final String RELATIONS_PHASE = "relations";
 
     /**
      * {@code REFERENCES}' checks, in registration's phase order (its phases 2 to 4): the substep delegations, the
@@ -237,8 +240,9 @@ public final class PackRulesets {
      * ({@code override_not_permitted}), an override cycle ({@code override_cycle}), an enhances cycle and an ungrounded
      * enhancer ({@code enhances_cycle}), then a specialization cycle ({@code specialization_cycle}). The relation rules
      * run only when the closure writes an {@code enhances} or {@code overrides} edge; the specialization rule runs
-     * regardless. Each rule reads the subject, since where an edge's ends are placed is a fact of the closure; run them
-     * over {@link #closureOf} the closure's packs.
+     * regardless. Each rule reads the subject, since where an edge's ends are placed is a fact of the closure, so the
+     * answer does not depend on the elements the walk hands over; the {@code RELATIONS} mode names what the check is
+     * about. {@link #relationFaults} runs it over a closure.
      *
      * @param relations the closure's typed edges, placed
      * @return the check: the relations walk and the one phase
@@ -248,7 +252,7 @@ public final class PackRulesets {
         return new GraphCheck(
                 PackGraph.Walk.RELATIONS,
                 List.of(new ValidationWalker.Phase<PackGraphNode>(
-                        RELATIONS,
+                        RELATIONS_PHASE,
                         List.of(
                                 relation("self_override", relations, RelationRules::selfOverride),
                                 relation("conflicting_relations", relations, RelationRules::conflicting),
@@ -270,13 +274,39 @@ public final class PackRulesets {
     }
 
     /**
-     * The scope of a whole closure: every pack of it a root, every element selected.
+     * Every relation fault of a composed closure (#639): {@link #relations} over the closure's subject, run by the
+     * walker over the closure's graph, every pack a root. The policies are scoped as the mutability check scopes them
+     * ({@link ScopedPolicies}). A closure with no pack has no fault.
      *
-     * @param packs the closure's packs
-     * @return the scope
+     * @param packs the closure's packs, in merge order
+     * @param factsOf each pack's composition facts, as the closure was composed with them
+     * @return the faults, rule by rule; empty when the closure is sound
      */
-    public static Scope closureOf(List<PackUnderResolution> packs) {
-        return Scope.of(packs.stream().map(pack -> pack.configured().id()).toList());
+    public static List<ClosureFault> relationFaults(
+            List<PackUnderResolution> packs, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
+        Objects.requireNonNull(packs, "packs");
+        Objects.requireNonNull(factsOf, "factsOf");
+        if (packs.isEmpty()) {
+            return List.of();
+        }
+        ComposedRelations relations = ComposedRelations.of(
+                packs,
+                member -> factsOf.apply(member).edges(),
+                member -> factsOf.apply(member).policy());
+        Map<PackIdentifier, PackUnderResolution> members = new LinkedHashMap<>();
+        packs.forEach(member -> members.putIfAbsent(member.configured().id(), member));
+        PackGraph graph = PackGraph.of(
+                packs.stream()
+                        .map(member -> new PackNode(member.configured(), member.descriptor()))
+                        .toList(),
+                pack -> factsOf.apply(Objects.requireNonNull(members.get(pack), "a pack of the closure")));
+        return relations(relations)
+                .run(
+                        graph,
+                        Scope.of(packs.stream()
+                                .map(member -> member.configured().id())
+                                .toList()))
+                .faults();
     }
 
     /**

@@ -18,6 +18,7 @@ import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.Preset;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.domain.ScopedPolicies;
 import ai.speckitty.charter.packs.domain.StepHolding;
 import java.time.Duration;
 import java.util.EnumMap;
@@ -373,10 +374,10 @@ public final class ClosureQueries {
 
     /**
      * The policy of each closure pack, by descriptor {@code pack_id}, from the facts the compose read, scoped to what
-     * the pack and the packs it builds on hold (A15, {@link PackMutabilityPolicy#scopedPolicies}).
+     * the pack and the packs it builds on hold (A15, {@link ScopedPolicies}).
      */
     private static PerPackPolicy policyOf(OfferingReadService.ComposedClosure composed) {
-        return new PerPackPolicy(PackMutabilityPolicy.scopedPolicies(
+        return new PerPackPolicy(ScopedPolicies.of(
                 composed.packs(), pack -> composed.factsOf(pack).policy()));
     }
 }
