@@ -14,6 +14,7 @@ import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.graph.ArtifactNode;
+import ai.speckitty.charter.packs.domain.graph.EdgeKind;
 import ai.speckitty.charter.packs.domain.graph.EdgeNode;
 import ai.speckitty.charter.packs.domain.graph.PackGraphNode;
 import ai.speckitty.charter.packs.domain.graph.PackNode;
@@ -180,6 +181,90 @@ class PackGraphWalkTest {
         assertThat(walker.seen)
                 .containsExactly(
                         "pack:p", "edge:ENHANCES:p", "edge:OVERRIDES:p", "edge:SPECIALIZES:p", "edge:STEP_LINK:p");
+    }
+
+    private static final Relationship OVERRIDES =
+            Relationship.of(u("directive:C"), u("directive:D"), RelationType.OVERRIDES);
+    private static final Relationship ENHANCES =
+            Relationship.of(u("directive:A"), u("directive:B"), RelationType.ENHANCES);
+
+    /** Two packs, b building on a, each writing an overrides edge, then an enhances edge. */
+    private static PackGraph twoPacksWithTwoEdges() {
+        return graph(
+                List.of(pack("a", Optional.empty()), pack("b", Optional.empty(), "a")),
+                pack -> facts(List.of(), List.of(), List.of(OVERRIDES, ENHANCES)));
+    }
+
+    @Test
+    @DisplayName("RELATIONS: an edge the scope does not select is not handed over; the next one is")
+    void theSelectionFiltersEdges() {
+        Recorder walker = new Recorder();
+
+        twoPacksWithTwoEdges()
+                .walk(
+                        new Scope(
+                                List.of(id("a")),
+                                node -> !(node instanceof EdgeNode edge && edge.kind() == EdgeKind.OVERRIDES)),
+                        PackGraph.Walk.RELATIONS,
+                        walker);
+
+        assertThat(walker.seen).containsExactly("pack:a", "edge:ENHANCES:a");
+    }
+
+    @Test
+    @DisplayName("RELATIONS: a pack the scope does not select still has its selected edges handed over")
+    void anUnselectedPacksEdgesAreHandedOver() {
+        Recorder walker = new Recorder();
+
+        twoPacksWithTwoEdges()
+                .walk(new Scope(List.of(id("b")), node -> node instanceof EdgeNode), PackGraph.Walk.RELATIONS, walker);
+
+        assertThat(walker.seen)
+                .containsExactly("edge:OVERRIDES:a", "edge:ENHANCES:a", "edge:OVERRIDES:b", "edge:ENHANCES:b");
+    }
+
+    @Test
+    @DisplayName("STOP on an edge ends the walk at once: no later edge and no later pack")
+    void stopOnAnEdgeEndsTheWalk() {
+        Recorder walker = new Recorder().answer("edge:OVERRIDES:a", Descent.STOP);
+
+        twoPacksWithTwoEdges().walk(Scope.of(List.of(id("b"))), PackGraph.Walk.RELATIONS, walker);
+
+        assertThat(walker.seen).containsExactly("pack:a", "edge:OVERRIDES:a");
+    }
+
+    @Test
+    @DisplayName("SKIP on an edge is CONTINUE: nothing is walked beneath an edge")
+    void skipOnAnEdgeContinues() {
+        Recorder walker = new Recorder().answer("edge:OVERRIDES:a", Descent.SKIP);
+
+        twoPacksWithTwoEdges().walk(Scope.of(List.of(id("b"))), PackGraph.Walk.RELATIONS, walker);
+
+        assertThat(walker.seen)
+                .containsExactly(
+                        "pack:a",
+                        "edge:OVERRIDES:a",
+                        "edge:ENHANCES:a",
+                        "pack:b",
+                        "edge:OVERRIDES:b",
+                        "edge:ENHANCES:b");
+    }
+
+    @Test
+    @DisplayName("two packs under one pack_id are both visited, and the closure follows what each builds on")
+    void everyHolderOfAPackIdIsWalked() {
+        PackNode first = new PackNode(
+                new ConfiguredPack(id("dup-1"), PackLevel.ORG),
+                pack("dup", Optional.empty()).descriptor());
+        PackNode second = new PackNode(
+                new ConfiguredPack(id("dup-2"), PackLevel.ORG),
+                pack("dup", Optional.empty(), "base").descriptor());
+        Recorder walker = new Recorder();
+
+        graph(List.of(pack("base", Optional.empty()), first, second), PackGraphWalkTest::noFacts)
+                .walk(Scope.of(List.of(id("dup-2"))), PackGraph.Walk.PACKS, walker);
+
+        assertThat(walker.seen).containsExactly("pack:base", "pack:dup-1", "pack:dup-2");
     }
 
     @Test

@@ -38,8 +38,9 @@ import java.util.function.Function;
  * ({@link #onParentLine}), the dependency order ({@link #topologicalOrder}) and the cycles it leaves
  * ({@link #leftoverCycles}).
  *
- * <p>A graph built over a closure's packs ({@link #of}) is also the one driver of the kernel's visitor contract over the pack
- * graph ({@link #walk}): a {@link Scope} narrows it, and the domain's {@link Walk} mode decides which edges it emits.
+ * <p>A graph built over a closure's packs ({@link #of}) is also the one driver of the kernel's visitor contract over
+ * the pack graph ({@link #walk}): a {@link Scope} narrows it, and the domain's {@link Walk} mode decides which edges it
+ * emits. Such a graph memoizes each pack's facts, so it is confined to the thread that walks it.
  *
  * <p>Every walk is iterative, so a long chain cannot exhaust the stack, and every answer is in a stable order: the
  * order of the inputs, never the hash order of a node (the determinism guard of the architecture page). A graph given
@@ -48,8 +49,8 @@ import java.util.function.Function;
 public final class PackGraph {
 
     /**
-     * What a walk emits beyond the packs it visits, decided by the domain and never by the caller: a rule's check
-     * carries its mode ({@code PackRulesets}).
+     * What a walk emits beyond the packs it visits, decided by the domain and never by the caller: the rule factory
+     * ({@code PackRulesets}) is to hand each check out with its mode.
      */
     public enum Walk {
         /** The packs alone; no pack's facts are read. */
@@ -77,9 +78,9 @@ public final class PackGraph {
     }
 
     /**
-     * The pack graph of a set of packs: the packs in the caller's merge order, and where each
-     * pack's composition facts are read. Facts are read lazily, once per pack, and only by a walk whose mode needs
-     * them.
+     * The pack graph of a set of packs: the packs in the caller's merge order, and where each pack's composition
+     * facts are read. Facts are read lazily, once per pack, and only by a walk whose mode needs them. The graph holds
+     * that memo, so it is confined to one thread; build one per judge.
      *
      * @param packsInMergeOrder the configured packs with their descriptors, in the order a walk visits them
      * @param factsOf each pack's composition facts, by configured identifier
@@ -94,8 +95,9 @@ public final class PackGraph {
 
     /**
      * Walks the composition closure of the scope's roots (ADR-0082 decision 2): every pack whose {@code pack_id} the
-     * closure holds, once each, in the graph's order; after each pack, the elements the mode emits for it, in declared
-     * order. The visitor is handed only what the scope selects; an element it does not select is still walked through,
+     * closure holds, once each, in the graph's order. When packs share a {@code pack_id}, each is visited and the
+     * closure follows what each of them builds on. After each pack come the elements the mode emits for it, in
+     * declared order. The visitor is handed only what the scope selects; an element it does not select is still walked through,
      * so its pack's elements are visited. {@link Descent#SKIP} on a pack skips its elements; on an element it is
      * {@link Descent#CONTINUE}, since nothing is walked beneath an element. {@link Descent#STOP} ends the walk. The
      * walk is iterative and visits each pack once, so a cycle ends and a long chain cannot exhaust the stack.
@@ -117,10 +119,12 @@ public final class PackGraph {
             }
             rootPackIds.add(node.descriptor().packId());
         }
-        Set<String> closure = compositionClosure(
+        Set<String> closure = ancestorsOf(
                 rootPackIds,
-                packId -> Optional.ofNullable(byPackId.get(packId))
-                        .map(holders -> holders.getFirst().descriptor()));
+                packId -> byPackId.getOrDefault(packId, List.of()).stream()
+                        .flatMap(holder -> buildsOn(holder.descriptor()).stream())
+                        .distinct()
+                        .toList());
         for (PackNode pack : packs) {
             if (!closure.contains(pack.descriptor().packId())) {
                 continue;
