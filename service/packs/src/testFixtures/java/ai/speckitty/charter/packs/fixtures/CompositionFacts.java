@@ -43,36 +43,6 @@ public final class CompositionFacts {
     }
 
     /**
-     * Facts with the first 5 parts, the rest empty.
-     *
-     * @param changed the distinct targets of its {@code overrides} relations
-     * @param held the artifacts it holds, as bare URNs
-     * @param declared every URN its graph documents declare, plus {@code held}
-     * @param references the references it writes, as written
-     * @param policy the mutability policy its descriptor names
-     * @return the facts
-     */
-    public static PackCompositionFacts of(
-            List<String> changed,
-            List<String> held,
-            List<String> declared,
-            List<String> references,
-            MutabilityPolicySource policy) {
-        return new PackCompositionFacts(
-                changed,
-                held,
-                declared,
-                references,
-                policy,
-                List.of(),
-                List.of(),
-                Map.of(),
-                PromptFacts.NONE,
-                List.of(),
-                List.of());
-    }
-
-    /**
      * Facts with the first 6 parts, the rest empty.
      *
      * @param changed the distinct targets of its {@code overrides} relations

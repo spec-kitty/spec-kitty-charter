@@ -405,10 +405,11 @@ class ClosureQueriesTest {
                 descriptor("org", "1.0.0"),
                 holding(List.of("directive:DIRECTIVE_001"), MutabilityPolicySource.empty(), preset));
 
-        assertThatThrownBy(() -> queries().snapshot(Optional.empty())).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
-            assertThat(refusal.getMessage()).contains("directive:directive_001", "directive:DIRECTIVE_001");
-        });
+        assertThatThrownBy(() -> queries().snapshot(Optional.empty()))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+                    assertThat(refusal.getMessage()).contains("directive:directive_001", "directive:DIRECTIVE_001");
+                });
     }
 
     @Test
@@ -563,10 +564,11 @@ class ClosureQueriesTest {
                 descriptor("right", "1.0.0"),
                 holding(List.of(), MutabilityPolicySource.empty(), right));
 
-        assertThatThrownBy(() -> queries().snapshot(Optional.empty())).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
-            assertThat(refusal.getMessage()).contains("the preset `team`");
-        });
+        assertThatThrownBy(() -> queries().snapshot(Optional.empty()))
+                .isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+                    assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+                    assertThat(refusal.getMessage()).contains("the preset `team`");
+                });
     }
 
     @Test
