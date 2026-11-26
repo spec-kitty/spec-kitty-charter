@@ -1,7 +1,7 @@
 {
-  "event_count": 28,
-  "last_event_id": "01M8BFP25TEDXCK509X40DWBMA",
-  "materialized_at": "2026-11-26T08:31:20.250584+00:00",
+  "event_count": 29,
+  "last_event_id": "01M8BS7F4XD8REGKRTB2F7QB9X",
+  "materialized_at": "2026-11-26T11:18:07.773265+00:00",
   "mission_number": "",
   "mission_slug": "service-test-reliability-01M8AAEG",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 0
   },
   "work_packages": {
@@ -159,15 +159,15 @@
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude::reviewer-renata",
-      "lane": "for_review",
-      "last_event_id": "01M8BFP25TEDXCK509X40DWBMA",
-      "last_transition_at": "2026-11-26T08:31:20.250584+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M8BS7F4XD8REGKRTB2F7QB9X",
+      "last_transition_at": "2026-11-26T11:18:07.773265+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "Gates run and attributed; NFR-003 met (+0.7 %)"
       ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
+      "role": "reviewer",
       "shell_pid": 15303,
       "shell_pid_created_at": "1795674302.57",
       "subtasks": {
