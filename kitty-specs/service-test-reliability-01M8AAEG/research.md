@@ -102,7 +102,7 @@ checked clean. No PIT was run (C-004).
 | 6da6cface | unexpected failure becomes BUSY, not FAILED | ActivationListingFaultTest.aListingThatFails… red | reverted |
 | 6da6cface | Job.end writes the audit after the end is visible, after a 500 ms park | RegistrationAuditWiringTest.anUnauthenticatedPut… red (3 entries of 4) | reverted |
 | 91d706a24 | requireForRun moved after the stager; start's RESERVED check off | RegistrationJobsUploadTest.theJobChecksTheRoomForTheSizeThatWasSpooled and startingAJobThatIsRunningIsStillAnError red | reverted |
-| 91d706a24 | OwnerOnly directory mode rwxr-x--- | StagingPermissionsTest.theStagingRoot… red | reverted |
+| 91d706a24 | OwnerOnly directory mode `rwxr-x---` | StagingPermissionsTest.theStagingRoot… red | reverted |
 | 91d706a24 | Job.expire returns while RUNNING | ExampleCoverageTest.everyRaisedRefusalCode… red (the held job never times out) | reverted |
 | 91d706a24, 6da6cface | RegistrationJobs pool of RUNNING_LIMIT + 1, re-run by method | RegistrationJobsTest: aJobIsPendingThenRunningThenSucceeded, twoRunAndEightWait…, atMostTheRunningLimit…, theIfMatchIsJudgedAgainUnderTheLock…, aJobEndedByTheDeadlineKeepsItsSlot… red | reverted |
 | 91d706a24, 6da6cface | evict at MAX_RETAINED - 1; expire returns while QUEUED; owned() leaves out job directories; audit written outside the job lock; Job.end commit exemption off | RegistrationJobsTest: endedStatusesAreKept…, aQueuedJobPastTheDeadline…, theStagingDirectoryIsOwned…, aJobIsNeverSeenEndedBeforeItsAuditEntry…, aDeadlineThatReachesTheJobAsItsCommitBegins… red, one mutant each | reverted |
@@ -123,7 +123,7 @@ red):
 
 - `GitCommandTest.aRunStartedAfterTheDeadlineIsNeverStarted`: dropping the run-start deadline check alone stays green,
   because the watchdog kills git at the passed deadline before the shim records a call. The test pins the deadline, not
-  the run-start check on its own; that check is pre-existing behaviour this Mission did not change.
+  the run-start check on its own; that check is pre-existing behavior this Mission did not change.
 - `MixedReadConcurrencyTest.aSnapshotStartedInsideASwapRetries…`: turning off the stale checks leaves this method green
   (two sibling methods go red); the refuse-inside-a-swap mutant reddens it through the new `readBegun` wait.
 - `RegistrationConcurrencyTest`: dropping the `Await.within` hold stays green on this runner; the readers overlap a swap
