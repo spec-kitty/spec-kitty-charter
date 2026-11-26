@@ -401,6 +401,38 @@ class PackDoctorMainTest {
     }
 
     @Test
+    void aTacticOfManySchemaViolationsIsOneProblemThatListsTheFirstHundredAndCountsTheRest() throws IOException {
+        // #648: what the command adds to the collection, which PackRegistrationScaleTest holds to its order and
+        // PackViolationCollectionBudgetTest to a time: the cap of listed violations, the first hundred in order, and
+        // the detail that counts the others.
+        Path pack = ExamplePacks.copyOf(ExamplePacks.ORG, temp.resolve("packs"));
+        String tactic = "tactics/reasons-canvas-fill.tactic.yaml";
+        StringBuilder text =
+                new StringBuilder("schema_version: \"1.0\"\nid: reasons-canvas-fill\nname: Fill\nsteps:\n");
+        for (int i = 0; i < 300; i++) {
+            text.append("  - {title: t, description: 1}\n");
+        }
+        Files.writeString(pack.resolve(tactic), text);
+
+        Run run = run("--pack", pack + ":org");
+
+        assertThat(run.exit()).as(run.err()).isEqualTo(PackDoctorMain.PROBLEMS);
+        JsonNode problem = run.report().get("problems").get(0);
+        assertThat(problem.get("code").asString()).isEqualTo("validation_failed");
+        assertThat(problem.get("detail").asString())
+                .isEqualTo("The pack cannot be registered: 300 fault(s), the first at " + tactic
+                        + "#/steps/0/description. 200 more violations are not listed.");
+        assertThat(problem.get("violations")).hasSize(Problems.MAX_VIOLATIONS);
+        assertThat(problem.get("violations").get(0).get("pointer").asString())
+                .isEqualTo(tactic + "#/steps/0/description");
+        assertThat(problem.get("violations")
+                        .get(Problems.MAX_VIOLATIONS - 1)
+                        .get("pointer")
+                        .asString())
+                .isEqualTo(tactic + "#/steps/99/description");
+    }
+
+    @Test
     void aPlantedDuplicateArtifactIdIsOneValidationFailedProblem() throws IOException {
         Path pack = GoldenSubjects.copy(
                 subject("planted/duplicate-artifact-id" + GoldenSubjects.WITH_DESCRIPTOR), temp.resolve("plant"));

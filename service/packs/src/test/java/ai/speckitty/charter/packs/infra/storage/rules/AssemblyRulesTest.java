@@ -29,6 +29,19 @@ class AssemblyRulesTest {
         assertThat(AssemblyRules.sibling("d/a.yaml", "../../out.md")).isEqualTo("../out.md");
     }
 
+    /**
+     * {@link AssemblyRules#sameFault} of the two, after asserting that the index {@link AssemblyRules.Stated} answers the
+     * same for the one violation it holds (#648): it copies the candidate dispatch of {@code sameFault}, so a mapping
+     * added to one and not the other shows here, at the first fixture that exercises it.
+     */
+    private static boolean agreed(PackElementViolation violation, Reason reason) {
+        boolean same = AssemblyRules.sameFault(violation, reason);
+        assertThat(new AssemblyRules.Stated(List.of(reason)).states(violation))
+                .as("the index agrees with sameFault for %s against %s", violation, reason)
+                .isEqualTo(same);
+        return same;
+    }
+
     private static Reason stated(String file, ReasonCode code, String detail) {
         return new Reason(code.value(), Origin.NONE, Evaluation.FAIL, code, Location.in(file), detail);
     }
@@ -42,25 +55,22 @@ class AssemblyRulesTest {
         PackElementViolation missing = PackElementViolation.wholeFile(
                 "toolguides/a.toolguide.yaml", StorageCodes.COMPANION, "a.guide.md: missing");
 
-        assertThat(AssemblyRules.sameFault(
-                        broken, stated("toolguides/a.guide.md", PackCodes.ARTIFACT_SCHEMA_ERROR, "bad")))
+        assertThat(agreed(broken, stated("toolguides/a.guide.md", PackCodes.ARTIFACT_SCHEMA_ERROR, "bad")))
                 .isTrue();
-        assertThat(AssemblyRules.sameFault(
-                        broken, stated("toolguides/a.toolguide.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "other")))
+        assertThat(agreed(broken, stated("toolguides/a.toolguide.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "other")))
                 .as("another fault of the artifact")
                 .isFalse();
-        assertThat(AssemblyRules.sameFault(
+        assertThat(agreed(
                         missing,
                         stated(
                                 "toolguides/a.toolguide.yaml",
                                 PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "toolguides/a.toolguide.yaml: names a.guide.md: missing")))
                 .isTrue();
-        assertThat(AssemblyRules.sameFault(
-                        missing, stated("toolguides/a.guide.md", StorageCodes.COMPANION, "something")))
+        assertThat(agreed(missing, stated("toolguides/a.guide.md", StorageCodes.COMPANION, "something")))
                 .as("a missing companion has no fault of its own at its file")
                 .isFalse();
-        assertThat(AssemblyRules.sameFault(
+        assertThat(agreed(
                         missing,
                         stated(
                                 "toolguides/a.toolguide.yaml",
@@ -68,7 +78,7 @@ class AssemblyRulesTest {
                                 "toolguides/a.toolguide.yaml: the companion a.guide.md does not exist")))
                 .as("the reader's 'does not exist', naming the companion as the artifact declares it")
                 .isTrue();
-        assertThat(AssemblyRules.sameFault(
+        assertThat(agreed(
                         missing,
                         stated(
                                 "toolguides/a.toolguide.yaml",
@@ -76,7 +86,7 @@ class AssemblyRulesTest {
                                 "toolguides/a.toolguide.yaml: names b.guide.md: missing")))
                 .as("another companion missing is another fault")
                 .isFalse();
-        assertThat(AssemblyRules.sameFault(
+        assertThat(agreed(
                         missing,
                         stated(
                                 "toolguides/b.toolguide.yaml",
@@ -92,19 +102,36 @@ class AssemblyRulesTest {
         PackElementViolation breach = PackElementViolation.wholeFile(
                 "presets/dup.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "Constraint breached: twice");
 
-        assertThat(AssemblyRules.sameFault(
+        assertThat(agreed(
                         breach,
                         stated(
                                 "presets/dup.yaml",
                                 PackCodes.ARTIFACT_SCHEMA_ERROR,
                                 "presets/dup.yaml: Constraint breached: twice")))
                 .isTrue();
-        assertThat(AssemblyRules.sameFault(
-                        breach, stated("presets/dup.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "id is not the stem")))
+        assertThat(agreed(breach, stated("presets/dup.yaml", PackCodes.ARTIFACT_SCHEMA_ERROR, "id is not the stem")))
                 .as("another fault of the same file")
                 .isFalse();
-        assertThat(AssemblyRules.sameFault(
-                        breach, stated("presets/dup.yaml", StorageCodes.UNREADABLE, "Constraint breached: twice")))
+        assertThat(agreed(breach, stated("presets/dup.yaml", StorageCodes.UNREADABLE, "Constraint breached: twice")))
+                .isFalse();
+        Reason placed = new Reason(
+                PackCodes.ARTIFACT_SCHEMA_ERROR.value(),
+                Origin.NONE,
+                Evaluation.FAIL,
+                PackCodes.ARTIFACT_SCHEMA_ERROR,
+                new Location("presets/dup.yaml", "/steps/3"),
+                "presets/dup.yaml: Constraint breached: twice");
+        assertThat(agreed(breach, placed))
+                .as("a fault with no place is stated by a violation at any place in its file")
+                .isTrue();
+        assertThat(agreed(
+                        new PackElementViolation(
+                                "presets/dup.yaml",
+                                "/steps/4",
+                                PackCodes.ARTIFACT_SCHEMA_ERROR,
+                                "Constraint breached: twice"),
+                        placed))
+                .as("a fault at another place is another fault")
                 .isFalse();
     }
 
@@ -125,9 +152,9 @@ class AssemblyRulesTest {
                 PackCodes.PROMPT_FRAGMENT_INVALID,
                 "the companion missions/x/enhancements/e.prompt-fragment.md does not exist");
 
-        assertThat(AssemblyRules.sameFault(blank, twice)).isFalse();
-        assertThat(AssemblyRules.sameFault(blank, absent)).isFalse();
-        assertThat(AssemblyRules.sameFault(gone, absent)).isTrue();
+        assertThat(agreed(blank, twice)).isFalse();
+        assertThat(agreed(blank, absent)).isFalse();
+        assertThat(agreed(gone, absent)).isTrue();
         assertThat(AssemblyRules.unreadFragments(
                         List.of(stated(enhancement, PackCodes.PROMPT_FRAGMENT_INVALID, "e.prompt-fragment.md: blank"))))
                 .containsExactly("missions/x/enhancements/e.prompt-fragment.md");
@@ -157,11 +184,11 @@ class AssemblyRulesTest {
         Reason names = stated(
                 type, PackCodes.ARTIFACT_SCHEMA_ERROR, type + ": names templates/t.md (named by the type): missing");
 
-        assertThat(AssemblyRules.sameFault(broken, stated("toolguides/a.guide.md", StorageCodes.RETIRED, "retired")))
+        assertThat(agreed(broken, stated("toolguides/a.guide.md", StorageCodes.RETIRED, "retired")))
                 .isFalse();
-        assertThat(AssemblyRules.sameFault(stepTwice, step)).isTrue();
-        assertThat(AssemblyRules.sameFault(stepTwice, names)).isFalse();
-        assertThat(AssemblyRules.sameFault(keyTwice, step)).isFalse();
-        assertThat(AssemblyRules.sameFault(keyTwice, names)).isFalse();
+        assertThat(agreed(stepTwice, step)).isTrue();
+        assertThat(agreed(stepTwice, names)).isFalse();
+        assertThat(agreed(keyTwice, step)).isFalse();
+        assertThat(agreed(keyTwice, names)).isFalse();
     }
 }
