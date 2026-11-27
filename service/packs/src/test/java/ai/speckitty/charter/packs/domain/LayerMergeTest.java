@@ -106,7 +106,7 @@ class LayerMergeTest {
         }
 
         MergedClosure merge() {
-            return LayerMerge.merge(closure(), facts(), new PerPackPolicy(policies));
+            return mergedOrRefused(LayerMerge.attempt(closure(), facts(), new PerPackPolicy(policies)));
         }
 
         /** The edge-index faults of the merge ({@link PackRulesets#edgeIndexFaults}), where C21 is judged. */
@@ -820,5 +820,10 @@ class LayerMergeTest {
     @Test
     void anEmptyClosureMergesToNothing() {
         assertThat(new Fixture().merge()).isEqualTo(MergedClosure.EMPTY);
+    }
+
+    /** The merge, or the refusal it met, thrown, as a read meets it. */
+    private static MergedClosure mergedOrRefused(LayerMerge.Attempt attempt) {
+        return attempt.merged().orElseThrow(() -> attempt.refused().orElseThrow());
     }
 }

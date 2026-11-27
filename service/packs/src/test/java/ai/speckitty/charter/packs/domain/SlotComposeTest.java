@@ -48,7 +48,8 @@ class SlotComposeTest {
         }
 
         MergedClosure merged() {
-            return LayerMerge.merge(packs.stream().map(Held::pack).toList(), facts(), new PerPackPolicy(Map.of()));
+            return mergedOrRefused(
+                    LayerMerge.attempt(packs.stream().map(Held::pack).toList(), facts(), new PerPackPolicy(Map.of())));
         }
 
         Map<String, PackCompositionFacts> facts() {
@@ -357,5 +358,10 @@ class SlotComposeTest {
 
         assertThat(new Fixture().with(base).missing(active("mission_type:M", "step_enhancement:x")))
                 .isEmpty();
+    }
+
+    /** The merge, or the refusal it met, thrown, as a read meets it. */
+    private static MergedClosure mergedOrRefused(LayerMerge.Attempt attempt) {
+        return attempt.merged().orElseThrow(() -> attempt.refused().orElseThrow());
     }
 }

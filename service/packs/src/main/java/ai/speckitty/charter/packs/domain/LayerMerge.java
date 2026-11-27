@@ -75,24 +75,6 @@ public final class LayerMerge {
     }
 
     /**
-     * Merges a composed closure.
-     *
-     * @param closure the composed closure, in closure order
-     * @param factsByConfiguredId the facts each pack was read with, by configured identifier
-     * @param policy the mutability policies of the closure's packs
-     * @return the winners and the layer overrides, every one of them: a layer override the overridden artifact's level
-     *     forbids (C21) is the edge-index rules' fault ({@code PackRulesets.edgeIndex}), judged on what this answers
-     * @throws CharterRefusal as {@link #attempt} refuses
-     */
-    public static MergedClosure merge(
-            List<PackUnderResolution> closure,
-            Map<String, PackCompositionFacts> factsByConfiguredId,
-            PerPackPolicy policy) {
-        Attempt attempt = attempt(closure, factsByConfiguredId, policy);
-        return attempt.merged().orElseThrow(() -> attempt.refused().orElseThrow());
-    }
-
-    /**
      * Merges a composed closure, and answers a refusal the merge meets beside the layer overrides it placed first: a
      * step contest no entry settles ({@code pack_sibling_conflict}).
      *
@@ -242,7 +224,7 @@ public final class LayerMerge {
 
     /**
      * The floor over the copy of every preset id in force at each level of the closure, restricted to the artifacts a pack of it holds (A1,
-     * C31, A10), which {@link #merge} answers with the winners but which is judged on no override: a closure whose
+     * C31, A10), which {@link #attempt} answers with the winners but which is judged on no override: a closure whose
      * layer override the owner's level forbids still has this floor.
      *
      * @param closure the composed closure, in closure order

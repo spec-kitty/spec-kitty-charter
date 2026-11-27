@@ -157,7 +157,7 @@ class EdgeIndexTest {
 
         /** The layer merge of the closure, whose packs were added in merge order. */
         MergedClosure mergedClosure() {
-            return LayerMerge.merge(packs, facts, new PerPackPolicy(Map.of()));
+            return mergedOrRefused(LayerMerge.attempt(packs, facts, new PerPackPolicy(Map.of())));
         }
     }
 
@@ -861,5 +861,10 @@ class EdgeIndexTest {
         assertThat(merged.scopeOwners()).isSameAs(merged.scopeOwners());
         assertThat(merged.heldUrns()).isSameAs(merged.heldUrns());
         assertThat(merged.heldUrns()).containsExactly(urn("directive:D"), urn("mission_type:M"), urn("tactic:T"));
+    }
+
+    /** The merge, or the refusal it met, thrown, as a read meets it. */
+    private static MergedClosure mergedOrRefused(LayerMerge.Attempt attempt) {
+        return attempt.merged().orElseThrow(() -> attempt.refused().orElseThrow());
     }
 }

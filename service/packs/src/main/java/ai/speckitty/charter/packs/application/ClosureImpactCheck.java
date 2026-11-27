@@ -707,14 +707,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
                 throw new ViewRefused(refused);
             }
         });
-        Supplier<MergedRelations> merged = () -> {
-            ClosureView merging = view.get();
-            try {
-                return merging.mergedRelations();
-            } catch (CharterRefusal refused) {
-                throw new ViewRefused(refused);
-            }
-        };
+        Supplier<MergedRelations> merged = () -> view.get().mergedRelations();
         Optional<OwnVerdict> verdict;
         try {
             Ledger ledger = closureLedger(roots, composed, view, merged, own);

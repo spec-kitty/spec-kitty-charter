@@ -563,9 +563,7 @@ public record ClosureView(
      * and every write run those rules on, after the relation rules ({@link PackRulesets#composedClosure}). It is built
      * with {@link #merged()}, once, and never refused, so the write places each fault the read would refuse with.
      *
-     * @return the merged relations
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal as the layer merge refuses a step contest no entry
-     *     settles ({@code pack_sibling_conflict})
+     * @return the merged relations; for a merge that refuses with its own code, the layer overrides it placed first
      */
     public MergedRelations mergedRelations() {
         return mergeInputs.relations(policy, edges);
