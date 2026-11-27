@@ -1780,9 +1780,10 @@ class ClosureImpactCheckTest {
         Rig rig = new Rig(host);
         rig.install("acme", storedAcme(CYCLE));
 
-        assertThat(rig.impact.census())
-                .singleElement()
-                .satisfies(finding -> assertThat(finding.detail()).contains(" (packs acme)"));
+        assertThat(rig.impact.census()).singleElement().satisfies(finding -> {
+            assertThat(finding.code()).isEqualTo(RefusalCode.ENHANCES_CYCLE);
+            assertThat(finding.detail()).contains(" (packs acme)");
+        });
     }
 
     @Test

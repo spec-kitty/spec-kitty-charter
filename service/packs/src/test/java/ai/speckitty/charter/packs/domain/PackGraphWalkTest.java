@@ -324,6 +324,15 @@ class PackGraphWalkTest {
     }
 
     @Test
+    @DisplayName("a pack configured twice is an argument error, not silently the first one")
+    void aConfiguredIdentifierRepeated() {
+        assertThatThrownBy(() -> graph(
+                        List.of(pack("a", Optional.empty()), pack("a", Optional.empty())), PackGraphWalkTest::noFacts))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("a is configured twice");
+    }
+
+    @Test
     @DisplayName("a root no pack is configured as is an argument error")
     void anUnknownRoot() {
         assertThatThrownBy(() -> graph(List.of(pack("a", Optional.empty())), PackGraphWalkTest::noFacts)

@@ -1,6 +1,11 @@
 package ai.speckitty.charter.packs.application.badfixture;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.packs.domain.Ledger;
+import ai.speckitty.charter.packs.domain.PackGraph;
+import ai.speckitty.charter.packs.domain.ValidationWalker;
+import ai.speckitty.charter.packs.domain.graph.PackGraphNode;
+import ai.speckitty.charter.packs.domain.graph.Scope;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,8 +19,8 @@ import java.util.Set;
 /**
  * A known-bad control for {@code PackGraphWalkBoundaryTest}: an application class that walks the pack graph itself, as
  * {@code ClosureRoots#dependents} did before #637. It reads a descriptor's {@code depends_on} and {@code parent_pack}
- * by a call and by a method reference, and descends over a deque and over a priority queue. The unchanged production
- * rules must fail on it.
+ * by a call and by a method reference, descends over a deque and over a priority queue, and drives a walk itself with
+ * {@code PackGraph.walk} and {@code ValidationWalker.run}. The unchanged production rules must fail on it.
  */
 public final class HandWrittenDescent {
 
@@ -74,5 +79,18 @@ public final class HandWrittenDescent {
             ordered.add(ready.poll());
         }
         return ordered;
+    }
+
+    /**
+     * Drives a walk of its own: a graph walk and a walker's run, as only the domain may.
+     *
+     * @param graph the graph
+     * @param scope the scope
+     * @param walker the walker
+     * @return the walker's ledger
+     */
+    public static Ledger drive(PackGraph graph, Scope scope, ValidationWalker<PackGraphNode> walker) {
+        graph.walk(scope, PackGraph.Walk.PACKS, walker);
+        return walker.run(visitor -> graph.walk(scope, PackGraph.Walk.PACKS, visitor));
     }
 }

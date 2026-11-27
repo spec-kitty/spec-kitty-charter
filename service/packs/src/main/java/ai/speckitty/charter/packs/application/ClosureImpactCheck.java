@@ -471,7 +471,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
         Map<PackIdentifier, PackUnderResolution> members = new LinkedHashMap<>();
         for (PackUnderResolution member : composed.packs()) {
             ConfiguredPack configured = member.configured();
-            members.putIfAbsent(configured.id(), member);
+            members.put(configured.id(), member);
             nodes.add(new PackNode(configured, member.descriptor()));
         }
         roots.ids().stream()

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
+import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackLevel;
@@ -25,9 +26,8 @@ import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import ai.speckitty.charter.packs.domain.RolePins;
-import ai.speckitty.charter.packs.domain.ValidationWalker;
-import ai.speckitty.charter.packs.domain.graph.PackGraphNode;
 import ai.speckitty.charter.packs.domain.graph.PackNode;
+import ai.speckitty.charter.packs.domain.graph.Scope;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
@@ -101,29 +101,41 @@ class OwnClosureRulesTest {
     }
 
     private static PackNode declaring(Optional<String> fallback) {
+        return node(ACME, fallback, List.of(new PackDependency(FixtureUlids.of("base"), ">=1.0")));
+    }
+
+    /** The pack the declaring pack builds on: it declares a fallback and pins of its own, which are not judged. */
+    private static PackNode base() {
+        return node(BASE, Optional.of("base-fallback"), List.of());
+    }
+
+    private static PackNode node(PackIdentifier id, Optional<String> fallback, List<PackDependency> dependencies) {
         return new PackNode(
-                new ConfiguredPack(ACME, PackLevel.ORG),
+                new ConfiguredPack(id, PackLevel.ORG),
                 new PackDescriptor(
-                        FixtureUlids.of("acme"),
+                        FixtureUlids.of(id.value()),
                         "1.0.0",
                         Optional.empty(),
-                        "acme",
+                        id.value(),
                         Optional.empty(),
                         Optional.empty(),
                         PackPaths.none(),
-                        List.of(),
+                        dependencies,
                         List.of(),
                         Optional.empty(),
                         fallback));
     }
 
-    /** The factory's own-closure check, run by the walker over a graph of the declaring pack. */
+    /**
+     * The factory's own-closure check, run by the walker over a graph of the declaring pack and the pack it builds on:
+     * only the declaring pack's own fallback and pins are judged, never the dependency's.
+     */
     private static List<ClosureFault> walk(
             Optional<String> fallback,
             ClosureFacts facts,
             ProfileReader profiles,
             Optional<ProfileEnhancementGateway> merge) {
-        PackGraph graph = PackGraph.of(List.of(declaring(fallback)), pack -> PackCompositionFacts.NONE);
+        PackGraph graph = PackGraph.of(List.of(base(), declaring(fallback)), pack -> PackCompositionFacts.NONE);
         return PackRulesets.ownClosure(facts, profiles, merge)
                 .run(graph, PackRulesets.ownClosureOf(ACME))
                 .faults();
@@ -138,52 +150,6 @@ class OwnClosureRulesTest {
         facts.pins.put("reviewer", "nobody");
         facts.pins.put("implementer", "nobody-either");
         return facts;
-    }
-
-    @Test
-    @DisplayName(
-            "the factory hands out one collect-all phase over the packs: fallback, own pins, conflicts, enhancements")
-    void oneCollectAllPhase() {
-        GraphCheck check = PackRulesets.ownClosure(new Facts(), (holder, id) -> Optional.empty(), Optional.empty());
-
-        assertThat(check.walk()).isEqualTo(PackGraph.Walk.PACKS);
-        assertThat(check.phases())
-                .singleElement()
-                .satisfies(phase -> assertThat(phase.checks())
-                        .extracting(ValidationWalker.Check::name)
-                        .containsExactly(
-                                "fallback_profile", "role_pins", "role_pin_conflicts", "profile_enhancements"));
-    }
-
-    @Test
-    @DisplayName("the fallback rule is selected by the declaring pack's node: only a pack that names a fallback")
-    void theFallbackPredicateTestsTheNode() {
-        ValidationWalker.Check<PackGraphNode> fallback = PackRulesets.ownClosure(
-                        new Facts(), (holder, id) -> Optional.empty(), Optional.empty())
-                .phases()
-                .getFirst()
-                .checks()
-                .getFirst();
-
-        assertThat(fallback).isInstanceOfSatisfying(ValidationWalker.OnNode.class, check -> {
-            @SuppressWarnings("unchecked")
-            ValidationWalker.OnNode<PackGraphNode, PackNode> onPack = check;
-            assertThat(onPack.when().test(declaring(Optional.empty()))).isFalse();
-            assertThat(onPack.when().test(declaring(Optional.of("generic-agent"))))
-                    .isTrue();
-        });
-    }
-
-    @Test
-    @DisplayName("the scope selects the declaring pack alone")
-    void theScopeSelectsTheDeclaringPack() {
-        PackNode other = new PackNode(
-                new ConfiguredPack(BASE, PackLevel.ORG),
-                declaring(Optional.empty()).descriptor());
-
-        assertThat(PackRulesets.ownClosureOf(ACME).selection().test(declaring(Optional.empty())))
-                .isTrue();
-        assertThat(PackRulesets.ownClosureOf(ACME).selection().test(other)).isFalse();
     }
 
     @Test
@@ -219,7 +185,20 @@ class OwnClosureRulesTest {
     }
 
     @Test
-    @DisplayName("no fallback declared: only the pins are judged")
+    @DisplayName("a walk that never hands over the declaring pack's node is a defect, not a pass")
+    void aWalkThatMissesTheDeclaringPackIsADefect() {
+        PackGraph graph = PackGraph.of(
+                List.of(base(), declaring(Optional.of("generic-agent"))), pack -> PackCompositionFacts.NONE);
+        GraphCheck check =
+                PackRulesets.ownClosure(pinningTwoUnknown(), (holder, id) -> Optional.empty(), Optional.empty());
+
+        assertThatThrownBy(() -> check.run(graph, new Scope(List.of(ACME), node -> false)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("exactly once");
+    }
+
+    @Test
+    @DisplayName("no fallback declared: only the pins are judged, and a dependency's own fallback and pins are not")
     void noFallbackDeclaredJudgesOnlyThePins() {
         assertThat(walk(Optional.empty(), pinningTwoUnknown()))
                 .extracting(ClosureFault::code)

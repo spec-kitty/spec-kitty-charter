@@ -189,12 +189,9 @@ time; the judging differs. A Visitor lets one walk serve every check.
   element) or `STOP` (end the walk). The artifact walk's driver,
   `{@link ai.speckitty.charter.packs.application.GraphWalk#walk}`, still lives in the application layer (epic #636's
   checklist).
-- *Proposed:* `PackGraph` in `packs.domain` becomes the one driver. The kernel keeps only the visitor contract
-  (`GraphWalker`, `Descent`); rules plug in as visitors and never drive. Its elements are a
-  `sealed interface PackGraphNode permits PackNode, ArtifactNode, EdgeNode`, and an `EdgeKind` enum names every edge
-  (`DEPENDS_ON`, `PARENT_PACK`, `OVERRIDES`, `ENHANCES`, `SPECIALIZES`, `REFERENCES`, `STEP_LINK`, `DELEGATES`). Rules
-  use a pattern switch over `PackGraphNode`; there is no double dispatch. `PackGraph` absorbs the duplicate walks,
-  the reverse index of `ClosureRoots`, the cycle and strongly-connected-group code, and keeps `EdgeIndex` as its index.
+- *Proposed (still open):* `PackGraph` absorbs the reverse index of `ClosureRoots` and keeps `EdgeIndex` as its index
+  (slice 4 and later). The kernel keeps only the visitor contract (`GraphWalker`, `Descent`); rules plug in as
+  visitors and never drive. Rules use a pattern switch over `PackGraphNode`; there is no double dispatch.
 - *Built (slice 3, #638):* the node types are in `packs.domain.graph` (`PackGraphNode`, `PackNode`, `ArtifactNode`,
   `EdgeNode` with the edge as written, `EdgeKind`). `PackGraph.of(packs in merge order, factsOf)` builds the graph
   over a closure's packs, reading facts lazily, and `PackGraph#walk(scope, mode, visitor)` is the driver: the roots'
@@ -261,7 +258,8 @@ active-set doctor need the same list, ranked by severity.
   `PackCompositionResolver.Refusal`, `ClosureVerdict` and the string notices of `ImpactCheck` fold into it.
 - *Built (slice 3, #638), as an interim shape:* the walker's ledger is `Ledger`, a list of `ClosureFault`s whose
   `reason()` is the kernel's `Reason`, with `rationale()` projecting it in order. A `ClosureFault` also carries the
-  packs, violations and `requiredBy` the edge maps; the ledger settles on `Rationale` with slice 7 (ruling R-x).
+  packs, violations and `requiredBy` the edge maps; the ledger settles on `Rationale` with slice 7 (ruling R-x, recorded in
+  [ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/) decision 15).
 
 Reference: Fowler, [*Replacing Throwing Exceptions with Notification in
 Validations*](https://martinfowler.com/articles/replaceThrowWithNotification.html).
@@ -310,6 +308,9 @@ generic functional interfaces such as `Predicate<T>`.
 - *Built (slice 3, #638):* `PackRulesets.ownClosure(closureFacts, profiles, merge)` hands out a `GraphCheck` (the
   `PACKS` mode, one phase: fallback profile, own role pins, pin conflicts, profile enhancements), run over
   `ownClosureOf(declaring)`; `references(..)` runs its three checks as three phases of the walker.
+  Interim: `references(..)` feeds the walker its members directly, not through `PackGraph#walk`, because its nodes are
+  the callers' members (a subset of the closure, in the caller's order), not a scope's composition closure; slice 4
+  moves it onto a graph walk.
 - *Built (slice 4, #639):* `PackRulesets.relations(composedRelations)` hands out a `GraphCheck` (the `RELATIONS` mode,
   one phase of eight whole-closure checks in the old order). `ComposedRelations` in `packs.domain` is the subject: the
   placed `enhances` and `overrides` edges, the `specializes_from` graph, the enhances cycles computed once, and the
@@ -393,7 +394,7 @@ from the impact check into `PackRefusals`, so it is written in one place.
   (compose, relations including the edge-index rules, own closure; then activations), then rule order within a phase
   (one bucket per rule, joined in the factory's declared order), then the graph's visit order: packs in the caller's
   merge order and, within a pack, its artifacts and edges in declared order. A whole-closure rule orders its own
-  findings. *Amended 2026-11-25 (Proposed, operator ruling D1): the earlier text ordered nodes by pack id in code-point
+  findings. *Amended 2026-11-25 (Accepted, operator ruling D1): the earlier text ordered nodes by pack id in code-point
   order, which would change today's first code on a multi-fault closure.*
   Never order work by iterating a `HashMap` or `HashSet`. Phase gates keep today's cascade suppression: the specific
   code wins.

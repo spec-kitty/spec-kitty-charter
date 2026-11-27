@@ -40,7 +40,8 @@ import java.util.function.Function;
  *
  * <p>A graph built over a closure's packs ({@link #of}) is also the one driver of the kernel's visitor contract over
  * the pack graph ({@link #walk}): a {@link Scope} narrows it, and the domain's {@link Walk} mode decides which edges it
- * emits. Such a graph memoizes each pack's facts, so it is confined to the thread that walks it.
+ * emits. Each configured pack appears once, though several packs may share a descriptor {@code pack_id}. Such a graph
+ * memoizes each pack's facts, so it is not thread-safe: one thread builds and walks it.
  *
  * <p>Every walk is iterative, so a long chain cannot exhaust the stack, and every answer is in a stable order: the
  * order of the inputs, never the hash order of a node (the determinism guard of the architecture page). A graph given
@@ -73,18 +74,22 @@ public final class PackGraph {
         for (PackNode pack : this.packs) {
             byPackId.computeIfAbsent(pack.descriptor().packId(), ignored -> new ArrayList<>())
                     .add(pack);
-            byConfigured.putIfAbsent(pack.pack(), pack);
+            if (byConfigured.put(pack.pack(), pack) != null) {
+                throw new IllegalArgumentException(
+                        "the pack " + pack.pack().value() + " is configured twice in one graph");
+            }
         }
     }
 
     /**
      * The pack graph of a set of packs: the packs in the caller's merge order, and where each pack's composition
      * facts are read. Facts are read lazily, once per pack, and only by a walk whose mode needs them. The graph holds
-     * that memo, so it is confined to one thread; build one per judge.
+     * that memo, so it is not thread-safe; build one per judge.
      *
      * @param packsInMergeOrder the configured packs with their descriptors, in the order a walk visits them
      * @param factsOf each pack's composition facts, by configured identifier
      * @return the graph
+     * @throws IllegalArgumentException when two packs are configured under the same identifier
      */
     public static PackGraph of(
             List<PackNode> packsInMergeOrder, Function<PackIdentifier, PackCompositionFacts> factsOf) {

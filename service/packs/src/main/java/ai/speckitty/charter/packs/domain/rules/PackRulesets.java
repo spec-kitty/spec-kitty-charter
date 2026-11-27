@@ -165,6 +165,11 @@ public final class PackRulesets {
      * a phase of the {@link ValidationWalker}, handed each member itself in the order given; its phase gate is the
      * stop rule (every closure fault is a violation).
      *
+     * <p>Interim: the members reach the walker by a direct feed, not by {@code PackGraph#walk}. The nodes are
+     * {@link PackUnderResolution}s, not pack-graph nodes, and the caller's members (a subset of the closure, in the
+     * caller's order) are not the composition closure of a scope, which a driver would walk in the graph's order.
+     * Slice 4 of epic #636 (relations as rules) moves this check onto a graph walk with a mode of its own.
+     *
      * @param closure the composed closure, in merge order
      * @param members the members whose checks run, each a pack of the closure
      * @param factsOf each member's composition facts
@@ -197,6 +202,8 @@ public final class PackRulesets {
      * ({@link FallbackProfileRule}), only when the pack's descriptor names one; its own role pins, then the pin
      * conflicts of its closure ({@link RolePinRule}); then the profile enhancements in force
      * ({@link ProfileEnhancementRule}), which passes when there are none. Every breach of each rule is reported.
+     * The fallback and own-pin rules run on the declaring pack's node, so a walk that does not hand it over exactly
+     * once would pass them unjudged; the check throws {@link IllegalStateException} then, rather than report nothing.
      * Registration, every write and the startup census get these rules here and nowhere else; run them over
      * {@link #ownClosureOf} of the declaring pack. Production runs them as the last phase of {@link #composedClosure};
      * this check alone is the phase's unit under test.
@@ -230,6 +237,16 @@ public final class PackRulesets {
         return new ValidationWalker.Phase<PackGraphNode>(
                 OWN_CLOSURE_PHASE,
                 List.of(
+                        new ValidationWalker.OnClose<PackGraphNode>("declaring_pack_visited", nodes -> {
+                            long packs = nodes.stream()
+                                    .filter(PackNode.class::isInstance)
+                                    .count();
+                            if (packs != 1) {
+                                throw new IllegalStateException("the own-closure rules judge the declaring"
+                                        + " pack's node exactly once, and the walk handed over " + packs);
+                            }
+                            return List.of();
+                        }),
                         new ValidationWalker.OnNode<PackGraphNode, PackNode>(
                                 "fallback_profile",
                                 PackNode.class,
