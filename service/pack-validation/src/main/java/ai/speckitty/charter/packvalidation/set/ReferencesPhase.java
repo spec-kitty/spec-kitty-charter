@@ -5,6 +5,7 @@ import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,12 +37,34 @@ import java.util.function.Function;
  * that only a stored activation lists together are never one closure here: pack-doctor is blind to activations, so
  * that shape stays registration's alone, as decision 20 of ADR-0083 says of the case-only answer.
  *
- * <p>Not here (R-s): the {@code specializes_from} cycle, the relation rules, the edge index's refusals and the
- * own-closure walk land in the domain factory with #636 slices 2-4 and 7.
+ * <p>Not here (R-s): the {@code specializes_from} cycle and the relation rules are {@link RelationsPhase}'s, which runs
+ * after this phase (#632 item 3, FR-012); the edge index's refusals and the own-closure walk need the layer merge and
+ * a profile reader, which pack-doctor does not have (#636 slice 7).
  */
 final class ReferencesPhase {
 
     private ReferencesPhase() {}
+
+    /**
+     * What the phase found: its faults, and the closures of the roots it passed, for {@link RelationsPhase}.
+     *
+     * @param faults the faults, as registration answers each; empty when every closure passes
+     * @param passed the closure of each root whose closure has no fault of this phase, in configured-id order of the
+     *     roots, each in merge order: what registration goes on to judge the relations of
+     */
+    record Judged(List<ClosureFault> faults, List<List<PackUnderResolution>> passed) {
+
+        /**
+         * Copies the lists.
+         *
+         * @param faults the faults
+         * @param passed the passed closures
+         */
+        Judged {
+            faults = List.copyOf(faults);
+            passed = passed.stream().map(List::copyOf).toList();
+        }
+    }
 
     /**
      * The faults of the set: per root, in configured-id order, every fault of the first failing check within the root's
@@ -56,9 +79,22 @@ final class ReferencesPhase {
      */
     static List<ClosureFault> faults(
             List<PackUnderResolution> set, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
+        return judged(set, factsOf).faults();
+    }
+
+    /**
+     * The faults of the set, as {@link #faults}, and the closures of the roots whose closure passed.
+     *
+     * @param set the packs, which have no composition fault
+     * @param factsOf each pack's composition facts
+     * @return what the phase found
+     * @throws IllegalStateException when a root's closure has a composition fault, as {@link #faults} does
+     */
+    static Judged judged(List<PackUnderResolution> set, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
         Objects.requireNonNull(set, "set");
         Objects.requireNonNull(factsOf, "factsOf");
         Set<ClosureFault> faults = new LinkedHashSet<>();
+        List<List<PackUnderResolution>> passed = new ArrayList<>();
         List<PackUnderResolution> roots = set.stream()
                 .sorted(Comparator.comparing(pack -> pack.configured().id().value()))
                 .toList();
@@ -69,10 +105,12 @@ final class ReferencesPhase {
                 throw new IllegalStateException("REFERENCES runs only when the set composes, yet the closure of "
                         + root.configured().id().value() + " has composition faults: " + rooted.faults());
             }
-            PackRulesets.references(rooted.order(), rooted.order(), factsOf).stream()
-                    .map(ClosureFault::asRegistrationRefuses)
-                    .forEach(faults::add);
+            List<ClosureFault> found = PackRulesets.references(rooted.order(), rooted.order(), factsOf);
+            if (found.isEmpty()) {
+                passed.add(rooted.order());
+            }
+            found.stream().map(ClosureFault::asRegistrationRefuses).forEach(faults::add);
         }
-        return List.copyOf(faults);
+        return new Judged(List.copyOf(faults), passed);
     }
 }

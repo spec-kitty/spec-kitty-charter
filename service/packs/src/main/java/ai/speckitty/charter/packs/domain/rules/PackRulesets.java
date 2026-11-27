@@ -22,7 +22,9 @@ import ai.speckitty.charter.packs.domain.graph.PackGraphNode;
 import ai.speckitty.charter.packs.domain.graph.PackNode;
 import ai.speckitty.charter.packs.domain.graph.Scope;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -284,11 +286,12 @@ public final class PackRulesets {
      * run only when the closure writes an {@code enhances} or {@code overrides} edge; the specialization rule runs
      * regardless. Each rule reads the subject, since where an edge's ends are placed is a fact of the closure, so the
      * answer does not depend on the elements the walk hands over; the {@code RELATIONS} mode names what the check is
-     * about. {@link #composedClosure} runs it ahead of the edge-index rules.
+     * about. {@link #composedClosure} runs it ahead of the edge-index rules; pack-doctor's {@code --full} runs it
+     * alone, through {@link #relationFaults}.
      *
      * @param relations the closure's typed edges, placed
      * @return the check: the relations walk and the one phase; production runs it as the first phase of
-     *     {@link #composedClosure}, and this check alone is the phase's unit under test
+     *     {@link #composedClosure} and in {@link #relationFaults}, and this check alone is the phase's unit under test
      */
     static GraphCheck relations(ComposedRelations relations) {
         return new GraphCheck(PackGraph.Walk.RELATIONS, List.of(relationsPhase(relations)));
@@ -333,6 +336,37 @@ public final class PackRulesets {
                 packs,
                 member -> factsOf.apply(member).edges(),
                 member -> factsOf.apply(member).policy());
+    }
+
+    /**
+     * Every relation fault of a composed closure ({@link #relations}), run by the walker over the closure's relations
+     * walk, every pack a root: what registration's relations phase refuses in the closure, without the edge-index rules
+     * behind it, which judge the layer merge (#632 item 3, FR-012). pack-doctor's {@code --full} runs it per root of
+     * its set, over the closure the root composes. A closure with no pack has no fault.
+     *
+     * @param closure the composed closure, in merge order, each configured pack once
+     * @param factsOf each pack's composition facts, as the closure was composed with them
+     * @return the faults, rule by rule; empty when the closure's relations are sound
+     * @throws IllegalArgumentException when two packs of the closure are configured under one identifier, as
+     *     {@link PackGraph#of} refuses them
+     */
+    public static List<ClosureFault> relationFaults(
+            List<PackUnderResolution> closure, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
+        Objects.requireNonNull(closure, "closure");
+        Objects.requireNonNull(factsOf, "factsOf");
+        if (closure.isEmpty()) {
+            return List.of();
+        }
+        Map<PackIdentifier, PackUnderResolution> members = new LinkedHashMap<>();
+        closure.forEach(member -> members.put(member.configured().id(), member));
+        PackGraph graph = PackGraph.of(
+                closure.stream()
+                        .map(member -> new PackNode(member.configured(), member.descriptor()))
+                        .toList(),
+                pack -> factsOf.apply(Objects.requireNonNull(members.get(pack), "a pack of the closure")));
+        return relations(relationsOf(closure, factsOf))
+                .run(graph, Scope.of(List.copyOf(members.keySet())))
+                .faults();
     }
 
     /**

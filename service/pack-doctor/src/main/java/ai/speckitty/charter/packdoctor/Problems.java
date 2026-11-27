@@ -47,7 +47,8 @@ final class Problems {
      * included, with the preset-item rule's case-only {@code pack_reference_artifact_missing}), which the registration
      * answers as 422 in place of their own 500; the two preset-item codes are 422 everywhere. {@code --full}'s
      * {@code REFERENCES} adds the three reference codes, 422 at registration (#632 item 3); its delegation fault is the
-     * registration's {@code validation_failed}.
+     * registration's {@code validation_failed}. {@code --full}'s {@code RELATIONS} adds the relation rules' codes and
+     * {@code specialization_cycle}, each 422 at registration (#632 item 3, FR-012).
      */
     static final Map<RefusalCode, Integer> STATUS = Map.ofEntries(
             Map.entry(RefusalCode.VALIDATION_FAILED, 422),
@@ -65,7 +66,13 @@ final class Problems {
             Map.entry(RefusalCode.PACK_REFERENCE_PACK_MISSING, 422),
             Map.entry(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING, 422),
             Map.entry(RefusalCode.PRESET_ITEM_NOT_HELD, 422),
-            Map.entry(RefusalCode.PRESET_ITEM_UNDECLARED, 422));
+            Map.entry(RefusalCode.PRESET_ITEM_UNDECLARED, 422),
+            Map.entry(RefusalCode.SELF_OVERRIDE, 422),
+            Map.entry(RefusalCode.CONFLICTING_RELATIONS, 422),
+            Map.entry(RefusalCode.OVERRIDE_NOT_PERMITTED, 422),
+            Map.entry(RefusalCode.OVERRIDE_CYCLE, 422),
+            Map.entry(RefusalCode.ENHANCES_CYCLE, 422),
+            Map.entry(RefusalCode.SPECIALIZATION_CYCLE, 422));
 
     private Problems() {}
 

@@ -334,6 +334,20 @@ class ProblemsTest {
         assertThat(Problems.statusOf(RefusalCode.REGISTRATION_CONFLICT)).isEqualTo(409);
     }
 
+    @Test
+    void everyRelationCodeHasTheRegistrationsStatus() {
+        // --full's RELATIONS (#632 item 3, FR-012): each code the factory's relation rules answer is 422 at
+        // registration, the getPackRegistration status of its x-refusal entry.
+        assertThat(List.of(
+                        RefusalCode.SELF_OVERRIDE,
+                        RefusalCode.CONFLICTING_RELATIONS,
+                        RefusalCode.OVERRIDE_NOT_PERMITTED,
+                        RefusalCode.OVERRIDE_CYCLE,
+                        RefusalCode.ENHANCES_CYCLE,
+                        RefusalCode.SPECIALIZATION_CYCLE))
+                .allSatisfy(code -> assertThat(Problems.statusOf(code)).isEqualTo(422));
+    }
+
     private static RefusalCode refusalCode(String token) {
         return Arrays.stream(RefusalCode.values())
                 .filter(code -> code.token().equals(token))
