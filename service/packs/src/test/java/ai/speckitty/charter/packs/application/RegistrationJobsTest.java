@@ -436,9 +436,7 @@ class RegistrationJobsTest {
         assertThat(beforeTheQueuedJob.await(10, TimeUnit.SECONDS))
                 .as("the sweep ended the fillers and reached the queued job")
                 .isTrue();
-        h.fillers.forEach(RegistrationJobsTest::awaitEnded);
-        Await.until(
-                "a freed worker to deal with the queued job", () -> !h.audited().isEmpty());
+        awaitEnded(held);
         goOn.countDown();
         watchdog.join(TimeUnit.SECONDS.toMillis(10));
 
