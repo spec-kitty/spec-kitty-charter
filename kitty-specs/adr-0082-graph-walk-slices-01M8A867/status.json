@@ -1,7 +1,7 @@
 {
-  "event_count": 47,
-  "last_event_id": "01M8DZFFXNXVFWB86S2GA1QV8A",
-  "materialized_at": "2026-11-27T07:45:51.029115+00:00",
+  "event_count": 49,
+  "last_event_id": "01M8DZRVZ2QC6JS41216BBFWHP",
+  "materialized_at": "2026-11-27T07:50:58.075973+00:00",
   "mission_number": "",
   "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
   "mission_type": "software-dev",
@@ -13,9 +13,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -187,11 +187,20 @@
       }
     },
     "WP06": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude::java-jenny",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M8AA8881X0H9ECNZBKCZMXHH",
-      "last_transition_at": "2026-11-25T21:37:10.401852+00:00"
+      "implementer_of_record": "claude::java-jenny",
+      "lane": "in_progress",
+      "last_event_id": "01M8DZRVZ2QC6JS41216BBFWHP",
+      "last_transition_at": "2026-11-27T07:50:58.075973+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 18509,
+      "shell_pid_created_at": "1795765848.33"
     },
     "WP07": {
       "actor": "claude",
