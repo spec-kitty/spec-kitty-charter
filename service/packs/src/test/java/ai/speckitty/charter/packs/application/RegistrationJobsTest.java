@@ -40,6 +40,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -419,13 +420,15 @@ class RegistrationJobsTest {
         assertThat(h.status(held).state()).as("not yet due").isEqualTo(State.PENDING);
         h.clock.advance(Duration.ofSeconds(2));
         // The fillers are overdue too, and they come first: ending them frees both workers. The sweep stops at its
-        // reading of the clock for the queued job, so the freed worker has dealt with that job before its end is
-        // reached.
+        // first reading of the clock after both fillers ended, which is the queued job's, so the freed worker has
+        // dealt with that job before its end is reached.
         CountDownLatch beforeTheQueuedJob = new CountDownLatch(1);
         CountDownLatch goOn = new CountDownLatch(1);
         Thread watchdog = new Thread(() -> {
-            // Reading 1 is the sweep's own, then one reading per filler as it ends, then the queued job's.
-            h.clock.pauseThisThreadAtCall(RegistrationJobs.RUNNING_LIMIT + 2, beforeTheQueuedJob, goOn);
+            h.clock.pauseThisThreadAtFirstReadWhen(
+                    () -> h.fillers.stream().allMatch(filler -> filler.status().state() == State.REFUSED),
+                    beforeTheQueuedJob,
+                    goOn);
             h.jobs.expireOverdue();
         });
         watchdog.setDaemon(true);
@@ -945,10 +948,25 @@ class RegistrationJobsTest {
         private volatile CountDownLatch pausedEntered = new CountDownLatch(0);
         private volatile CountDownLatch pausedRelease = new CountDownLatch(0);
         private int callsOfPausing;
+        private volatile BooleanSupplier pauseWhen;
+
+        /**
+         * The calling thread stops at its first reading of the clock once {@code condition} holds, until
+         * {@code release}.
+         */
+        void pauseThisThreadAtFirstReadWhen(BooleanSupplier condition, CountDownLatch entered, CountDownLatch release) {
+            pauseAtCall = 0;
+            pauseWhen = condition;
+            pausedEntered = entered;
+            pausedRelease = release;
+            callsOfPausing = 0;
+            pausingThread = Thread.currentThread().threadId();
+        }
 
         /** The calling thread stops at its {@code call}-th reading of the clock until {@code release}. */
         void pauseThisThreadAtCall(int call, CountDownLatch entered, CountDownLatch release) {
             pauseAtCall = call;
+            pauseWhen = null;
             pausedEntered = entered;
             pausedRelease = release;
             callsOfPausing = 0;
@@ -975,9 +993,14 @@ class RegistrationJobsTest {
 
         @Override
         public Instant instant() {
-            if (Thread.currentThread().threadId() == pausingThread && ++callsOfPausing == pauseAtCall) {
-                pausedEntered.countDown();
-                await(pausedRelease);
+            if (Thread.currentThread().threadId() == pausingThread) {
+                BooleanSupplier condition = pauseWhen;
+                boolean stop = condition != null ? condition.getAsBoolean() : ++callsOfPausing == pauseAtCall;
+                if (stop) {
+                    pausingThread = -1;
+                    pausedEntered.countDown();
+                    await(pausedRelease);
+                }
             }
             return now;
         }
