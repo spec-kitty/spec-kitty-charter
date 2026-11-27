@@ -409,7 +409,7 @@ class RegistrationJobsTest {
     // ---- the deadline ------------------------------------------------------------------------------------------
 
     @Test
-    void aQueuedJobPastTheDeadlineIsWithdrawnRefusedTimedOutAndWritesNothing(@TempDir Path host) {
+    void aQueuedJobPastTheDeadlineIsWithdrawnRefusedTimedOutAndWritesNothing(@TempDir Path host) throws Exception {
         Harness h = new Harness(host);
         h.occupyWorkers();
         Reservation held = h.start("pack-x", Preconditions.none(), h.stage(h.pack("pack-x", "1.0.0")));
@@ -418,9 +418,30 @@ class RegistrationJobsTest {
         h.jobs.expireOverdue();
         assertThat(h.status(held).state()).as("not yet due").isEqualTo(State.PENDING);
         h.clock.advance(Duration.ofSeconds(2));
-        h.jobs.expireOverdue();
+        // The fillers are overdue too, and they come first: ending them frees both workers. The sweep stops at its
+        // reading of the clock for the queued job, so the freed worker has dealt with that job before its end is
+        // reached.
+        CountDownLatch beforeTheQueuedJob = new CountDownLatch(1);
+        CountDownLatch goOn = new CountDownLatch(1);
+        Thread watchdog = new Thread(() -> {
+            // Reading 1 is the sweep's own, then one reading per filler as it ends, then the queued job's.
+            h.clock.pauseThisThreadAtCall(RegistrationJobs.RUNNING_LIMIT + 2, beforeTheQueuedJob, goOn);
+            h.jobs.expireOverdue();
+        });
+        watchdog.setDaemon(true);
+        watchdog.start();
+        assertThat(beforeTheQueuedJob.await(10, TimeUnit.SECONDS))
+                .as("the sweep ended the fillers and reached the queued job")
+                .isTrue();
+        h.fillers.forEach(RegistrationJobsTest::awaitEnded);
+        Await.until(
+                "a freed worker to deal with the queued job", () -> !h.audited().isEmpty());
+        goOn.countDown();
+        watchdog.join(TimeUnit.SECONDS.toMillis(10));
 
-        assertThat(h.status(held).state()).isEqualTo(State.REFUSED);
+        assertThat(h.status(held).state())
+                .as("a job past its deadline is never dispatched from the queue")
+                .isEqualTo(State.REFUSED);
         assertThat(h.status(held).ending()).isInstanceOfSatisfying(Refused.class, why -> {
             assertThat(why.kind()).isEqualTo(Kind.CODED);
             assertThat(why.refusal().code()).isEqualTo(RefusalCode.REGISTRATION_TIMED_OUT);

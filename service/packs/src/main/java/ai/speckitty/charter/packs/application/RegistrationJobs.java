@@ -758,7 +758,7 @@ public final class RegistrationJobs implements AutoCloseable {
             snapshot = List.copyOf(jobs.values());
         }
         for (Job job : snapshot) {
-            if (!now.isBefore(job.acceptedAt.plus(DEADLINE))) {
+            if (job.overdue(now)) {
                 job.expire();
             }
         }
@@ -993,6 +993,11 @@ public final class RegistrationJobs implements AutoCloseable {
                     return null;
                 }
                 if (!markRunning()) {
+                    if (overdue()) {
+                        // Taken from the queue past its deadline, before the watchdog reached it: ended here, never
+                        // run.
+                        expire();
+                    }
                     return null;
                 }
                 return work();
@@ -1020,8 +1025,16 @@ public final class RegistrationJobs implements AutoCloseable {
             worker = null;
         }
 
+        private boolean overdue() {
+            return overdue(owner.clock.instant());
+        }
+
+        boolean overdue(Instant now) {
+            return !now.isBefore(acceptedAt.plus(DEADLINE));
+        }
+
         private synchronized boolean markRunning() {
-            if (phase != Phase.QUEUED) {
+            if (phase != Phase.QUEUED || overdue()) {
                 return false;
             }
             phase = Phase.RUNNING;
