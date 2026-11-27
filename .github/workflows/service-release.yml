@@ -22,7 +22,9 @@ name: service-release
 # releases' assets and the tag's stability are checked here, where the remote is. Only the publish job can write, and
 # it runs no build. A release is never marked latest, and a tag with a pre-release suffix makes a GitHub pre-release.
 # An existing release fails the run; nothing is replaced. The workflow runs from the tagged commit, so these checks
-# guard against mistakes, not against someone who can push tags: a tag ruleset on service-v* limits who can publish.
+# guard against mistakes, not against someone who can push tags: the tag ruleset of #196 on service-v* is to limit
+# who can publish (required before the first final tag, while a release candidate may be tagged before it: operator
+# ruling, 2026-11-25).
 #
 # The build it calls (service.yml) also checks out spec-kitty-open-packs at the commit pinned in gradle.properties
 # (openPacksRef) to sync packs/internal and packs/qa for governance; no test reads it, and it is never part of an asset.
@@ -239,7 +241,8 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    # The operator may require reviewers on this environment; the service-v* tag ruleset is the first guard (ADR-0046).
+    # The operator may require reviewers on this environment; the service-v* tag ruleset of #196 is to be the first
+    # guard (ADR-0046).
     environment: service-release
     permissions:
       contents: write
@@ -262,8 +265,9 @@ jobs:
       # The assets are those of the commit gate judged. A tag moved or re-pushed since then names another commit, and
       # nothing is published.
       # Residual (in model): a tag moved between this check and `gh release create` below would point the release at
-      # a new commit carrying the old assets. It needs a ruleset-forbidden tag update, and the per-asset attestation
-      # still binds each asset to this workflow and tag, so it is a release/target mismatch, not a supply-chain hole.
+      # a new commit carrying the old assets. It needs a tag update (which #196's ruleset is to forbid), and the
+      # per-asset attestation still binds each asset to this workflow and tag, so it is a release/target mismatch, not
+      # a supply-chain hole.
       - name: Check the tag still names the built commit
         env:
           GH_TOKEN: ${{ github.token }}

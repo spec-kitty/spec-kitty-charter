@@ -3,7 +3,7 @@ okf_version: "0.2"
 title: For contract consumers
 description: Where the charter and packs contracts are published, which release to pin, how to generate a client, and why core writes declared ids through it.
 doc_status: draft
-updated: 2026-11-25T00:00:00Z
+updated: 2026-11-26T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -54,6 +54,8 @@ contract releases, for example:
 
 The releases before this rule differ: `service-v0.1.0-rc.1` bundles the charter contract `0.2.0-rc.2`, and
 `service-v0.1.0-rc.3` bundles `0.2.0-SNAPSHOT`, whose content is that of `0.2.0-rc.3` but whose bytes match no release.
+The tag `service-v0.1.0-rc.2` was never published: its release run did not finish, so it has no GitHub release and no
+assets. Pin `service-v0.1.0-rc.3` or later.
 
 ## Where the charter contract is published
 

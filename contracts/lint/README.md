@@ -98,8 +98,10 @@ release `0.2.0-rc.1` with the procedure below, writing `0.2.0-rc.1` where it say
    of `../charter/changes/` into the top CHANGELOG section and deletes them
    (`../charter/changes/README.md`). Then set `info.version` of `../charter/openapi.yaml` to the
    release (`1.1.0`) and turn the top CHANGELOG heading into `## 1.1.0` (adding `### Breaking` for
-   a new major, or for a new minor while the major is 0). `:contracts:checkReleaseTag` refuses the
-   tag while a fragment is left. The
+   a new major, or for a new minor while the major is 0), and rewrite the section's opening
+   paragraph ("The work toward the next candidate ...") by hand: no task rewrites it and no gate
+   reads it.
+   `:contracts:checkReleaseTag` refuses the tag while a fragment is left. The
    check reports "pending release 1.1.0" while no tag for it is merged into HEAD, and compares
    against the previous release.
 2. After the merge, tag `main` at the merge commit: `git tag contract-charter-v1.1.0 <merge commit>`
@@ -123,7 +125,9 @@ and publishes nothing, unless the tag, `info.version` and the top heading name o
 candidate (a malformed pre-release is refused) (`./gradlew :contracts:checkReleaseTag -PreleaseTag=<tag>`), the contract checks pass and
 the tagged commit is on `main`; it also refuses a tag that moved while the assets were built.
 The workflow runs from the tagged commit, so these checks catch mistakes, not someone who can push
-tags: a tag ruleset on `contract-charter-v*` decides who can publish.
+tags: the tag ruleset of #196 on `contract-charter-v*` is to limit who can publish. It is not applied
+yet, and it must be applied before the first final tag; a release candidate may be tagged before it
+(operator ruling, 2026-11-25). Until then only this procedure, not GitHub, limits who pushes one.
 
 **Every service release bundles a released contract** (#650). A `service-v*` release, a pre-release too, is published
 only when `contract-charter-v<info.version>` of the contract it bundles is merged into its commit and its GitHub
