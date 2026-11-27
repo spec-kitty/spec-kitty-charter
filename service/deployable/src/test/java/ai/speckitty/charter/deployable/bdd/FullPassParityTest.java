@@ -96,6 +96,10 @@ class FullPassParityTest {
 
     private static final String ETA_ID = "01M4P01D5TWB5FKZGNNQG3943Z";
 
+    private static final String THETA_ID = "01M4P01D5TWB5FKZGNNQG3943Q";
+
+    private static final String IOTA_ID = "01M4P01D5TWB5FKZGNNQG3943P";
+
     private static final String FRAGMENT = "nodes: []\nedges: []\n";
 
     private static final String MANIFEST = "pack-manifest.yaml";
@@ -690,8 +694,55 @@ class FullPassParityTest {
                     "an artifact that both enhances and overrides one target",
                     "conflicting_relations",
                     "{source: 'directive:A', target: 'directive:B', relation: enhances}",
-                    "{source: 'directive:A', target: 'directive:B', relation: overrides}")
+                    "{source: 'directive:A', target: 'directive:B', relation: overrides}"),
+            // The rules that read the mutability policy and the mission type's lock: pack-doctor reads them from the
+            // files, registration from the stored packs (review F1).
+            closureOf(
+                    "an override of a dependency's artifact that is not open",
+                    THETA_ID,
+                    theta(),
+                    lineage("{source: 'directive:MINE', target: 'theta::directive:D', relation: overrides}"),
+                    "override_not_permitted"),
+            new Row(
+                    "an enhancement of a step whose mission type its dependency locks",
+                    alpha(IOTA_ID, stepEnhancementOf("iota::action:software-dev/plan")),
+                    Optional.of(iota()),
+                    "override_not_permitted",
+                    List.of(),
+                    true),
+            relation(
+                    "an enhances cycle",
+                    "enhances_cycle",
+                    "{source: 'directive:A', target: 'directive:B', relation: enhances}",
+                    "{source: 'directive:B', target: 'directive:A', relation: enhances}"),
+            relation(
+                    "an enhancer whose chain reaches no artifact that enhances nothing",
+                    "enhances_cycle",
+                    "{source: 'directive:A', target: 'directive:MISSING_ONE', relation: enhances}")
         };
+    }
+
+    /** alpha depending on a base, with the relations file given. */
+    private static Row closureOf(String fault, String baseId, Base base, String relations, String code) {
+        return new Row(
+                fault,
+                alpha(baseId, Map.of("relations.graph.yaml", relations)),
+                Optional.of(base),
+                code,
+                List.of(),
+                true);
+    }
+
+    /** theta, a base whose policy locks its directive D. */
+    private static Base theta() {
+        return new Base("theta", locking(base(THETA_ID, "theta", Map.of()), "directive:D"));
+    }
+
+    /** iota, beta's files under its own id and name, whose policy locks the mission type software-dev. */
+    private static Base iota() {
+        Map<String, String> files = new LinkedHashMap<>(beta());
+        files.put("pack.yaml", files.get("pack.yaml").replace(BETA_ID, IOTA_ID).replace("name: beta", "name: iota"));
+        return new Base("iota", locking(files, "mission_type:software-dev"));
     }
 
     /**
