@@ -68,27 +68,15 @@ final class ReferencesPhase {
 
     /**
      * The faults of the set: per root, in configured-id order, every fault of the first failing check within the root's
-     * closure, every pack of it judged in merge order; a fault several roots find, once.
-     *
-     * @param set the packs, which have no composition fault
-     * @param factsOf each pack's composition facts
-     * @return the faults, as registration answers each; empty when every closure passes
-     * @throws IllegalStateException when a root's closure has a composition fault: {@code PackSetCheck} runs this only
-     *     when none of {@code CLOSURE}'s faults is one (its {@code isCompositionFault} gate), so the throw means the
-     *     gate and this phase disagree on the set
-     */
-    static List<ClosureFault> faults(
-            List<PackUnderResolution> set, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
-        return judged(set, factsOf).faults();
-    }
-
-    /**
-     * The faults of the set, as {@link #faults}, and the closures of the roots whose closure passed.
+     * closure, every pack of it judged in merge order; a fault several roots find, once. And the closures of the roots
+     * whose closure passed, for {@link RelationsPhase}.
      *
      * @param set the packs, which have no composition fault
      * @param factsOf each pack's composition facts
      * @return what the phase found
-     * @throws IllegalStateException when a root's closure has a composition fault, as {@link #faults} does
+     * @throws IllegalStateException when a root's closure has a composition fault: {@code PackSetCheck} runs this only
+     *     when none of {@code CLOSURE}'s faults is one (its {@code isCompositionFault} gate), so the throw means the
+     *     gate and this phase disagree on the set
      */
     static Judged judged(List<PackUnderResolution> set, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
         Objects.requireNonNull(set, "set");

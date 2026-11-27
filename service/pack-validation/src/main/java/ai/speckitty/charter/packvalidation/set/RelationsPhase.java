@@ -25,13 +25,18 @@ import java.util.function.Function;
  * first found, as {@link ReferencesPhase} reports a reference fault (ruling R-ae). Each fault is the code registration
  * answers; none carries a violation or a pointer.
  *
- * <p>Where it sits: after {@code REFERENCES}, and gated by it root by root. Registration judges a closure's relations
- * only once its delegations, references and enhancement targets pass (its phases 2 to 4 come first, in
- * {@code OfferingReadService.judged}), so a root whose closure has a {@code REFERENCES} fault is not judged here: a
- * relation rule would answer the same cause again (an enhancement whose target pack is missing is also an ungrounded
- * enhancer), and a pack never gets two problems for one cause. The stop rule of {@code PackRulesets.references} spans
- * the two phases as it spans the closure (ruling R-ab). The faults follow {@code REFERENCES}', so the first finding is
- * registration's. Like {@code REFERENCES} it runs only when the set has no composition fault (ruling R-aa).
+ * <p>Where it sits: after {@code REFERENCES}, and gated by it root by root, as registration's phases 2 to 4 gate its
+ * relations phase: registration judges a closure's relations only once its delegations, references and enhancement
+ * targets pass ({@code OfferingReadService.judged}). So a root whose closure has a {@code REFERENCES} fault is not
+ * judged here: a relation rule would answer the same cause again (an enhancement whose target pack is missing is also
+ * an ungrounded enhancer), and a pack never gets two problems for one cause. The stop rule of
+ * {@code PackRulesets.references} spans the two phases as it spans the closure (ruling R-ab). Registration's phases 5
+ * and 6 (the preset contests, the case-only answer) also come before its relations, and it places a preset-item fault
+ * only for a closure that passed them; here those are {@code CLOSURE}'s faults, which do not stop this phase and stand
+ * beside its faults, as beside {@code REFERENCES}' (ruling R-aa). Within one root's closure the faults follow
+ * {@code REFERENCES}', so that closure's first finding is registration's. Across roots the order is phase-major (every
+ * root's {@code REFERENCES} faults, then every root's {@code RELATIONS} faults), where registration's is closure-major.
+ * Like {@code REFERENCES} it runs only when the set has no composition fault (ruling R-aa).
  *
  * <p>Not here: the edge-index rules, which judge the closure's layer merge, and the own-closure rules, which read the
  * agent profiles the merge keeps; pack-doctor composes no merge and has no profile reader (#636 slice 7).

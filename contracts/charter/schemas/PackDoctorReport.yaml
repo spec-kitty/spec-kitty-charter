@@ -104,9 +104,9 @@ properties:
         fault, a rooted closure that does not compose (ruling R-aa): per root of the set, over the closure the root
         composes, every pack of it (ruling R-ae), the substep delegations, the references and the step enhancements'
         targets, in the registration's order, a fault several roots find reported once; RELATIONS with --full, after
-        REFERENCES and whenever it runs: per root whose closure REFERENCES passed, over the same closure, the relation
-        rules and the specializes_from cycle (#632 item 3), a fault several roots find reported once; ROUND_TRIP with
-        --round-trip.
+        REFERENCES, when at least one root's closure passed REFERENCES: per such root, over the same closure, the
+        relation rules and the specializes_from cycle (#632 item 3), a fault several roots find reported once;
+        ROUND_TRIP with --round-trip.
       inputs:
         - the command line
         - the packs checked

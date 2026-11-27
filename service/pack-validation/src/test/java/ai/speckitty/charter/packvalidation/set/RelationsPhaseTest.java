@@ -126,7 +126,8 @@ class RelationsPhaseTest {
         writes(writing, specializes("jenny", "ivan"), specializes("ivan", "jenny"));
         writes(reader, edge("step_enhancement:x", "gamma::action:M/s", RelationType.ENHANCES));
 
-        assertThat(codes(ReferencesPhase.faults(List.of(writing, reader), this::factsOf)))
+        assertThat(codes(ReferencesPhase.judged(List.of(writing, reader), this::factsOf)
+                        .faults()))
                 .as("reader's root: the enhancement's target pack is missing")
                 .containsExactly(RefusalCode.PACK_REFERENCE_PACK_MISSING.token());
         assertThat(codes(faults(writing, reader)))

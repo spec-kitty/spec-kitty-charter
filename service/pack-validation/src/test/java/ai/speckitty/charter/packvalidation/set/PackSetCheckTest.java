@@ -1214,6 +1214,28 @@ class PackSetCheckTest {
         }
 
         @Test
+        @DisplayName("every root's closure has a REFERENCES fault: RELATIONS judges no closure, so it is not listed")
+        void noRootPassingReferencesLeavesRelationsOut(@TempDir Path dir) {
+            List<PackSetEntry> set = References.alphaAndBeta(dir, "beta-pack::directive:NOPE");
+            References.write(dir.resolve("beta/relations.graph.yaml"), """
+                    schema_version: '1.0'
+                    generated_at: STATIC
+                    nodes: []
+                    edges:
+                    - {source: 'directive:SHARE', target: 'beta-pack::directive:GONE', relation: requires}
+                    """);
+
+            PackSetVerdict verdict = CHECK.checkFull(set);
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(codes(verdict.faults()))
+                    .containsExactly(
+                            RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING.token(),
+                            RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING.token());
+            assertThat(verdict.skipped()).isEmpty();
+        }
+
+        @Test
         @DisplayName("a composition fault: RELATIONS does not run either (R-aa)")
         void aCompositionFaultStopsRelations(@TempDir Path dir) {
             PackSetEntry alpha =

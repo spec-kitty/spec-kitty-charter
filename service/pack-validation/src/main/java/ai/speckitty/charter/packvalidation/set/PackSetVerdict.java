@@ -21,7 +21,8 @@ import java.util.stream.Collectors;
  *     then, when {@code CLOSURE} found no composition fault and {@code --full} asked for them, those of
  *     {@code REFERENCES} and then those of {@code RELATIONS}; empty when the checks that ran passed or none ran
  * @param checks the checks that ran over the whole set: {@link Check#PACK}, then {@link Check#CLOSURE} when it ran, then
- *     {@link Check#REFERENCES} and {@link Check#RELATIONS} when they were asked for and ran, then
+ *     {@link Check#REFERENCES} and {@link Check#RELATIONS} when they were asked for and ran ({@code RELATIONS} when
+ *     at least one root's closure passed {@code REFERENCES}), then
  *     {@link Check#ROUND_TRIP} when it was asked for
  * @param skipped the checks skipped, with why; empty when every check asked for ran
  */
@@ -58,7 +59,8 @@ public record PackSetVerdict(
         /**
          * {@code --full}: per root of the set, over the closure the root composes, the factory's relation rules, the
          * {@code specializes_from} cycle among them, with registration's codes (#632 item 3, FR-012). It runs when
-         * {@code REFERENCES} runs, after it, over each root whose closure {@code REFERENCES} passed.
+         * {@code REFERENCES} runs, after it, over each root whose closure {@code REFERENCES} passed, and is listed
+         * only when it judged at least one.
          */
         RELATIONS,
         /** The production round trip, per pack, judged with no expected-red baseline. */
