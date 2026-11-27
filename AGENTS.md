@@ -44,3 +44,9 @@ Read `docs/development/issue-tracker.md` before you file or close an issue. In s
 - No reviewer sessions: the runner runs its own adversarial review with in-session subagents, folds
   every finding, confirms the fold and posts the "Independent adversarial review (agent)" comment.
   Detail: `docs/development/cloud-session-setup.md`, "Running several cloud sessions".
+
+## Commit rules for agents (operator, 2026-11-25)
+
+- Every commit a Claude agent session makes in this repository ends with
+  `Co-Authored-By: Claude <noreply@anthropic.com>`, with no model name. No commit message or PR
+  body names a model.
