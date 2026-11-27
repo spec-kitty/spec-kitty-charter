@@ -358,6 +358,7 @@ class FullPassParityTest {
                         closureRows(),
                         crossPackRows(),
                         relationRows(),
+                        policyRows(),
                         fileRows(),
                         antiPatternRows(),
                         remainderRows())
@@ -694,9 +695,14 @@ class FullPassParityTest {
                     "an artifact that both enhances and overrides one target",
                     "conflicting_relations",
                     "{source: 'directive:A', target: 'directive:B', relation: enhances}",
-                    "{source: 'directive:A', target: 'directive:B', relation: overrides}"),
-            // The rules that read the mutability policy and the mission type's lock: pack-doctor reads them from the
-            // files, registration from the stored packs (review F1).
+                    "{source: 'directive:A', target: 'directive:B', relation: overrides}")
+        };
+    }
+
+    private static Row[] policyRows() {
+        return new Row[] {
+            // RELATIONS, the rules that read the mutability policy and the mission type's lock: pack-doctor reads them
+            // from the files, registration from the stored packs (review F1).
             closureOf(
                     "an override of a dependency's artifact that is not open",
                     THETA_ID,
