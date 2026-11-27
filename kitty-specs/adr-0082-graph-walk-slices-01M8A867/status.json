@@ -197,6 +197,9 @@
       "last_event_id": "01M8E86FQ49N55M3EZSH69Q9M6",
       "last_transition_at": "2026-11-27T10:18:13.092584+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP06 done on lane-f (signed). pack-doctor validate --full gains a RELATIONS check: PackRulesets.relationFaults over each root's composed closure, roots in configured-id order, a fault several roots find reported once (R-ae), registration's phases 2-4 gate per root (a contest, preset-item or case-only fault stands beside, as for REFERENCES). PackDoctorReport gains RELATIONS (maxItems 5; contract fragment). Nine two-sided FullPassParityTest rows (specialization cycle x2, override cycle, self-override, conflicting, override_not_permitted x2, enhances cycle, ungrounded enhancer). The edge-index phase stays with #636 slice 7 (pinned gap row). Adversarial review: no HIGH; F1-F10 folded (F5/F7 on the PR branch, which stacks on #683). Out of map: PackRulesets, ReferencesPhase, PackSetVerdict, pack-doctor Problems/Arguments and tests, PackDoctorReport.yaml, ADR-0075/0083 notes, architecture page."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 18509,
