@@ -204,6 +204,9 @@
       "last_event_id": "01M8DZATCGE7PY1G39GJEHGJ0Q",
       "last_transition_at": "2026-11-27T07:43:17.904497+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP07 done on lane-g (signed). REFERENCES runs on PackGraph#walk: referencesCheck = GraphCheck(PACKS, 3 phases), every closure pack a root and selected. PACKS is the members mode the ruling names (the packs alone, no facts read; the WP prompt T026 allows it), so no duplicate enum constant. The Interim notes are gone; an ArchUnit rule (only GraphCheck runs ValidationWalker, packs and pack-validation) guards it. Order of findings identical for all three callers. Adversarial review: no HIGH/MEDIUM; 3 LOW + 5 NIT folded. verifyAll green. Out of map: PackRulesets, OfferingReadService, ReferencesPhase, EdgeIndexTest, PackGraphWalkBoundaryTest, architecture page, graph-walk-classes diagram."
+      ],
       "provider": "__resolved_provider_absent__",
       "role": "implementer",
       "shell_pid": 3217,
