@@ -318,7 +318,6 @@ class EdgeIndexTest {
 
         assertThat(PackRulesets.references(
                         closure.packs,
-                        closure.packs,
                         pack -> Objects.requireNonNull(
                                 facts.get(pack.configured().id().value()), "facts")))
                 .extracting(ClosureFault::code, fault -> fault.detail().contains("beta::tactic:"))

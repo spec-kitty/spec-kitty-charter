@@ -69,7 +69,7 @@ final class ReferencesPhase {
                 throw new IllegalStateException("REFERENCES runs only when the set composes, yet the closure of "
                         + root.configured().id().value() + " has composition faults: " + rooted.faults());
             }
-            PackRulesets.references(rooted.order(), rooted.order(), factsOf).stream()
+            PackRulesets.references(rooted.order(), factsOf).stream()
                     .map(ClosureFault::asRegistrationRefuses)
                     .forEach(faults::add);
         }

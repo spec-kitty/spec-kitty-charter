@@ -22,7 +22,9 @@ import ai.speckitty.charter.packs.domain.graph.PackGraphNode;
 import ai.speckitty.charter.packs.domain.graph.PackNode;
 import ai.speckitty.charter.packs.domain.graph.Scope;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -157,43 +159,81 @@ public final class PackRulesets {
      * their stop rule, which registration's composing judge and pack-doctor's {@code --full} both run. In order, the
      * substep delegations ({@link PackCompositionResolver#delegationFaultsOf}), the references
      * ({@link PackCompositionResolver#referenceFaultsOf}) and the step enhancements' targets
-     * ({@link EnhancementCompose#targetFaultsOf}), each judged for every member given, in the order given; the first
-     * check that finds any fault answers all of them, and the later checks do not run, since a later check would answer
-     * the same cause again (a delegation candidate is also the reference of its {@code scope} edge). Registration
-     * judges every member of the closure it composes; pack-doctor's {@code --full} does the same per root of its set,
-     * every pack of the root's closure a member (ruling R-ae), reporting a fault several roots find once. Each check is
-     * a phase of the {@link ValidationWalker}, handed each member itself in the order given; its phase gate is the
-     * stop rule (every closure fault is a violation).
+     * ({@link EnhancementCompose#targetFaultsOf}), each judged for every member of the closure, in the closure's order;
+     * the first check that finds any fault answers all of them, and the later checks do not run, since a later check
+     * would answer the same cause again (a delegation candidate is also the reference of its {@code scope} edge).
+     * Registration judges every member of the closure it composes; pack-doctor's {@code --full} does the same per root
+     * of its set, every pack of the root's closure a member (ruling R-ae), reporting a fault several roots find once.
      *
-     * <p>Interim: the members reach the walker by a direct feed, not by {@code PackGraph#walk}. The nodes are
-     * {@link PackUnderResolution}s, not pack-graph nodes, and the caller's members (a subset of the closure, in the
-     * caller's order) are not the composition closure of a scope, which a driver would walk in the graph's order.
-     * Slice 4 of epic #636 (relations as rules) moves this check onto a graph walk with a mode of its own.
+     * <p>It runs {@link #referencesCheck} on a {@link PackGraph#walk} (#639, ADR-0082 slice 4): the graph holds the
+     * closure's packs in the closure's order, every pack is a root and the scope selects every pack, so the packs walk
+     * hands the walker every member once, in the closure's order. Each check is a phase; its phase gate is the stop
+     * rule (every closure fault is a violation). A closure with no pack has no fault.
      *
-     * @param closure the composed closure, in merge order
-     * @param members the members whose checks run, each a pack of the closure
+     * @param closure the composed closure, in merge order, each configured pack once
      * @param factsOf each member's composition facts
      * @return every fault of the first check that finds any, member by member; empty when every check passes
+     * @throws IllegalArgumentException when two packs of the closure are configured under one identifier, as
+     *     {@link PackGraph#of} refuses them; neither caller composes such a closure (registration keys its reads by
+     *     configured identifier, pack-doctor refuses a repeated name)
      */
     public static List<ClosureFault> references(
-            List<PackUnderResolution> closure,
-            List<PackUnderResolution> members,
-            Function<PackUnderResolution, PackCompositionFacts> factsOf) {
+            List<PackUnderResolution> closure, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
         Objects.requireNonNull(closure, "closure");
-        Objects.requireNonNull(members, "members");
         Objects.requireNonNull(factsOf, "factsOf");
-        List<ValidationWalker.Phase<PackUnderResolution>> phases = REFERENCES.stream()
-                .map(named -> new ValidationWalker.Phase<PackUnderResolution>(
-                        named.name(),
-                        List.of(new ValidationWalker.OnNode<PackUnderResolution, PackUnderResolution>(
-                                named.name(),
-                                PackUnderResolution.class,
-                                member -> true,
-                                member -> named.check().faults(closure, member, factsOf.apply(member))))))
-                .toList();
-        return ValidationWalker.of(phases)
-                .run(visitor -> members.forEach(visitor::onNode))
+        if (closure.isEmpty()) {
+            return List.of();
+        }
+        PackGraph graph = PackGraph.of(
+                closure.stream()
+                        .map(member -> new PackNode(member.configured(), member.descriptor()))
+                        .toList(),
+                pack -> {
+                    throw new IllegalStateException("the packs walk reads no pack's facts: " + pack.value());
+                });
+        return referencesCheck(closure, factsOf)
+                .run(
+                        graph,
+                        Scope.of(closure.stream()
+                                .map(member -> member.configured().id())
+                                .toList()))
                 .faults();
+    }
+
+    /**
+     * {@code REFERENCES}' check over a composed closure (#639, ADR-0082 slice 4): the packs walk, whose packs the scope
+     * selects as the members, and one phase per check of {@link #references}, each judging every member it is handed,
+     * in the order it is handed them. A member's facts are read when its node is judged, once per phase that runs.
+     *
+     * @param closure the composed closure, in merge order: what each member is judged in
+     * @param factsOf each member's composition facts
+     * @return the check: the packs walk and the three phases
+     * @throws IllegalArgumentException when the walk hands over a pack that is not of the closure
+     */
+    static GraphCheck referencesCheck(
+            List<PackUnderResolution> closure, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
+        Objects.requireNonNull(closure, "closure");
+        Objects.requireNonNull(factsOf, "factsOf");
+        Map<PackIdentifier, PackUnderResolution> members = new LinkedHashMap<>();
+        closure.forEach(member -> members.putIfAbsent(member.configured().id(), member));
+        Function<PackNode, PackUnderResolution> memberOf = node -> {
+            PackUnderResolution member = members.get(node.pack());
+            if (member == null) {
+                throw new IllegalArgumentException("the pack " + node.pack().value() + " is not of the closure");
+            }
+            return member;
+        };
+        return new GraphCheck(
+                PackGraph.Walk.PACKS,
+                REFERENCES.stream()
+                        .map(named -> new ValidationWalker.Phase<PackGraphNode>(
+                                named.name(),
+                                List.of(new ValidationWalker.OnNode<PackGraphNode, PackNode>(
+                                        named.name(), PackNode.class, node -> true, node -> {
+                                            PackUnderResolution member = memberOf.apply(node);
+                                            return named.check().faults(closure, member, factsOf.apply(member));
+                                        }))))
+                        .toList());
     }
 
     /**

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
+import ai.speckitty.charter.packs.domain.GraphCheck;
 import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.ValidationWalker;
 import com.tngtech.archunit.base.DescribedPredicate;
@@ -36,6 +37,9 @@ import org.junit.jupiter.api.Test;
  *   <li>{@link #ONLY_THE_DOMAIN_DRIVES}: only {@code packs.domain..} calls {@code PackGraph.walk} and {@code
  *       ValidationWalker.run} (ADR-0082 decision 2, #638); the application layer runs a rule factory's {@code
  *       GraphCheck}, which picks the walk mode and the phases, and never drives a walk with a visitor of its own.
+ *   <li>{@link #ONLY_A_GRAPH_WALK_FEEDS_THE_WALKER}: within the domain, only {@code GraphCheck} runs a {@code
+ *       ValidationWalker}, and it runs it on a {@code PackGraph.walk}; no rule factory feeds the walker its nodes by
+ *       hand (#639, operator ruling 01M8DT4CGSQZBPJCC6K9CN3ZX4: {@code REFERENCES} runs on a graph walk too).
  * </ul>
  *
  * <p>A walk written with a list as its stack, or by recursion, over edges the domain already handed out is not caught
@@ -93,6 +97,19 @@ class PackGraphWalkBoundaryTest {
             .accessTargetWhere(A_DRIVER_CALL)
             .because("a walk is driven by the packs domain through a rule factory's GraphCheck (ADR-0082, #638)");
 
+    private static final DescribedPredicate<JavaAccess<?>> A_WALKER_RUN = DescribedPredicate.describe(
+            "call ValidationWalker.run",
+            access -> access.getTargetOwner().isEquivalentTo(ValidationWalker.class)
+                    && access.getName().equals("run"));
+
+    static final ArchRule ONLY_A_GRAPH_WALK_FEEDS_THE_WALKER = noClasses()
+            .that()
+            .doNotBelongToAnyOf(GraphCheck.class)
+            .should()
+            .accessTargetWhere(A_WALKER_RUN)
+            .because("the walker's nodes come from a PackGraph walk, through a rule factory's GraphCheck"
+                    + " (ADR-0082, #639)");
+
     @Test
     void noApplicationClassWalksThePackGraph() {
         JavaClasses production = new ClassFileImporter()
@@ -102,6 +119,8 @@ class PackGraphWalkBoundaryTest {
         assertThatCode(() -> NO_WORK_QUEUE.check(production)).doesNotThrowAnyException();
         assertThatCode(() -> EDGES_ARE_READ_IN_THE_DOMAIN.check(production)).doesNotThrowAnyException();
         assertThatCode(() -> ONLY_THE_DOMAIN_DRIVES.check(production)).doesNotThrowAnyException();
+        assertThatCode(() -> ONLY_A_GRAPH_WALK_FEEDS_THE_WALKER.check(production))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -123,6 +142,10 @@ class PackGraphWalkBoundaryTest {
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("HandWrittenDescent.drive")
                 .hasMessageContaining("PackGraph.walk")
+                .hasMessageContaining("ValidationWalker.run");
+        assertThatThrownBy(() -> ONLY_A_GRAPH_WALK_FEEDS_THE_WALKER.check(fixtures))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("HandWrittenDescent.drive")
                 .hasMessageContaining("ValidationWalker.run");
     }
 }
