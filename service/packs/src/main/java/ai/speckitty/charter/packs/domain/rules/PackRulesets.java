@@ -168,7 +168,9 @@ public final class PackRulesets {
      * <p>It runs {@link #referencesCheck} on a {@link PackGraph#walk} (#639, ADR-0082 slice 4): the graph holds the
      * closure's packs in the closure's order, every pack is a root and the scope selects every pack, so the packs walk
      * hands the walker every member once, in the closure's order. Each check is a phase; its phase gate is the stop
-     * rule (every closure fault is a violation). A closure with no pack has no fault.
+     * rule (every closure fault is a violation). A closure with no pack has no fault. The graph's facts function
+     * throws by design: the packs walk reads no pack's facts, and the checks read the caller's {@code factsOf}, so a
+     * call to it would mean a walk reads facts it should not.
      *
      * @param closure the composed closure, in merge order, each configured pack once
      * @param factsOf each member's composition facts
@@ -204,11 +206,12 @@ public final class PackRulesets {
      * {@code REFERENCES}' check over a composed closure (#639, ADR-0082 slice 4): the packs walk, whose packs the scope
      * selects as the members, and one phase per check of {@link #references}, each judging every member it is handed,
      * in the order it is handed them. A member's facts are read when its node is judged, once per phase that runs.
+     * Running the check over a graph whose walk hands over a pack that is not of the closure throws
+     * {@link IllegalArgumentException} from {@link GraphCheck#run}, naming the pack.
      *
      * @param closure the composed closure, in merge order: what each member is judged in
      * @param factsOf each member's composition facts
      * @return the check: the packs walk and the three phases
-     * @throws IllegalArgumentException when the walk hands over a pack that is not of the closure
      */
     static GraphCheck referencesCheck(
             List<PackUnderResolution> closure, Function<PackUnderResolution, PackCompositionFacts> factsOf) {

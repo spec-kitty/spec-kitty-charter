@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -115,7 +117,61 @@ class ReferencesWalkTest {
         assertThat(run(closure, "alpha", "beta", "gamma", "delta"))
                 .as("no selected member has a fault")
                 .isEmpty();
-        assertThat(read).as("an unselected member's facts are never read").containsOnly(BASE);
+        assertThat(read)
+                .as("an unselected member's facts are never read; a selected one's once per phase that runs")
+                .containsExactly(BASE, BASE, BASE);
+    }
+
+    @Test
+    void theFindingsFollowTheListOrderNotTheEdges() {
+        // zeta is linked to alpha only by parent_pack, and both come before the base they build on: the walk keeps
+        // the order of the list, whatever the edges say.
+        PackUnderResolution zeta = new PackUnderResolution(
+                new ConfiguredPack(new PackIdentifier("zeta"), PackLevel.ORG),
+                new PackDescriptor(
+                        FixtureUlids.of("zeta"),
+                        "1.0.0",
+                        Optional.of(FixtureUlids.of("alpha")),
+                        "zeta",
+                        Optional.empty(),
+                        Optional.empty()),
+                List.of(),
+                List.of());
+        List<PackUnderResolution> closure =
+                List.of(zeta, pack("alpha", List.of(BASE)), closure(BASE).getFirst());
+        Map<String, PackCompositionFacts> referring = Map.of(
+                "zeta",
+                facts(List.of("base::tactic:zeta_missing"), List.of(), List.of()),
+                "alpha",
+                facts(List.of("base::tactic:alpha_missing"), List.of(), List.of()),
+                BASE,
+                facts(List.of(), List.of(), List.of()));
+
+        assertThat(PackRulesets.references(
+                        closure,
+                        member -> referring.get(member.configured().id().value())))
+                .extracting(ClosureFault::detail)
+                .satisfiesExactly(
+                        first -> assertThat(first).contains("tactic:zeta_missing"),
+                        second -> assertThat(second).contains("tactic:alpha_missing"));
+    }
+
+    @Test
+    void aWalkThatHandsOverAPackOutsideTheClosureIsRefused() {
+        List<PackUnderResolution> closure = closure(BASE, "alpha");
+        PackUnderResolution extra = pack("extra", List.of(BASE));
+        PackGraph graph = PackGraph.of(
+                Stream.concat(closure.stream(), Stream.of(extra))
+                        .map(member -> new PackNode(member.configured(), member.descriptor()))
+                        .toList(),
+                pack -> {
+                    throw new AssertionError("the packs walk reads no pack's facts: " + pack.value());
+                });
+
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> PackRulesets.referencesCheck(closure, this::factsOf)
+                        .run(graph, Scope.of(List.of(new PackIdentifier("extra")))))
+                .withMessage("the pack extra is not of the closure");
     }
 
     @Test
