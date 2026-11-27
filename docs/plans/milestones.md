@@ -74,7 +74,7 @@ Not close: two P0s are open (#405, #406). Profile and mission-type reads have la
 | #405 | Language profiles cannot reach their conventions styleguide | B | Fixed upstream in open-packs; the pin bump remains |
 | #406 | Reserved operations' `501` is logged as an error with a stack trace | D | With #454 |
 | #97 | R3: merged CRG and graph queries, decide and shape | C | The effective graph read exists (PR #448) |
-| #45, #196 | Contract release publishing; tag ruleset | D | Built; open until a release is cut, which the operator holds |
+| #45, #196 | Contract release publishing; tag ruleset | D | Publishing built; the tag ruleset is still to be applied, before the first final tag. Open until a release is cut, which the operator holds |
 | #312, #367 | Orphaned `ActionNotFound` response; refactor the over-limit methods | D | #367 before the complexity gate #371 |
 | #206, #397, #408, #409, #411 | `required_<plural>` to presets; retire the CRG (Charter Reference Graph) walk; cascade controls; and follow-ups | B to D | #397: check whether #448 made it moot. #411 (unserved kind gives a bare 400) shrinks as the last kinds become readable |
 

@@ -183,10 +183,12 @@ The first releases are release candidates (operator ruling R1, 2026-11-16): `0.1
 `rc.1` and never `rc-1`; no build metadata). Release one with the steps below, writing `0.1.0-rc.1` for `0.1.0`.
 
 1. In a pull request, turn the top heading of `CHANGELOG.md` into the release (`## 0.1.0`), adding `### Breaking` for
-   a new minor while the major is 0.
+   a new minor while the major is 0, and rewrite the section's opening paragraph by hand: no gate reads it.
 2. After the merge, tag `main` at the merge commit, `git tag contract-packs-v0.1.0 <merge commit>`, and push the tag.
-   Only the operator pushes this tag: the tag ruleset of #196 is extended to `contract-packs-v*` (operator ruling,
-   2026-11-14). Push the first tag only once that setting is applied.
+   Only the operator pushes this tag. The tag ruleset of #196, extended to `contract-packs-v*` (operator ruling,
+   2026-11-14), must be applied before the first final tag (`contract-packs-v0.1.0`); a release candidate may be
+   tagged before it (operator ruling, 2026-11-25). Until #196 is applied, only this procedure, not GitHub, limits who
+   pushes one.
 3. Open the next version: a new top heading `## 0.2.0-SNAPSHOT` (or the next patch). After a release candidate the
    next version is the same `X.Y.Z`: reopen `## 0.1.0-SNAPSHOT` above `## 0.1.0-rc.1`, then release the next candidate
    (`0.1.0-rc.2`) or the final `0.1.0` from it; any other version above a candidate is refused until its final release

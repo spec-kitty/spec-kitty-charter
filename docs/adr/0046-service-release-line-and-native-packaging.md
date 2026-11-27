@@ -3,7 +3,7 @@ title: "ADR-0046: The service releases on its own service-v* line, native per OS
 description: A service-v tag line apart from the contract's; the service's own SemVer; four native executables and the jar under names core pins, with SHA256SUMS and provenance.
 doc_status: active
 updated: 2026-11-25T00:00:00Z
-decision_status: Accepted; decision 5's build-on-every-change superseded by ADR-0060 (2026-11-05); decision 4's asset set amended to add the pack-check jar (2026-11-19, #478); decisions 3 and 7 amended: every release bundles released contracts (2026-11-25, #650)
+decision_status: Accepted; decision 5's build-on-every-change superseded by ADR-0060 (2026-11-05); decision 4's asset set amended to add the pack-check jar (2026-11-19, #478); the pack-check jar renamed `pack-doctor-<ver>.jar` by ADR-0083 decision 6 (2026-11-22); decisions 3 and 7 amended: every release bundles released contracts (2026-11-25, #650); decision 7 amended: the tag ruleset precedes the first final tag, not the first tag (2026-11-25, #196)
 decision_date: '2026-10-31'
 type: ADR
 kind: ADR
@@ -108,6 +108,13 @@ serves is always one a consumer can download and pin. Decisions 3 and 7 now read
    `openapi.yaml`, even when nothing in it changed: its `info.version` is served (`GET /info`, `GET /openapi.yaml`)
    and a `-SNAPSHOT` cannot be pinned. So a service release while `main` holds a `-SNAPSHOT` contract releases the
    contract, or a candidate of it, first. This narrows the "independent cadences" consequence.
+
+### Amendment 2026-11-25 (#196): the tag ruleset precedes the first final tag
+
+Decision 7 had the operator create the `service-v*` tag ruleset before the first tag. `service-v0.1.0-rc.1` to
+`rc.3` were tagged without it, and the operator ruled (2026-11-25) that the ruleset of #196, on `contract-charter-v*`,
+`contract-packs-v*` and `service-v*`, is required before the first final tag only: a release candidate may be tagged
+before it. Until it is applied, only the release procedure, not GitHub, limits who pushes a release tag.
 
 ## Context
 

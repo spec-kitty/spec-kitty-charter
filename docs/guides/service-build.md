@@ -581,7 +581,11 @@ Core's service pin fetches and verifies these assets by name.
    - **patch:** fixes only.
 
    The service stays at 0.x until contract 1.0.0. A pre-release uses only letters, digits and dots
-   (`0.2.0-rc.1`), because core's tag rule refuses `0.2.0-rc-1` and any `+build` metadata.
+   (`0.2.0-rc.1`), because core's tag rule refuses `0.2.0-rc-1` and any `+build` metadata. After a release candidate
+   the next version is the same `X.Y.Z`, the next candidate or the final, as for the contracts: a change that would
+   bump the version lands in the candidate line while it has no final release (operator ruling, 2026-11-26).
+   `checkServiceReleaseTag` does not check this order, only that the tag equals `version`, so the release pull request
+   keeps it.
 2. **Release the contracts the service bundles first, for every release, a pre-release too** (#650). A service
    release ships only when both contracts it bundles are published, so a consumer can fetch the contract the service
    serves ([For contract consumers](/development/contract-consumers/)):
@@ -609,8 +613,11 @@ Core's service pin fetches and verifies these assets by name.
    ```
 
    It names the cause of a refusal, or writes `build/service-release/gate.properties`.
-4. **Merge the pull request.** Run `service-native.yml` on `main` with `workflow_dispatch` at the merge commit, and tag
-   only when it is green. `CI gate / gate` no longer proves the native build
+4. **Merge the pull request.** Run `service-native.yml` with `workflow_dispatch` at the merge commit, and tag only
+   when it is green. The dispatch has no commit input and builds the head of the ref it is given: give it the contract
+   tag at the merge commit, or `main` while the merge commit is still its head, and turn the cache off as a release
+   does (`gh workflow run service-native.yml --ref contract-charter-v<version> -f cache-disabled=true`). The CI
+   gate (`CI gate / gate`) no longer proves the native build
    ([ADR-0060](/adr/0060-native-build-runs-nightly-and-per-release/)). The operator then tags the merge commit on
    `main` and pushes the tag:
 
@@ -618,7 +625,9 @@ Core's service pin fetches and verifies these assets by name.
    git tag service-v0.2.0 <merge-commit> && git push origin service-v0.2.0
    ```
 
-   A tag ruleset on `service-v*` limits who can push one.
+   The tag ruleset of #196 on `service-v*` is to limit who can push one. It is not applied yet, and it must be applied
+   before the first final tag; a release candidate may be tagged before it (operator ruling, 2026-11-25). Until then
+   only this procedure, not GitHub, limits who pushes one.
 5. **Set the next development version.** In a follow-up pull request, set `version` to the next
    `-SNAPSHOT`.
 

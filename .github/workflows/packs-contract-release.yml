@@ -11,7 +11,8 @@ name: packs-contract-release
 # contracts/packs/CHANGELOG.md name one release or release candidate (X.Y.Z-<pre>, operator ruling R1), the classifier passes the conformance cases, and the tagged
 # commit is on main; the publish job refuses a tag that moved while the assets were built. The workflow file runs
 # from the tagged commit, so these checks guard against mistakes, not against someone who can push tags: a tag
-# ruleset on contract-packs-v* is to limit who can publish (#196; push no tag before it exists).
+# ruleset on contract-packs-v* is to limit who can publish (#196; required before the first final tag, while a
+# release candidate may be tagged before it: operator ruling, 2026-11-25).
 #
 # A manual run (workflow_dispatch) is a rehearsal: it assembles the assets of the chosen ref under the tag it is
 # given and uploads them as the workflow artifact `packs-contract-release`. It never creates a Release, and the

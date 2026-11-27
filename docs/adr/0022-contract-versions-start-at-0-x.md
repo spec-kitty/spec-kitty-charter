@@ -2,7 +2,7 @@
 title: "ADR-0022: The contract is published as 0.x while it iterates, and 1.0.0 is minted once it is stable"
 description: Proposes publishing the charter contract as 0.x with core's generated client as the feedback loop, breaking only on a 0.x minor, and minting 1.0.0 once stable.
 doc_status: active
-updated: 2026-11-25T00:00:00Z
+updated: 2026-11-27T00:00:00Z
 decision_status: Accepted
 decision_date: '2026-10-24'
 type: ADR
@@ -146,13 +146,16 @@ change in behavior.
 ### Note, 2026-11-14 (operator ruling on #559): the packs contract is a second 0.x line
 
 The packs contract (`contracts/packs/`: `file-kinds.yaml`, the pack schemas and the classifier conformance cases) is
-released on its own line, tagged `contract-packs-v<version>` beside `contract-charter-v<version>`. It follows D1 and D2
-by analogy: its first release is 0.1.0, and while its major is 0 a minor may break, with a `### Breaking` subsection,
-and a patch may not. Its version is the top heading of `contracts/packs/CHANGELOG.md`, its only carrier. Its gate is
-minimal: the tag and that heading name one released version, and the heading, order and Breaking rules hold (the
-release gate's rule 12). It has no schema-diff check yet. A tag ruleset on `contract-packs-v*` limits who can publish,
-as #196 does for `contract-charter-v*`. The release procedure is in `contracts/packs/README.md`, and how a consumer
-pins it is in [Pin the packs contract](/guides/pin-the-packs-contract/).
+released on its own line, tagged `contract-packs-v<version>` beside `contract-charter-v<version>`. It follows D1 and
+D2 by analogy: its first release is 0.1.0, and while its major is 0 a minor may break, with a `### Breaking`
+subsection, and a patch may not. Its version is the top heading of `contracts/packs/CHANGELOG.md`, its only carrier.
+Its gate is minimal: the tag and that heading name one released version, and the heading, order and Breaking rules
+hold (the release gate's rule 12), and a released-heading gate freezes the packs contract's files once a release's
+tag is merged (#663; stated in `contracts/packs/README.md`). It has no schema-diff check yet. A tag ruleset on
+`contract-packs-v*` is to limit who can publish, as #196 is to for `contract-charter-v*`; it is not applied yet, and
+the operator ruled it required before the first final tag only: a release candidate may be tagged before it
+(operator ruling, 2026-11-25). The release procedure is in `contracts/packs/README.md`, and
+how a consumer pins it is in [Pin the packs contract](/guides/pin-the-packs-contract/).
 
 ### Note, 2026-11-16 (operator ruling R1): the first releases are release candidates
 
