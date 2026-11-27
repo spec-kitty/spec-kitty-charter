@@ -1,7 +1,7 @@
 {
-  "event_count": 41,
-  "last_event_id": "01M8CZXX03C1MABKA17W2SXCQF",
-  "materialized_at": "2026-11-26T22:34:28.739938+00:00",
+  "event_count": 42,
+  "last_event_id": "01M8DT9B2N08XAZ734YHDC2T7R",
+  "materialized_at": "2026-11-27T06:15:06.581710+00:00",
   "mission_number": "",
   "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
   "mission_type": "software-dev",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 1
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -192,6 +192,13 @@
       "lane": "planned",
       "last_event_id": "01M8AA8881X0H9ECNZBKCZMXHH",
       "last_transition_at": "2026-11-25T21:37:10.401852+00:00"
+    },
+    "WP07": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M8DT9B2N08XAZ734YHDC2T7R",
+      "last_transition_at": "2026-11-27T06:15:06.581710+00:00"
     }
   }
 }
