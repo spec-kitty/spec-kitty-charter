@@ -48,3 +48,5 @@ Future work for this repository. The target design lives in
   ranked actions of the [codebase assessment of 2026-11-20](/plans/engineering-notes/codebase-assessment-2026-11-20/).
 - [Codebase health, 2026-11-25](/plans/codebase-health-2026-11-25/) — the verdict, scorecard against 2026-11-20,
   top hotspots and re-ranked actions of the [codebase assessment delta of 2026-11-25](/plans/engineering-notes/codebase-assessment-delta-2026-11-25/).
+- [Next release candidates, 2026-11-25](/plans/release-candidates-2026-11-25/) — the proposed next candidate of each
+  release line, what changed since the last tags, the rehearsals on `main`, the tagging order and what gates it.
