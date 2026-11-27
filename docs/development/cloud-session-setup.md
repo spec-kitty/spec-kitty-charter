@@ -294,6 +294,9 @@ spec-kitty --version
 - [ ] Tell the runner to run its adversarial review with in-session subagents, fold every finding,
       confirm the fold and post the "Independent adversarial review (agent)" comment. Plan no
       reviewer session.
+- [ ] Tell the runner that every commit it makes ends with
+      `Co-Authored-By: Claude <noreply@anthropic.com>`, with no model name, and that no commit
+      message or PR body names a model (operator, 2026-11-25).
 
 ### Troubleshooting parallel runs
 
