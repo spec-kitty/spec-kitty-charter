@@ -167,6 +167,29 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-11-27T06:12:24.217096Z",
+      "decision_id": "01M8DT4CGSQZBPJCC6K9CN3ZX4",
+      "final_answer": "(a) Operator ruling 2026-11-26, relayed by the dispatcher and confirmed by the user: add a WP that moves REFERENCES onto a PackGraph walk (a members mode plus the scope's selection), so #639 delivers what main's interim notes promise; remove the Interim notes in PackRulesets' Javadoc and on the architecture page; behaviour identical outside the prior rulings; red-first; in-session subagent review.",
+      "input_key": "references_walk_scope",
+      "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
+      "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
+      "opened_by": "claude::java-jenny",
+      "options": [
+        "(a) a new WP in #639 moves REFERENCES onto a PackGraph walk",
+        "(b) a later slice; reword the notes"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Main's #638 landing notes say slice 4 moves references(..) onto a graph walk; does #639 do it?",
+      "rationale": null,
+      "resolved_at": "2026-11-27T06:12:34.490923Z",
+      "resolved_by": null,
+      "slot_key": "plan.scope.references-walk",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M8A867YM81MH0B3DMZ7PF521",
