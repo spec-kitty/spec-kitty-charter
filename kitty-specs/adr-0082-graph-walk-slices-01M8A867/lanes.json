@@ -170,9 +170,26 @@
         "lane-e"
       ],
       "parallel_group": 5
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "docs/changelog/2026-11-27-references-run-on-a-graph-walk.md",
+        "service/packs/src/test/java/ai/speckitty/charter/packs/domain/rules/ReferencesWalkTest.java"
+      ],
+      "predicted_surfaces": [
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-e"
+      ],
+      "parallel_group": 5
     }
   ],
-  "computed_at": "2026-11-25T21:37:11.137128+00:00",
+  "computed_at": "2026-11-27T06:15:08.495136+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
   "planning_commit_sha": "ebe6eca72626ea4b055887ff15ca9ff53f837449"

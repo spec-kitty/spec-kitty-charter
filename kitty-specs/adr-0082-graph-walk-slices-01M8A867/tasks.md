@@ -7,7 +7,7 @@ Planning branch and merge target: `feat/adr-0082-graph-walk-slices`. Each slice 
 |---|---|---|
 | #665 (draft) | 2 (#637) | WP01 |
 | new | 3 (#638) | WP02, WP03 |
-| new | 4 (#639) | WP04, WP05 |
+| new | 4 (#639) | WP04, WP05, WP07 |
 | new | #632 item 3 pickup | WP06 |
 
 Every pull request gets its own adversarial review, posted as "Independent adversarial review (agent)", with every
@@ -43,6 +43,9 @@ reported ready. No PIT (C-004).
 | T023 | Contract, scenarios, `### Breaking` fragment and docs for the wire change | WP05 | |
 | T024 | pack-doctor runs the relations phase over each root's composed closure | WP06 | |
 | T025 | `FullPassParityTest` rows and the guide | WP06 | |
+| T026 | A walk mode and scope selection for the `REFERENCES` members | WP07 | |
+| T027 | `references(..)` runs on `PackGraph#walk`; the Interim notes go | WP07 | |
+| T028 | `ReferencesWalkTest`, parity rows and the changelog | WP07 | |
 
 ## WP01 --- Slice 2: `PackGraph` holds every pack-graph walk (#637, PR #665)
 
@@ -120,5 +123,17 @@ Dependencies: WP04; operator answers to Q-A, Q-B and Q-C.
 
 T024 pack-doctor runs the relations phase over each root's composed closure (WP06)
 T025 `FullPassParityTest` rows and the guide (WP06)
+
+Dependencies: WP05.
+
+## WP07 --- Slice 4c: REFERENCES on a PackGraph walk (#639)
+
+- **Goal**: `REFERENCES` runs on `PackGraph#walk` with a members mode and the scope's selection; no direct feed.
+- **Priority**: P1 (operator ruling 01M8DT4CGSQZBPJCC6K9CN3ZX4). **Independent test**: `ReferencesWalkTest`; parity rows.
+- **Prompt**: [tasks/WP07-references-on-a-graph-walk.md](tasks/WP07-references-on-a-graph-walk.md)
+
+T026 A walk mode and scope selection for the `REFERENCES` members (WP07)
+T027 `references(..)` runs on `PackGraph#walk`; the Interim notes go (WP07)
+T028 `ReferencesWalkTest`, parity rows and the changelog (WP07)
 
 Dependencies: WP05.
