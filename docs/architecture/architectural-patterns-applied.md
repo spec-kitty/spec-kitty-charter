@@ -317,10 +317,10 @@ generic functional interfaces such as `Predicate<T>`.
   link), which a read runs alone (`edgeIndexFaults`), and `composedClosure(..)` the relations, edge-index and, for a
   declaring pack, own-closure phases as one walker, which `ClosureImpactCheck` runs per closure.
   `REFERENCES` runs on `PackGraph#walk` too ([changelog](/changelog/2026-11-27-references-run-on-a-graph-walk/)):
-  `referencesCheck(closure, factsOf)` hands out a `GraphCheck` (the `PACKS` mode, whose packs the scope selects as the
-  members; three phases, one per check), and `references(closure, factsOf)` runs it over the closure's graph, every
-  pack a root, so the members come in the closure's order. Only `GraphCheck` runs a `ValidationWalker`
-  (`PackGraphWalkBoundaryTest`).
+  `referencesCheck(closure, factsOf)` hands out a `GraphCheck` (the `PACKS` mode; three phases, one per check), and
+  `references(closure, factsOf)` runs it over the closure's graph, every pack a root and selected, so the members come
+  in the closure's order. No class but `GraphCheck` calls `ValidationWalker.run`, and `GraphCheck` feeds it from
+  `PackGraph.walk` (`PackGraphWalkBoundaryTest`, over `packs` and `pack-validation`).
 
 Reference: Bloch, *Effective Java*, 3rd edition, Item 1.
 

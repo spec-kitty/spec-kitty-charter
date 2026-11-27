@@ -131,7 +131,8 @@ package "packs.domain (owns HOW to walk)" {
     + {static} references(..)
     + {static} ownClosure(..) : GraphCheck
     + {static} ownClosureOf(declaring) : Scope
-    + {static} relations() <<proposed>>
+    ~ {static} referencesCheck(..) : GraphCheck
+    + {static} relations()
     + {static} mutability(policies) <<proposed>>
     + {static} dependents() <<proposed>>
     + {static} activeSet(..) / selection(..) <<proposed>>
