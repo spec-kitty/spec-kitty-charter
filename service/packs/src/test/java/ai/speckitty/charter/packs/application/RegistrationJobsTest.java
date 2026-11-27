@@ -439,6 +439,7 @@ class RegistrationJobsTest {
         awaitEnded(held);
         goOn.countDown();
         watchdog.join(TimeUnit.SECONDS.toMillis(10));
+        assertThat(watchdog.isAlive()).as("the sweep finished").isFalse();
 
         assertThat(h.status(held).state())
                 .as("a job past its deadline is never dispatched from the queue")
