@@ -1,19 +1,19 @@
 {
-  "event_count": 44,
-  "last_event_id": "01M8DTASQPRQ6C9XRRBW81G38Z",
-  "materialized_at": "2026-11-27T06:15:54.184148+00:00",
+  "event_count": 47,
+  "last_event_id": "01M8DZFFXNXVFWB86S2GA1QV8A",
+  "materialized_at": "2026-11-27T07:45:51.029115+00:00",
   "mission_number": "",
   "mission_slug": "adr-0082-graph-walk-slices-01M8A867",
   "mission_type": "software-dev",
   "schema_version": 2,
   "summary": {
-    "approved": 5,
+    "approved": 6,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
+    "in_progress": 0,
     "in_review": 0,
     "planned": 1
   },
@@ -195,19 +195,34 @@
     },
     "WP07": {
       "actor": "claude",
-      "agent": "claude::java-jenny",
+      "agent": "claude::reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
       "implementer_of_record": "claude::java-jenny",
-      "lane": "in_progress",
-      "last_event_id": "01M8DTASQPRQ6C9XRRBW81G38Z",
-      "last_transition_at": "2026-11-27T06:15:54.184148+00:00",
+      "lane": "approved",
+      "last_event_id": "01M8DZFFXNXVFWB86S2GA1QV8A",
+      "last_transition_at": "2026-11-27T07:45:51.029115+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP07 done on lane-g (signed). REFERENCES runs on PackGraph#walk: referencesCheck = GraphCheck(PACKS, 3 phases), every closure pack a root and selected. PACKS is the members mode the ruling names (the packs alone, no facts read; the WP prompt T026 allows it), so no duplicate enum constant. The Interim notes are gone; an ArchUnit rule (only GraphCheck runs ValidationWalker, packs and pack-validation) guards it. Order of findings identical for all three callers. Adversarial review: no HIGH/MEDIUM; 3 LOW + 5 NIT folded. verifyAll green. Out of map: PackRulesets, OfferingReadService, ReferencesPhase, EdgeIndexTest, PackGraphWalkBoundaryTest, architecture page, graph-walk-classes diagram.",
+        "Review passed (claude::reviewer-renata): REFERENCES runs through GraphCheck(PACKS, 3 phases).run on PackGraph#walk; no hand feed of ValidationWalker remains (ArchUnit rule over packs and pack-validation, red on the old body). Order of findings unchanged: every closure pack a root, walk iterates the graph list = rooted.order() for all three callers (OfferingReadService, ReferencesPhase, EdgeIndexTest passed closure as members). Reusing PACKS as the members mode agreed: T026 allows it, PACKS already emits each pack and no edge and reads no facts; a MEMBERS value would duplicate it. Interim notes removed; changelog present (152-char description). Only new exception (duplicate configured id) is documented and unreachable from callers. Checklist: dead code PASS, synthetic fixture PASS, silent empty return PASS (empty closure documented), FR-007 coverage PASS, frozen surface N/A, locked decision PASS (no legacy overload), shared files PASS (out-of-map edits to PackRulesets/PackGraphWalkBoundaryTest/EdgeIndexTest/OfferingReadService/ReferencesPhase/architecture page recorded in commits), fragility PASS (raises documented)."
+      ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 3217,
-      "shell_pid_created_at": "1795760138.04"
+      "review_result": {
+        "feedback_path": "/home/user/spec-kitty-charter/.worktrees/adr-0082-graph-walk-slices-01M8A867-coord/kitty-specs/adr-0082-graph-walk-slices-01M8A867/tasks/WP07-references-on-a-graph-walk/review-cycle-1.md",
+        "reference": "review-cycle://adr-0082-graph-walk-slices-01M8A867/WP07-references-on-a-graph-walk/review-cycle-1.md",
+        "reviewer": "claude::reviewer-renata",
+        "verdict": "approved"
+      },
+      "role": "reviewer",
+      "shell_pid": 13562,
+      "shell_pid_created_at": "1795765434.37",
+      "subtasks": {
+        "T026": "done",
+        "T027": "done",
+        "T028": "done"
+      }
     }
   }
 }
