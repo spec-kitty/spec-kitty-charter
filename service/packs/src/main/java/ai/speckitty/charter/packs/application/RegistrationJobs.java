@@ -992,8 +992,9 @@ public final class RegistrationJobs implements AutoCloseable {
                 if (ended()) {
                     return null;
                 }
-                if (!markRunning()) {
-                    if (overdue()) {
+                Instant now = owner.clock.instant();
+                if (!markRunning(now)) {
+                    if (overdue(now)) {
                         // Taken from the queue past its deadline, before the watchdog reached it: ended here, never
                         // run.
                         expire();
@@ -1025,16 +1026,12 @@ public final class RegistrationJobs implements AutoCloseable {
             worker = null;
         }
 
-        private boolean overdue() {
-            return overdue(owner.clock.instant());
-        }
-
         boolean overdue(Instant now) {
             return !now.isBefore(acceptedAt.plus(DEADLINE));
         }
 
-        private synchronized boolean markRunning() {
-            if (phase != Phase.QUEUED || overdue()) {
+        private synchronized boolean markRunning(Instant now) {
+            if (phase != Phase.QUEUED || overdue(now)) {
                 return false;
             }
             phase = Phase.RUNNING;
