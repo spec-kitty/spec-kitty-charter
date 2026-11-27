@@ -183,17 +183,24 @@ time; the judging differs. A Visitor lets one walk serve every check.
 
 **How it maps.**
 
-- *Exists:* `{@link ai.speckitty.charter.kernel.domain.GraphWalker}` is the visitor. It is called with
-  `onNode` and `onRelationship`, and answers a `{@link ai.speckitty.charter.kernel.domain.Descent}`: `CONTINUE`
-  (go deeper), `SKIP` (do not go below this element) or `STOP` (end the walk). The driver is
-  `{@link ai.speckitty.charter.packs.application.GraphWalk#walk}`, which lives in the application layer today, and the
-  choice of edges to follow is not owned by the domain.
-- *Proposed:* `PackGraph` in `packs.domain` becomes the one driver. The kernel keeps only the visitor contract
-  (`GraphWalker`, `Descent`); rules plug in as visitors and never drive. Its elements are a
-  `sealed interface PackGraphNode permits PackNode, ArtifactNode, EdgeNode`, and an `EdgeKind` enum names every edge
-  (`DEPENDS_ON`, `PARENT_PACK`, `OVERRIDES`, `ENHANCES`, `SPECIALIZES`, `REFERENCES`, `STEP_LINK`, `DELEGATES`). Rules
-  use a pattern switch over `PackGraphNode`; there is no double dispatch. `PackGraph` absorbs the duplicate walks,
-  the reverse index of `ClosureRoots`, the cycle and strongly-connected-group code, and keeps `EdgeIndex` as its index.
+- *Exists:* `{@link ai.speckitty.charter.kernel.domain.GraphWalker}` is the visitor, generic over the node and the
+  relationship it is handed (`GraphWalker<N, E>`, slice 3). It is called with `onNode` and `onRelationship`, and
+  answers a `{@link ai.speckitty.charter.kernel.domain.Descent}`: `CONTINUE` (go deeper), `SKIP` (do not go below this
+  element) or `STOP` (end the walk). The artifact walk's driver,
+  `{@link ai.speckitty.charter.packs.application.GraphWalk#walk}`, still lives in the application layer (epic #636's
+  checklist).
+- *Proposed (still open):* `PackGraph` absorbs the reverse index of `ClosureRoots` and keeps `EdgeIndex` as its index
+  (slice 4 and later). The kernel keeps only the visitor contract (`GraphWalker`, `Descent`); rules plug in as
+  visitors and never drive. Rules use a pattern switch over `PackGraphNode`; there is no double dispatch.
+- *Built (slice 3, #638):* the node types are in `packs.domain.graph` (`PackGraphNode`, `PackNode`, `ArtifactNode`,
+  `EdgeNode` with the edge as written, `EdgeKind`). `PackGraph.of(packs in merge order, factsOf)` builds the graph
+  over a closure's packs, reading facts lazily, and `PackGraph#walk(scope, mode, visitor)` is the driver: the roots'
+  composition closure once each, in the graph's order, the scope's selection handed over, the mode's edges in declared
+  order. The domain's modes (`PACKS`, and `RELATIONS` for slice 4) decide the edges; a rule's check carries its mode,
+  so a caller never picks one. No mode emits an `ArtifactNode` or the descriptor, reference and delegation edges yet;
+  the rule that needs one adds its mode. `packs.domain.graph` and `packs.domain` depend on each other (the nodes take
+  `ConfiguredPack`, `PackOrigins` and the delegation candidate; the driver takes the nodes); no slice-cycle rule
+  forbids it, and the graph package goes one way when those types move.
 - *Built (slice 2, #637):* `PackGraph` (`packs.domain`) holds the walks the application layer
   wrote by hand: the edges a pack builds on, the descent along them, the composition closure, the packs building on a
   pack, its direct dependents, `cyclesIn` (with the Tarjan pass), the `enhances` grounding, and the composition
@@ -222,6 +229,8 @@ artifacts this write touched". A predicate says that as data, so the walker stay
   Which edge kinds are followed is not part of the scope: the domain rule or check decides it (the compose check
   follows `DEPENDS_ON` and `PARENT_PACK`, for example). Each rule in a walk also carries a predicate; the rule runs
   only on the elements its predicate selects.
+- *Built (slice 3, #638):* `{@link ai.speckitty.charter.packs.domain.graph.Scope}` as above;
+  `PackRulesets.ownClosureOf(declaring)` is the first named scope.
 
 Reference: Evans and Fowler, [*Specifications*](https://martinfowler.com/apsupp/spec.pdf); Evans, *Domain-Driven
 Design* (2003), chapter 9.
@@ -247,6 +256,10 @@ active-set doctor need the same list, ranked by severity.
   deleted, and one `ClosureFault.of(...)` factory builds every closure fault.
 - *Proposed:* a `ValidationWalker` appends to the `Rationale` as it walks. No parallel result shape is kept beside it:
   `PackCompositionResolver.Refusal`, `ClosureVerdict` and the string notices of `ImpactCheck` fold into it.
+- *Built (slice 3, #638), as an interim shape:* the walker's ledger is `Ledger`, a list of `ClosureFault`s whose
+  `reason()` is the kernel's `Reason`, with `rationale()` projecting it in order. A `ClosureFault` also carries the
+  packs, violations and `requiredBy` the edge maps; the ledger settles on `Rationale` with slice 7 (ruling R-x, recorded in
+  [ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/) decision 15).
 
 Reference: Fowler, [*Replacing Throwing Exceptions with Notification in
 Validations*](https://martinfowler.com/articles/replaceThrowWithNotification.html).
@@ -269,6 +282,11 @@ given.
   `GraphWalker` built from rules and predicates per node kind. It runs in phases behind a **phase gate**: once a
   phase records a `VIOLATION`, later phases do not run, so a client sees the root cause instead of its knock-on
   faults.
+- *Built (slice 3, #638):* `{@link ai.speckitty.charter.packs.domain.ValidationWalker}` is a `GraphWalker` the driver
+  feeds. A phase holds checks: an `OnNode` check (a node kind, a predicate, a rule) or an `OnClose` check (a rule over
+  the selected nodes, run after the traversal). Each check keeps a bucket, joined in check order, so findings come rule
+  first. The gate is on `VIOLATION`. Interim: a check's rule returns `ClosureFault`s rather than a kernel `Rule<T>`'s
+  reasons, for the reason above; it converges with `Rule<T>` in slice 7.
 
 Reference: [refactoring.guru: Strategy](https://refactoring.guru/design-patterns/strategy).
 
@@ -287,6 +305,12 @@ generic functional interfaces such as `Predicate<T>`.
   `ModularRuleset.of` builds a ruleset.
 - *Proposed:* `PackRulesets` grows `relations()`, `ownClosure()`, `mutability(policies)` and `dependents()`, and the
   scopes `activeSet(..)`, `selection(..)`, `ancestorsOf(..)` and `closuresHolding(..)`.
+- *Built (slice 3, #638):* `PackRulesets.ownClosure(closureFacts, profiles, merge)` hands out a `GraphCheck` (the
+  `PACKS` mode, one phase: fallback profile, own role pins, pin conflicts, profile enhancements), run over
+  `ownClosureOf(declaring)`; `references(..)` runs its three checks as three phases of the walker.
+  Interim: `references(..)` feeds the walker its members directly, not through `PackGraph#walk`, because its nodes are
+  the callers' members (a subset of the closure, in the caller's order), not a scope's composition closure; slice 4
+  moves it onto a graph walk.
 
 Reference: Bloch, *Effective Java*, 3rd edition, Item 1.
 
@@ -311,7 +335,8 @@ adapter (a file store) is called out to. The domain never names an adapter.
   and the stored reads share the wording in `{@link ai.speckitty.charter.packs.domain.PackRefusalMapping}`; slice 7
   settles where it lives.
 - *Proposed:* the judging ports of PR #618 (`ClosureWalk`, `ImpactCheck`, `MutabilityCheck`) are replaced.
-  `ClosureWalk` becomes a pure domain function. `MutabilityCheck` goes; the real port is
+  `ClosureWalk` becomes a pure domain function (*built*, slice 3, #638: the port and `OwnClosureWalk` are deleted).
+  `MutabilityCheck` goes; the real port is
   `MutabilityPolicyRepository` plus a closure reader. `ImpactCheck` becomes an application use case with no domain
   port. `packs.application` keeps orchestration only: sessions, the before-and-after difference that yields notices,
   and the activations gate.
@@ -358,8 +383,11 @@ from the impact check into `PackRefusals`, so it is written in one place.
   violation in a phase skips the later phases. ADR-0075 decision 7 still holds: `CLOSURE`
   needs every pack's descriptor, not the closure walk.
 - **Determinism.** The first fault decides the refusal code, so order matters. The ledger order is phase order
-  (compose, relations including the edge-index rules, own closure; then activations), then nodes by pack id in
-  code-point order and, within a pack, artifacts by URN, then edges in declared order.
+  (compose, relations including the edge-index rules, own closure; then activations), then rule order within a phase
+  (one bucket per rule, joined in the factory's declared order), then the graph's visit order: packs in the caller's
+  merge order and, within a pack, its artifacts and edges in declared order. A whole-closure rule orders its own
+  findings. *Amended 2026-11-25 (Accepted, operator ruling D1): the earlier text ordered nodes by pack id in code-point
+  order, which would change today's first code on a multi-fault closure.*
   Never order work by iterating a `HashMap` or `HashSet`. Phase gates keep today's cascade suppression: the specific
   code wins.
 - **No god walker.** The walker owns the traversal order, the edge filter, cycle handling and `Descent`. Rules,
@@ -399,6 +427,9 @@ merged; otherwise they delete nothing and #618's ports are not built.
    deleted. `Scope` and the node types are built in slice 3 (operator ruling D1, 2026-11-25).*
 3. **`ValidationWalker` and the factory.** `PackRulesets` becomes the factory; the own-closure rules move into
    `packs.domain.rules`; delete `ClosureWalk` and `OwnClosureWalk`.
+   *Built 2026-11-25 (#638): the generic visitor contract, the node types, `Scope`, the `PackGraph` driver, the
+   `ValidationWalker`; the own-closure rules and `REFERENCES` run on it; `ClosureWalk` (with `Profiles`, now
+   `ProfileReader`) and `OwnClosureWalk` are deleted.*
 4. **Relations as rules.** The relation refusals and the edge-index refusals become rules of the relations phase;
    `EdgeIndex` stays as the graph's index.
 5. **Mutability.** Delete `MutabilityCheck`.

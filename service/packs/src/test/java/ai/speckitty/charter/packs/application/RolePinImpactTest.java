@@ -164,4 +164,27 @@ class RolePinImpactTest {
                 .as("the control: the dependency pins the role as the project does")
                 .isEqualTo(Outcome.REPLACED);
     }
+
+    @Test
+    void aFallbackBreachComesBeforeThePinBreachesInOneRefusal(@TempDir Path host) {
+        Rig rig = withOrg(host);
+        Packs both = Packs.of(
+                        PROJECT_ID,
+                        "project",
+                        "1.0.0",
+                        "project",
+                        DEPENDS_ON_ORG + NAMES_POLICY + "fallback_profile: nobody\n")
+                .file("policy.yaml", pins("reviewer", "reviewer-rex", "implementer", "implementer-ida"));
+
+        CharterRefusal refused = refusal(() -> rig.register("project", rig.stage(both), Preconditions.none()));
+
+        assertThat(refused.code())
+                .as("the fallback's breach comes first, so it sets the code")
+                .isEqualTo(RefusalCode.FALLBACK_PROFILE_UNKNOWN);
+        assertThat(refused.violations())
+                .extracting(violation -> violation.code())
+                .as("then every pin's, in authored order, in one refusal")
+                .containsExactly("fallback_profile_unknown", "role_pin_unknown", "role_pin_unknown");
+        assertThat(rig.packs.resolve("project")).as("nothing was stored").doesNotExist();
+    }
 }

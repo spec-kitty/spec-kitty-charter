@@ -17,8 +17,8 @@ import java.util.TreeMap;
  * The enhancers of each agent profile of a merged closure (ruling D5): every winning agent profile that {@code enhances}
  * another winning agent profile, as the in-force resolution reads the edges ({@link ClosureView.MergedView}), listed
  * under the profile it enhances in closure order, the nearest pack last, then by URN. The one order both the
- * registration rule ({@link ProfileEnhancementRule}) and the effective profile read ({@link ClosureView#resolvedProfile})
- * merge in. Whether an enhancer is in force is the caller's to judge.
+ * registration rule ({@code PackRulesets#ownClosure}) and the effective profile read
+ * ({@link ClosureView#resolvedProfile}) merge in. Whether an enhancer is in force is the caller's to judge.
  */
 final class ProfileEnhancers {
 

@@ -1,12 +1,14 @@
 @startuml graph-walk-classes
 ' Sources:
 '   service/kernel (kernel.domain): GraphWalker, Descent, CharterRefusal
-'   service/kernel (kernel.validation): Rule, ModularRuleset, Constraint, Rationale, Reason, ReasonCode, Severity, Location
+'   service/kernel (kernel.validation): Rule, ModularRuleset, Constraint, Rationale, Reason, ReasonCode, Severity, Location, Origin
+'   service/packs (packs.domain): ValidationWalker, PackGraph, GraphCheck, Ledger, ClosureFault
+'   service/packs (packs.domain.graph): PackGraphNode, PackNode, ArtifactNode, EdgeNode, EdgeKind, Scope
 '   service/packs (packs.domain.rules): PackRulesets; (packs.application): PackRefusals
 '   service/packs (packs.infra.api): PackRegistrationController
 '   service/pack-validation: PackVerdicts, PackCheck; service/pack-doctor: PackDoctorMain
-'   Decided: ADR-0082 (the domain owns every graph walk). Proposed: the type design on architectural-patterns-applied.md.
-' Notation: a <<proposed>> class is part of the approved target design, not built yet; every other class exists.
+'   Decided: ADR-0082 (the domain owns every graph walk). Slices 1 to 3 (#614, #637, #638) are built; the type design is on architectural-patterns-applied.md.
+' Notation: a <<proposed>> class or member is part of the approved target design, not built yet; every other one exists.
 !include _style.iuml
 set separator none
 skinparam class<<proposed>> {
@@ -24,9 +26,9 @@ skinparam interface<<proposed>> {
 title One graph walk, domain rules, one rationale (ADR-0082)
 
 package "kernel (generic, framework-free)" {
-  interface GraphWalker {
-    + onNode(node) : Descent
-    + onRelationship(relationship) : Descent
+  interface "GraphWalker<N, E>" as GraphWalker {
+    + onNode(node : N) : Descent
+    + onRelationship(relationship : E) : Descent
   }
   enum Descent {
     CONTINUE
@@ -56,7 +58,7 @@ package "kernel (generic, framework-free)" {
     + code : ReasonCode
     + location : Location
     + detail : String
-    + origin : Origin <<proposed>>
+    + origin : Origin
   }
   class ReasonCode <<record>> {
     + value : String
@@ -71,25 +73,38 @@ package "kernel (generic, framework-free)" {
     + file
     + pointer
   }
-  class Origin <<proposed>> {
+  class Origin {
     an opaque element identifier
     the kernel never names a pack
-  }
-  class "ValidationWalker<N>" as ValidationWalker <<proposed>> {
-    rules and predicates per node kind
-    phases: a violation gates later phases
-    + rationale() : Rationale
   }
 }
 
 package "packs.domain (owns HOW to walk)" {
-  interface PackGraphNode <<proposed>> {
+  class "ValidationWalker<N>" as ValidationWalker {
+    a visitor, never a driver
+    OnNode checks (a node kind, a predicate, a rule) and OnClose checks
+    phases: a violation gates later phases
+    + run(traversal) : Ledger
+  }
+  class GraphCheck <<record>> {
+    + walk : PackGraph.Walk
+    + phases
+    + run(graph, scope) : Ledger
+  }
+  class Ledger <<record>> {
+    the ClosureFaults, in order
+    interim: settles on Rationale in slice 7
+  }
+  class ClosureFault {
+    a Reason with its packs,\nviolations and requiredBy
+  }
+  interface PackGraphNode {
     sealed
   }
-  class PackNode <<proposed>>
-  class ArtifactNode <<proposed>>
-  class EdgeNode <<proposed>>
-  enum EdgeKind <<proposed>> {
+  class PackNode
+  class ArtifactNode
+  class EdgeNode
+  enum EdgeKind {
     DEPENDS_ON
     PARENT_PACK
     OVERRIDES
@@ -99,21 +114,24 @@ package "packs.domain (owns HOW to walk)" {
     STEP_LINK
     DELEGATES
   }
-  class Scope <<proposed>> {
+  class Scope <<record>> {
     + roots
     + selection : Predicate<PackGraphNode>
     given by the caller; a selection filter only
   }
-  class PackGraph <<proposed>> {
-    built once per session
-    + walk(scope, walker)
+  class PackGraph {
+    built over a closure's packs, one thread
+    + {static} of(packs, factsOf)
+    + walk(scope, mode, visitor)
     stable order, cycles, strongly connected groups
   }
   class PackRulesets <<rule factory>> {
     + {static} content()
     + {static} closure()
+    + {static} references(..)
+    + {static} ownClosure(..) : GraphCheck
+    + {static} ownClosureOf(declaring) : Scope
     + {static} relations() <<proposed>>
-    + {static} ownClosure() <<proposed>>
     + {static} mutability(policies) <<proposed>>
     + {static} dependents() <<proposed>>
     + {static} activeSet(..) / selection(..) <<proposed>>
@@ -141,8 +159,11 @@ GraphWalker ..> Descent
 ModularRuleset ..|> Rule
 Constraint ..|> Rule
 ModularRuleset o-- Rule
-ValidationWalker o-- Rule : runs when the predicate holds
-ValidationWalker --> Rationale : appends
+ValidationWalker --> Ledger : appends
+Ledger o-- ClosureFault
+ClosureFault --> Reason
+GraphCheck --> ValidationWalker : runs its phases
+GraphCheck --> PackGraph : walks
 Rationale o-- Reason
 Reason --> ReasonCode
 ReasonCode --> Severity
@@ -158,6 +179,7 @@ PackRulesets ..> Origin : fills from a pack id,\nor pack id + URN
 PackGraph --> Scope : walks within
 PackGraph --> GraphWalker : drives (the one driver)
 PackRulesets ..> Scope : builds
+PackRulesets ..> GraphCheck : hands out
 PackRulesets ..> ModularRuleset : builds
 
 PackRegistrationController ..> PackRulesets : imports rules and scope
@@ -171,6 +193,6 @@ PackVerdicts ..> Rationale
 
 legend right
   Green <<proposed>>: approved target design, not built yet (ADR-0082 and its 2026-11-21 amendment).
-  Every other class exists today.
+  Every other class exists today. No mode of the driver emits an ArtifactNode yet.
 endlegend
 @enduml
