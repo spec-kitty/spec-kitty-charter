@@ -1157,15 +1157,18 @@
     The service's understanding of core, to be confirmed against core: core merges artifacts by
     file, and a graph document's node holds nothing.
   service: >-
-    The merge counts every holder of a URN, a node a graph document declares included. An org
-    pack whose graph only declares the node of a built-in step replaces that step whole at its
-    level and drops the step's built-in edges. A qualified source (`built-in::action:<mission
+    The merge counts every holder of a URN by what a reference can name in the pack (its
+    referable artifacts, ADR-0083 R-v): every artifact file it holds, and every step node its
+    graph documents declare of a mission type it holds. A pack that holds the mission type and
+    declares the node of a step replaces that step whole at its level and drops the step's
+    lower-level edges. A step node of a mission type the pack does not hold, and a node of any
+    other kind without its file, hold nothing. A qualified source (`built-in::action:<mission
     type>/<step>`) restates an edge without holding the node.
   rationale: >-
     One winner function over every holder keeps provenance and edges on one rule. A pack author
     who restates a node replaces it; the record says so.
   ruling: >-
-    ADR-0059 D3; ADR-0064; WP21 review, cycle 1
+    ADR-0059 D3; ADR-0064; ADR-0083 R-v; WP21 review, cycle 1
   status: open
   since: 2026-11-08
   evidence:

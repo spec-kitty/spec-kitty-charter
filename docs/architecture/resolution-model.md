@@ -152,8 +152,9 @@ carries it to `activations` as a value (C-002). `/offering` composes and never m
    preset at one level are parent and child, and the child holds it (C29, C34; operator decision
    `01M6ZCXAJ9MTTF9XJSR89F3NYG`: within a level the replacing copy wins).
 2. **Across levels** (C17, C18). In merge order (built-in, org, project) the level that applies wins (ADR-0053 d6), and its artifact
-   replaces the others whole: nothing of a losing version is read (ADR-0059 decision 3, DIV-216). A graph document's node counts as holding
-   its URN, so an org graph that only declares a built-in step's node replaces that step (DIV-220).
+   replaces the others whole: nothing of a losing version is read (ADR-0059 decision 3, DIV-216). A graph document's step node counts as holding
+   its URN only for a pack that holds the step's mission type (ADR-0083 R-v): an org pack that holds the type and
+   declares a built-in step's node replaces that step; a node alone, without its file, holds nothing (DIV-220).
 3. **Edges** (C19, C20). An edge from a losing version is dropped with it; an edge to the overridden id, bare or
    `<pack>::`-written, resolves to the winner.
 4. **The gate** (C21). An override is allowed only when the overridden artifact is `open`, judged along the closure
