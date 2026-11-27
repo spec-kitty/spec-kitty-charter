@@ -2,7 +2,7 @@
 title: "ADR-0075: One pack-validation module on the kernel's rule vocabulary, packaged as pack-check"
 description: Every pack check runs as a kernel ruleset in one Spring-free module that the service and a standalone pack-check CLI share; the expensive closure walks stay behind ports.
 doc_status: active
-updated: 2026-11-26T00:00:00Z
+updated: 2026-11-27T00:00:00Z
 decision_status: Accepted, with an amendment of decision 2 (ADR-0077, 2026-11-13), of decision 8 (2026-11-15, #555) and of decisions 3, 4 and 7 (2026-11-16, #554), and a status note on decision 2 (2026-11-19, #583); decision 9 landed (2026-11-19, #478); and an amendment of decision 6 (2026-11-20, #556; its ports transitional under ADR-0082); a status note on decision 8 (2026-11-21, #631); and an amendment of decisions 6, 7 and 9 (2026-11-22, ADR-0083: pack-doctor, its preset phase and --full); and an amendment of decision 9 (2026-11-25, #651: remediate repairs a quoted number); and an amendment of AA5 (2026-11-26, #659, accepted 2026-11-26: the read counters are a meter bound per call)
 decision_date: '2026-11-13'
 type: ADR
@@ -358,9 +358,14 @@ decision carries a note where it stands.
   or `pack_reference_artifact_missing`. A later check runs only when the earlier ones pass: that order and that stop
   are one body, `PackRulesets.references`, which registration's composing judge calls too (R-ab). `REFERENCES` runs
   when `CLOSURE` ran and found no composition fault, a closure that does not compose (R-aa); a contest, a
-  preset-item fault or a case-only answer is reported beside it. No walk is written for it (ADR-0082). The `specializes_from` cycle, the
-  relation checks, the edge-index refusals and the own-closure walk stay with the service until #636 slices 2 to 4 and
-  7 land them in the domain factory.
+  preset-item fault or a case-only answer is reported beside it. No walk is written for it (ADR-0082). The
+  edge-index refusals and the own-closure walk stay with the service until #636 slice 7 gives the CLI the layer merge
+  and a profile reader.
+
+  *Note 2026-11-27 (#632 item 3, FR-012 of mission adr-0082-graph-walk-slices, operator ruling D3): `validate --full`
+  also adds `RELATIONS` after `REFERENCES`: per root whose closure passed `REFERENCES`, the factory's relation rules
+  and the `specializes_from` cycle (`PackRulesets.relationFaults`), with registration's codes. ADR-0083 decision 9's
+  note holds the detail.*
 - **Decision 7: `CLOSURE`'s steps.** `CLOSURE` runs, in order: the composition faults, the preset contests, the preset
   items, then the case-only answer. The preset-item step judges each preset item of each pack against the pack's own
   closure (`PresetItemRules`, rulings R-a and R-k to R-m), once per item: a `must_have` item no closure pack holds as a

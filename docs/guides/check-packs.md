@@ -28,8 +28,7 @@ audience:
 `validate` command runs the checks a registration runs on each pack, in the same codes and words, plus the placement
 checks and the composition of the set (`CLOSURE`, with its presets). When you ask, it also runs the reference and
 relation checks registration runs on each pack's closure (`--full`) and the round trip through the charter's model
-(`--round-trip`). It
-writes one report, in the contract's problem JSON
+(`--round-trip`). It writes one report, in the contract's problem JSON
 ([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)).
 
 It is one file, `pack-doctor-<version>.jar`, and it needs **Java 25**. It has no native build. Run it under a UTF-8
@@ -168,12 +167,12 @@ pack's bytes is `manifest_stale`, one violation per field, naming it. `remediate
 closure it composes (the pack and every pack it reaches over `depends_on` and `parent_pack`), `REFERENCES` runs three
 checks a registration runs on every pack of that closure, in the registration's order and with its codes, as
 registering that pack would. So a dependency's bare reference that only its dependent holds is reported when you give
-the dependent too. A problem several roots find is
-reported once; a qualified reference into a pack outside its writer's `depends_on`, but inside a root's closure, is
-reported once per root, each in that root's words, as registering each root answers it. Packs that only an activation
-lists together are judged by a registration alone: pack-doctor does not see activations. A pack named in a reference, a
-delegation candidate or an enhancement target must be in the pack's `depends_on` closure: the pack and every pack it
-reaches over `depends_on`. Its `parent_pack` does not count, as at registration.
+the dependent too. A problem several roots find is reported once; a qualified reference into a pack outside its
+writer's `depends_on`, but inside a root's closure, is reported once per root, each in that root's words, as
+registering each root answers it. Packs that only an activation lists together are judged by a registration alone:
+pack-doctor does not see activations. A pack named in a reference, a delegation candidate or an enhancement target must
+be in the pack's `depends_on` closure: the pack and every pack it reaches over `depends_on`. Its `parent_pack` does not
+count, as at registration.
 
 1. **The substep delegations.** A candidate of a substep's `delegates_to` that names a pack of the closure that does not
    hold it is `validation_failed`, with the violation `substep_delegation_unresolved` at the mission type file.
@@ -206,9 +205,16 @@ the registration's codes, in this order:
    from the dependent's root, as registering the dependent refuses it.
 
 A rule runs only when the closure writes an `enhances` or `overrides` edge; the specialization cycle is judged always.
-Each rule reports every fault it finds. A problem several roots find is reported once. `RELATIONS` runs and is skipped
-when `REFERENCES` is, after it, and a root whose closure has a `REFERENCES` problem is not judged: a registration checks
-a closure's relations only once its references pass, and a broken reference would be reported again as a relation.
+Each rule reports every fault it finds. A problem several roots find is reported once. `RELATIONS` runs after
+`REFERENCES` and is skipped when it is. A root whose closure has a `REFERENCES` problem is not judged, as registration's
+phases 2 to 4 (the delegations, the references and the targets) gate its relation checks: a broken reference would be
+reported again as a relation. `RELATIONS` is listed in `checks` only when at least one root was judged. A preset
+contest, a preset-item problem or a case-only problem does not stop it, though registration would stop at those first:
+they stand beside `RELATIONS`' problems, as beside `REFERENCES`'.
+
+Within one root's closure, its `REFERENCES` problems come before its `RELATIONS` problems, so that closure's first
+problem is the one registering the root answers. Across roots the report lists every `REFERENCES` problem, then every
+`RELATIONS` problem, where a registration judges one closure after another.
 
 `--full` does not yet judge everything a registration does. A pack it passes can still be refused when you register it
 for an edge rule that needs the layer merge, or the closure walk of its own profiles; see
@@ -345,17 +351,18 @@ The report goes to standard output, as one JSON object. Its schema is the contra
 - **`inputs`:** what you gave, as you wrote it: the `config_root`, or the `packs` (each `--pack` value), and the
   `options` that choose the checks: `round_trip` and `full`, each `true` or `false`.
 - **`checks`:** the checks that ran over the set, in order: `PACK` always, `CLOSURE` when every pack's composition
-  could be read and its `pack.yaml` is well formed, `REFERENCES` and then `RELATIONS` with `--full` when `CLOSURE`
-  found no composition problem, and `ROUND_TRIP` with `--round-trip`.
+  could be read and its `pack.yaml` is well formed, `REFERENCES` with `--full` when `CLOSURE` found no composition
+  problem, `RELATIONS` after it when at least one root's closure passed `REFERENCES`, and `ROUND_TRIP` with
+  `--round-trip`.
 - **`packs`:** each pack checked, with its pack id as `name` (its `=<id>`, or its directory's name), its level and
   its path as you gave it. Every problem, warning and `skipped` reason names a pack by that id.
 - **`skipped`:** present only when a check was asked for and could not run. That is `CLOSURE`, and with `--full`
   `REFERENCES` and `RELATIONS`, when a pack could not be read, its `pack.yaml` is malformed, or its level is unknown;
   its `reason` names the pack. `REFERENCES` and `RELATIONS` left out because `CLOSURE` found a composition problem are
-  not listed here. The pack's own
-  fault is its one problem, under `PACK`. One such pack skips `CLOSURE` for the whole set, on purpose: judging the
-  others without it would report false `pack_dependency_unknown` faults for the packs that depend on it. A closure
-  fault among the other packs shows once that pack is fixed; the exit is `1` either way.
+  not listed here, nor is `RELATIONS` left out because no root's closure passed `REFERENCES`. The pack's own fault is
+  its one problem, under `PACK`. One such pack skips `CLOSURE` for the whole set, on purpose: judging the others
+  without it would report false `pack_dependency_unknown` faults for the packs that depend on it. A closure fault among
+  the other packs shows once that pack is fixed; the exit is `1` either way.
 - **`problems`:** each a `Problem` of the contract, with the code and the shape a registration answers for the same
   fault. A pack's violations are one `validation_failed` problem, with each violation's code, file and detail. Its
   `instance` is the `file:` URI of the pack's directory, so you can tell the packs apart. A composition fault has its

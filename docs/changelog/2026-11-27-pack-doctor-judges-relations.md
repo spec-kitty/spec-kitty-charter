@@ -23,8 +23,9 @@ audience:
   factory's relation rules: the relations phase registration runs. It reports `self_override`,
   `conflicting_relations`, `override_not_permitted`, `override_cycle`, `enhances_cycle` and `specialization_cycle`,
   each 422 at registration. A fault several roots find is reported once.
-- It runs after `REFERENCES`, and a root with a `REFERENCES` fault is not judged: registration judges a closure's
-  relations only once its references pass.
+- It runs after `REFERENCES`, and a root with a `REFERENCES` fault is not judged, as registration's phases 2 to 4 gate
+  its relations phase. `checks` lists `RELATIONS` only when at least one root was judged. A preset contest, a
+  preset-item fault or a case-only answer stands beside `RELATIONS`' faults, as beside `REFERENCES`'.
 - `PackRulesets.relationFaults(closure, factsOf)` runs the phase over one closure. pack-validation's `RelationsPhase`
   calls it.
 - `PackDoctorReport` gains `RELATIONS` in `checks` and `skipped[].check`.
