@@ -3,12 +3,15 @@ package ai.speckitty.charter.profiles.domain;
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
 import ai.speckitty.charter.kernel.domain.ModelBearer;
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.RoleBearer;
 import ai.speckitty.charter.kernel.validation.Constraints;
 import ai.speckitty.charter.kernel.validation.ModularRuleset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -40,6 +43,27 @@ public final class AgentProfile implements CharterArtifact, RoleBearer, ModelBea
     /** The rule text of a profile that takes the reserved role {@value #OPERATOR_ROLE} and is not human-performed. */
     public static final String OPERATOR_ROLE_HUMAN_ONLY =
             "An agent profile that takes the role operator must be performed by a human.";
+
+    /**
+     * The rule text of a profile whose selection reference is no reference (#673): a pack it names is no pack id (the
+     * schema's qualifier pattern does not cap its length), or it writes another kind than its list's (a stored or
+     * API-built profile, or an {@code excluding} value, which the schema does not pattern).
+     */
+    public static final String REFERENCES_WELL_FORMED =
+            "Each reference of an agent profile's directive, tactic, toolguide and styleguide references, operating"
+                    + " procedures and excluding values of those lists names its pack, when it names one, by a pack id of at most "
+                    + PackIdentifier.MAX_LENGTH
+                    + " characters, and writes no kind but its list's.";
+
+    /**
+     * The kind each tactic-like reference list's entries name, by the list's schema name (#673): the key an {@code
+     * excluding} declaration removes values of such a list under.
+     */
+    public static final Map<String, NodeKind> REFERENCE_LISTS = Map.of(
+            "directive-references", NodeKind.DIRECTIVE,
+            "tactic-references", NodeKind.TACTIC,
+            "toolguide-references", NodeKind.TOOLGUIDE,
+            "styleguide-references", NodeKind.STYLEGUIDE);
 
     /** The reserved role of a fallback profile (ADR-0068 decision 4); it never earns a role fit. */
     public static final String GENERIC_ROLE = RoleBearer.GENERIC;
@@ -76,7 +100,8 @@ public final class AgentProfile implements CharterArtifact, RoleBearer, ModelBea
                             .orElse(true)))
             .must(Constraints.of(
                     "An agent profile's maximum of concurrent tasks must be above 0.",
-                    profile -> profile.maxConcurrentTasks.map(max -> max > 0).orElse(true)));
+                    profile -> profile.maxConcurrentTasks.map(max -> max > 0).orElse(true)))
+            .must(Constraints.of(REFERENCES_WELL_FORMED, AgentProfile::referencesWellFormed));
 
     private final AgentProfileIdentifier id;
     private final PackIdentifier packId;
@@ -454,6 +479,125 @@ public final class AgentProfile implements CharterArtifact, RoleBearer, ModelBea
      */
     public Optional<Exclusion> excluding() {
         return excluding;
+    }
+
+    /**
+     * The references the profile writes in its selection data (ADR-0064 decision 11; #673): each {@code
+     * directive-references} code, each {@code tactic-references}, {@code toolguide-references} and {@code
+     * styleguide-references} id, each {@code collaboration.operating-procedures} entry, and each {@code excluding} value
+     * under one of those lists' keys, in that order. Each names
+     * an artifact of the kind its list implies, by its id: bare inside the profile's own pack, {@code <pack>::<id>}
+     * across packs, or with the kind written out ({@code <pack>::directive:DIRECTIVE_001}). They are judged as every
+     * other reference is, and mint no edge: {@link #derivedRelationships()} stays empty.
+     *
+     * <p>A profile holds no entry that is not such a reference: the pack schema refuses one in a list, and {@link
+     * #REFERENCES_WELL_FORMED} refuses the rest: a pack name over the pack-id cap, an {@code excluding} value that is
+     * none, and one that writes another kind than its list's (a stored or API-built profile).
+     *
+     * @return the references, duplicates removed, in the order written
+     */
+    @Override
+    public List<PackQualifiedReference> writtenReferences() {
+        return selectionEntries().stream()
+                .flatMap(entry -> PackQualifiedReference.ofKind(entry.kind(), entry.written()).stream())
+                .distinct()
+                .toList();
+    }
+
+    /**
+     * The entries of the profile's selection data, each with the kind its list names (#673), in the order {@link
+     * #writtenReferences()} gives, then each {@code excluding} value under a reference list's key ({@link
+     * #REFERENCE_LISTS}): the one place a reference list is mapped to its kind.
+     *
+     * @return the entries as written, duplicates kept
+     */
+    public List<SelectionEntry> selectionEntries() {
+        List<SelectionEntry> entries = new ArrayList<>();
+        directiveReferences.forEach(reference -> entries.add(new SelectionEntry(NodeKind.DIRECTIVE, reference.code())));
+        tacticReferences.forEach(reference -> entries.add(new SelectionEntry(NodeKind.TACTIC, reference.id())));
+        toolguideReferences.forEach(reference -> entries.add(new SelectionEntry(NodeKind.TOOLGUIDE, reference.id())));
+        styleguideReferences.forEach(reference -> entries.add(new SelectionEntry(NodeKind.STYLEGUIDE, reference.id())));
+        collaboration
+                .operatingProcedures()
+                .forEach(procedure -> entries.add(new SelectionEntry(NodeKind.PROCEDURE, procedure)));
+        if (excluding.orElse(null) instanceof Exclusion.FieldValues values) {
+            values.values().forEach((field, removed) -> {
+                NodeKind kind = REFERENCE_LISTS.get(field);
+                if (kind != null) {
+                    removed.forEach(value -> entries.add(new SelectionEntry(kind, value)));
+                }
+            });
+        }
+        return List.copyOf(entries);
+    }
+
+    /**
+     * One entry of a profile's selection data (#673).
+     *
+     * @param kind the kind the entry's list names
+     * @param written the entry as written, for example {@code built-in::DIRECTIVE_001}
+     */
+    public record SelectionEntry(NodeKind kind, String written) {
+
+        /** Checks the parts are present. */
+        public SelectionEntry {
+            Objects.requireNonNull(kind, "kind");
+            Objects.requireNonNull(written, "written");
+        }
+    }
+
+    /**
+     * What a selection reference of this profile names, whichever way it is written (#673): {@code
+     * <pack>::<kind>:<id>}, with a bare reference qualified by the profile's own pack. Two entries that name the same
+     * artifact give the same text, so a profile of another pack that writes {@code built-in::DIRECTIVE_001} keeps the
+     * {@code DIRECTIVE_001} a built-in profile writes bare.
+     *
+     * @param kind the kind the entry's list names
+     * @param written the entry as written
+     * @return what it names; the entry itself when it is no reference
+     */
+    public String named(NodeKind kind, String written) {
+        return PackQualifiedReference.ofKind(kind, written)
+                .map(reference -> reference.packName().orElse(packId.value()) + "::" + reference.urn())
+                .orElse(written);
+    }
+
+    /**
+     * A selection reference of this profile as a profile of {@code reader}'s pack writes it (#673), so it names the same
+     * artifact there and a reference inside one pack stays bare (ADR-0053 decision 7): a bare reference, which names an
+     * artifact of this profile's own pack, is qualified with that pack; one qualified with {@code reader}'s pack is
+     * written bare; any other is kept as written, as is every reference when {@code reader} is this profile's pack.
+     *
+     * <p>A pack is named by its pack id ({@link #packId()}), which is the name its references qualify it by (ADR-0075
+     * decision 2, #582): registration refuses a pack whose descriptor {@code name} is not its id.
+     *
+     * @param reader the pack the reference is to be read in
+     * @param kind the kind the entry's list names
+     * @param written the entry as written
+     * @return the entry as {@code reader} writes it
+     */
+    public String writtenFor(PackIdentifier reader, NodeKind kind, String written) {
+        Objects.requireNonNull(reader, "reader");
+        if (reader.equals(packId)) {
+            return written;
+        }
+        Optional<PackQualifiedReference> reference = PackQualifiedReference.ofKind(kind, written);
+        if (reference.isEmpty()) {
+            return written;
+        }
+        Optional<String> pack = reference.get().packName();
+        if (pack.isEmpty()) {
+            return packId.value() + "::" + written;
+        }
+        return pack.get().equals(reader.value())
+                ? PackQualifiedReference.parse(written).urn()
+                : written;
+    }
+
+    private boolean referencesWellFormed() {
+        return selectionEntries().stream()
+                .allMatch(entry -> PackQualifiedReference.ofKind(entry.kind(), entry.written())
+                        .isPresent());
     }
 
     /** Entity identity: equal when the identifier is equal, whatever the other fields hold. */

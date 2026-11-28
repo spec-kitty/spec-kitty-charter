@@ -115,22 +115,22 @@ specialization-context:
     - high
 
 directive-references:
-  - code: "001"
+  - code: DIRECTIVE_001
     name: Architectural Integrity Standard
     rationale: Reviews must enforce clear component boundaries and flag coupling violations before merge
-  - code: "024"
+  - code: DIRECTIVE_024
     name: Locality of Change
     rationale: Flag changes that expand scope beyond the stated task objective
-  - code: "030"
+  - code: DIRECTIVE_030
     name: Test and Typecheck Quality Gate
     rationale: Verify tests pass and static analysis gates are green before approving
-  - code: "032"
+  - code: DIRECTIVE_032
     name: Conceptual Alignment
     rationale: Terminology in code and docs must align with the project glossary — language drift signals architectural drift
-  - code: "041"
+  - code: DIRECTIVE_041
     name: Tests as Scaffold, Not Friction
     rationale: Reject tests that pass for the wrong reason or false-red on correct changes; require observable-contract assertions, no defect-masking xfails, and content-anchored ratchet keys
-  - code: "051"
+  - code: DIRECTIVE_051
     name: Supply-Chain Install Safety
     rationale: >-
       Dependency-touching reviews must verify a result for every threat-class

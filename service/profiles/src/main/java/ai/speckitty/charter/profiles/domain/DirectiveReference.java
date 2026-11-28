@@ -5,7 +5,8 @@ import java.util.Objects;
 /**
  * A directive an {@link AgentProfile} applies, with why: one item of {@code directive-references}.
  *
- * @param code the directive's code as authored, for example {@code "003"}; it is text, never a number
+ * @param code the directive's id as authored, bare or pack-qualified, for example {@code DIRECTIVE_003} or {@code
+ *     foundation::DIRECTIVE_003} (#673); it is text, never a number
  * @param name the directive's name
  * @param rationale why the profile applies it
  */

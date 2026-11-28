@@ -2,6 +2,7 @@ package ai.speckitty.charter.packdoctor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import ai.speckitty.charter.packs.domain.roundtrip.PackRoundTripResult;
 import ai.speckitty.charter.packs.examples.ExamplePacks;
@@ -22,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -174,6 +177,213 @@ class PackDoctorMainTest {
                 .as("validate without --full judges no reference")
                 .isEqualTo(PackDoctorMain.VALID);
         assertThat(texts(plain.report().get("checks"))).containsExactly("PACK", "CLOSURE");
+    }
+
+    /**
+     * base-pack holds the directive B_001 and, copied from the built-in example pack, the tactic problem-decomposition,
+     * the toolguide execution-lanes, the styleguide boring-code-review and the procedure git-flow; org-pack depends on
+     * it and holds the profile {@code p}, which writes {@code body} as its selection data (#673). other-pack, which some
+     * references name, is in no compose.
+     */
+    private static Path[] plantProfilePacks(Path root, String body) throws IOException {
+        Path base = root.resolve("base");
+        Path org = root.resolve("org");
+        for (String dir : List.of("directives", "drg", "tactics", "toolguides", "styleguides", "procedures")) {
+            Files.createDirectories(base.resolve(dir));
+        }
+        Files.writeString(base.resolve("pack.yaml"), """
+                pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+                pack_version: 1.0.0
+                parent_pack: null
+                name: base-pack
+                pack_level: org
+                """);
+        Files.writeString(base.resolve("drg/fragment.yaml"), "nodes: []\nedges: []\n");
+        Files.writeString(base.resolve("directives/B_001.directive.yaml"), """
+                schema_version: '1.0'
+                id: B_001
+                title: Base one
+                intent: Base one
+                enforcement: required
+                """);
+        Path builtIn = ExamplePacks.pack(ExamplePacks.BUILT_IN);
+        for (String file : List.of(
+                "tactics/problem-decomposition.tactic.yaml",
+                "toolguides/execution-lanes.toolguide.yaml",
+                "toolguides/execution-lanes.guide.md",
+                "styleguides/boring-code-review.styleguide.yaml",
+                "procedures/git-flow.procedure.yaml")) {
+            Files.copy(builtIn.resolve(file), base.resolve(file));
+        }
+        Files.createDirectories(org.resolve("agent_profiles"));
+        Files.createDirectories(org.resolve("drg"));
+        Files.writeString(org.resolve("pack.yaml"), """
+                pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+                pack_version: 1.0.0
+                parent_pack: null
+                name: org-pack
+                pack_level: org
+                depends_on:
+                - pack_id: 01M4P01D5TWB5FKZGNNQG3943S
+                  range: '>=1.0'
+                """);
+        Files.writeString(org.resolve("drg/fragment.yaml"), "nodes: []\nedges: []\n");
+        Files.writeString(org.resolve("agent_profiles/p.agent.yaml"), """
+                profile-id: p
+                name: P
+                role: implementer
+                purpose: x
+                specialization:
+                  primary-focus: f
+                """ + body);
+        return new Path[] {base, org};
+    }
+
+    private Run fullOverProfilePacks(String name, String body) throws IOException {
+        Path[] packs = plantProfilePacks(temp.resolve(name), body);
+        return run("--pack", packs[0].toString(), "--pack", packs[1].toString(), "--full");
+    }
+
+    private static String directive(String code) {
+        return "directive-references:\n- code: " + code + "\n  name: n\n  rationale: r\n";
+    }
+
+    private static String cites(String field, String id) {
+        return field + ":\n- id: " + id + "\n  rationale: r\n";
+    }
+
+    private static String procedure(String id) {
+        return "collaboration:\n  operating-procedures:\n  - " + id + "\n";
+    }
+
+    /** The four cases of #673, and a fault in every other reference list of a profile, with the reference as judged. */
+    static Stream<org.junit.jupiter.params.provider.Arguments> profileReferenceFaults() {
+        return Stream.concat(directiveReferenceFaults(), otherListFaults());
+    }
+
+    /** The four cases of #673, in a profile's directive references. */
+    private static Stream<org.junit.jupiter.params.provider.Arguments> directiveReferenceFaults() {
+        return Stream.of(
+                arguments(
+                        "bare, held only by another pack",
+                        directive("B_001"),
+                        "pack_reference_unqualified",
+                        "directive:B_001"),
+                arguments(
+                        "pack outside the closure",
+                        directive("other-pack::O_001"),
+                        "pack_reference_pack_missing",
+                        "other-pack::directive:O_001"),
+                arguments(
+                        "absent from the named pack",
+                        directive("base-pack::B_404"),
+                        "pack_reference_artifact_missing",
+                        "base-pack::directive:B_404"),
+                arguments(
+                        "kind written out, absent",
+                        directive("base-pack::directive:B_404"),
+                        "pack_reference_artifact_missing",
+                        "base-pack::directive:B_404"));
+    }
+
+    /** One fault in each of the profile's other reference lists, and one in an exclusion of a reference list. */
+    private static Stream<org.junit.jupiter.params.provider.Arguments> otherListFaults() {
+        return Stream.of(
+                arguments(
+                        "a tactic, bare",
+                        cites("tactic-references", "problem-decomposition"),
+                        "pack_reference_unqualified",
+                        "tactic:problem-decomposition"),
+                arguments(
+                        "a toolguide absent from the named pack",
+                        cites("toolguide-references", "base-pack::gradle"),
+                        "pack_reference_artifact_missing",
+                        "base-pack::toolguide:gradle"),
+                arguments(
+                        "a styleguide outside the closure",
+                        cites("styleguide-references", "other-pack::styleguide:boring"),
+                        "pack_reference_pack_missing",
+                        "other-pack::styleguide:boring"),
+                arguments(
+                        "an exclusion outside the closure",
+                        "excluding:\n  directive-references:\n  - other-pack::O_001\n",
+                        "pack_reference_pack_missing",
+                        "other-pack::directive:O_001"),
+                arguments(
+                        "an operating procedure, bare",
+                        procedure("git-flow"),
+                        "pack_reference_unqualified",
+                        "procedure:git-flow"));
+    }
+
+    /**
+     * {@code --full} judges an agent profile's selection references as registration does (#673, ruling of 2026-11-26):
+     * the code, the status and the detail naming the reference as judged, the same as
+     * {@code registration/profile-references.feature} answers.
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("profileReferenceFaults")
+    void fullJudgesAnAgentProfilesReferences(String label, String body, String code, String written)
+            throws IOException {
+        Run run = fullOverProfilePacks(label.replace(' ', '-').replace(",", ""), body);
+
+        assertThat(run.exit()).as(run.out() + run.err()).isEqualTo(PackDoctorMain.PROBLEMS);
+        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE", "REFERENCES", "RELATIONS");
+        assertThat(run.codes()).containsExactly(code);
+        JsonNode problem = run.report().get("problems").get(0);
+        assertThat(problem.get("status").asInt()).isEqualTo(422);
+        assertThat(problem.get("detail").asString()).contains("org-pack").contains("`" + written + "`");
+    }
+
+    /**
+     * The control: each reference form of every list that resolves is no problem, and a bare one no pack holds is none
+     * either, as for a graph edge's endpoint.
+     */
+    @Test
+    void fullPassesAnAgentProfileWhoseReferencesResolve() throws IOException {
+        Run run = fullOverProfilePacks(
+                "resolving",
+                directive("base-pack::B_001") + "- code: base-pack::directive:B_001\n  name: n\n  rationale: r\n"
+                        + "- code: HELD_BY_NONE\n  name: n\n  rationale: r\n"
+                        + cites("tactic-references", "base-pack::problem-decomposition")
+                        + cites("toolguide-references", "base-pack::toolguide:execution-lanes")
+                        + cites("styleguide-references", "base-pack::boring-code-review")
+                        + procedure("base-pack::git-flow"));
+
+        assertThat(run.exit()).as(run.out() + run.err()).isEqualTo(PackDoctorMain.VALID);
+        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE", "REFERENCES", "RELATIONS");
+    }
+
+    /**
+     * An entry that is no reference of its list is refused when the pack is read (#673): by the schema (another kind
+     * written out), and by the profile's rule (a pack name past the pack-id cap, which the schema's pattern lets through).
+     */
+    static Stream<org.junit.jupiter.params.provider.Arguments> entriesThatAreNoReference() {
+        return Stream.of(
+                arguments(
+                        "another kind written out",
+                        cites("tactic-references", "directive:B_001"),
+                        "#/tactic-references/0/id",
+                        "does not match its pattern"),
+                arguments(
+                        "a pack name past the cap",
+                        directive("a".repeat(64) + "::B_001"),
+                        "",
+                        "by a pack id of at most 63 characters"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("entriesThatAreNoReference")
+    void anEntryThatIsNoReferenceIsRefusedAtTheProfile(String label, String body, String pointer, String detail)
+            throws IOException {
+        Run run = fullOverProfilePacks(label.replace(' ', '-'), body);
+
+        assertThat(run.exit()).as(run.out() + run.err()).isEqualTo(PackDoctorMain.PROBLEMS);
+        assertThat(run.codes()).containsExactly("validation_failed");
+        assertThat(run.out())
+                .contains("artifact_schema_error")
+                .contains("agent_profiles/p.agent.yaml" + pointer)
+                .contains(detail);
     }
 
     @Test

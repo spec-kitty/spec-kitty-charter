@@ -132,7 +132,7 @@ class DomainRoundTripTest {
             specialization:
               primary-focus: Java.
             directive-references:
-              - code: "003"
+              - code: DIRECTIVE_003
                 name: Decision Documentation
                 rationale: Record decisions.
             """;

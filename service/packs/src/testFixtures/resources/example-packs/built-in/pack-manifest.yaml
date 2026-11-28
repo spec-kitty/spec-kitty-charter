@@ -1,26 +1,26 @@
 schema_version: '1.0'
-manifest_hash: b32d828032c5138e269daa6da5887fdf32b4d50e50fed90549cfb7d80085361d
+manifest_hash: 1b6c66d8cde19e9c0b56140628dd736ed61d530f7d53d0719a3759ec213ee845
 constituents:
 - kind: agent_profile
   id: generic-agent
   path: agent_profiles/generic-agent.agent.yaml
-  content_hash: e950fbe0a6366df37ebd98c792098664efb63f7f1187a77dfd169545800e869a
+  content_hash: a07e25767b941b524f0d82d10fa90574d7b18c368ece7813ddb9350f09c482b7
 - kind: agent_profile
   id: implementer-ivan
   path: agent_profiles/implementer-ivan.agent.yaml
-  content_hash: ceb113b7d41781d58dde15c4809b5e30a978c9e75fbad4d90590693580969cea
+  content_hash: 34627f8498813c472d7c7efa8563c3d5ab0da1b8f328e1f31ec15511fc8bf631
 - kind: agent_profile
   id: java-jenny
   path: agent_profiles/java-jenny.agent.yaml
-  content_hash: 70ce7bc07bba060af5380d008e149776ef1d5163df124c842d0635ceeaa064bc
+  content_hash: ec93ab6ab14dcf7ad73fe090a7b9bc4c8dc91f938e832353ba821c324721b154
 - kind: agent_profile
   id: python-pedro
   path: agent_profiles/python-pedro.agent.yaml
-  content_hash: bd126dd904c29f52d5f1dc749709b830f4a627ad41e9c24f66feaa723e9e832c
+  content_hash: 390444dce8278a9cbe9caedf7040e63958b36efe61d21d4df48f76b9c77afb13
 - kind: agent_profile
   id: reviewer-renata
   path: agent_profiles/reviewer-renata.agent.yaml
-  content_hash: 0bee3de90c36de4c75a997f0db0840f7af1a2a730adb9163b2d31875f0653bba
+  content_hash: 32982b92077e246f467869984c633ebb0eaa935e4758add63fa2c8680dfc6b1b
 - kind: anti_pattern
   id: averaging-divergent-verdicts
   path: anti_patterns/averaging-divergent-verdicts.anti-pattern.yaml
@@ -126,9 +126,21 @@ constituents:
   path: directives/030-test-and-typecheck-quality-gate.directive.yaml
   content_hash: 201c160f0ca0497cd467b41cd6c300c094b62e71cd9e11e393ab402b693516a9
 - kind: directive
+  id: DIRECTIVE_032
+  path: directives/032-conceptual-alignment.directive.yaml
+  content_hash: b73e0903b621a34c4f78ee70bd909bfead9182a3b2404cb6c8f11c6f1fdd3d02
+- kind: directive
   id: DIRECTIVE_037
   path: directives/037-living-documentation-sync.directive.yaml
   content_hash: f8cc220e158fb455fed30bbe4e26ce89b6b3d95945e2bbf18245aaf45bc2170b
+- kind: directive
+  id: DIRECTIVE_041
+  path: directives/041-tests-as-scaffold-not-friction.directive.yaml
+  content_hash: 5ac7200586bc66127ff08be7330ba62a7903cd46c9d699a02b0f852167a78cf4
+- kind: directive
+  id: DIRECTIVE_051
+  path: directives/051-supply-chain-install-safety.directive.yaml
+  content_hash: b8a4b610fc813fb266119603a5991eb1896804810d663f6134173bac22e7109e
 - kind: glossary
   id: spec-kitty-core
   path: glossaries/spec-kitty-core.glossary.yaml
@@ -194,6 +206,10 @@ constituents:
   path: procedures/adversarial-squad-deployment.procedure.yaml
   content_hash: a67ede45fc5ed615aaeb211f0bd24c5c41e6319924331ebe7dba2d90ae2f5f6a
 - kind: procedure
+  id: disciplined-defect-diagnosis
+  path: procedures/disciplined-defect-diagnosis.procedure.yaml
+  content_hash: 9803c63504fabf4702ae1a15294d58f170e03c2aef96bcfbf5de8f2b6ba96849
+- kind: procedure
   id: example-mapping-workshop
   path: procedures/example-mapping-workshop.procedure.yaml
   content_hash: d6a954b58d4122ed3dd26c24cea485250186b70d7b59605fa980bcbe7ca84cb9
@@ -201,6 +217,10 @@ constituents:
   id: git-flow
   path: procedures/git-flow.procedure.yaml
   content_hash: 4b44d69a755a240970e128ba12a52c430ec5a7c392675a2bb01ad8a98d053d96
+- kind: procedure
+  id: issue-triage-state-machine
+  path: procedures/issue-triage-state-machine.procedure.yaml
+  content_hash: 11240e3d71b91d5c7c0e5fed7342658aaa07467ce9eb671b3250262335d14a5b
 - kind: routing_catalog
   id: default
   path: routing_catalogs/default.routing-catalog.yaml
@@ -245,6 +265,10 @@ constituents:
   id: change-apply-smallest-viable-diff
   path: tactics/change-apply-smallest-viable-diff.tactic.yaml
   content_hash: d6da622d0a7b6fa756fc4516884be737fa54880ab78ebda8567f1c96a533e039
+- kind: tactic
+  id: eisenhower-prioritisation
+  path: tactics/eisenhower-prioritisation.tactic.yaml
+  content_hash: 482a87dfc290f9c61528cb9ffffb1ccc71f41ff8f4810d49ba91879d0b96a900
 - kind: tactic
   id: problem-decomposition
   path: tactics/problem-decomposition.tactic.yaml

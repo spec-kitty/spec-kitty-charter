@@ -9,11 +9,14 @@ import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
 import ai.speckitty.charter.profiles.domain.ArtifactReference;
 import ai.speckitty.charter.profiles.domain.Collaboration;
+import ai.speckitty.charter.profiles.domain.DirectiveReference;
+import ai.speckitty.charter.profiles.domain.Exclusion;
 import ai.speckitty.charter.profiles.domain.ModeDefault;
 import ai.speckitty.charter.profiles.domain.Performer;
 import ai.speckitty.charter.profiles.domain.Specialization;
 import ai.speckitty.charter.profiles.domain.SpecializationContext;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -148,6 +151,51 @@ class ProfileInheritanceTest {
                 .as("routing-priority is identity")
                 .isEmpty();
         assertThat(effective.performer()).as("performer is identity").isEmpty();
+    }
+
+    /**
+     * A field inherited from an ancestor of another pack names what it named there (#673): each bare reference of each
+     * list, and of the exclusion's values, is qualified with the ancestor's pack; one qualified with the leaf's pack is
+     * bare; one qualified with a third pack is kept.
+     */
+    @Test
+    void aFieldInheritedFromAnotherPackNamesWhatItNamedThere() {
+        AgentProfile root = Profiles.minimal("root", "built-in", Profiles.REVIEW)
+                .directiveReference(new DirectiveReference("DIRECTIVE_001", "One", "why"))
+                .directiveReference(new DirectiveReference("org-base::DIRECTIVE_038", "Org", "why"))
+                .tacticReference(new ArtifactReference("tactic:t", "why"))
+                .toolguideReference(new ArtifactReference("other::g", "why"))
+                .styleguideReference(new ArtifactReference("s", "why"))
+                .collaboration(
+                        new Collaboration(List.of(), List.of(), List.of(), List.of(), List.of("review"), List.of()))
+                .excluding(Optional.of(new Exclusion.FieldValues(
+                        Map.of("directive-references", List.of("DIRECTIVE_003"), "capabilities", List.of("x")))))
+                .build();
+        AgentProfile leaf =
+                Profiles.minimal("leaf", "org-base", Profiles.REVIEW).build();
+
+        AgentProfile effective = ProfileInheritance.fold(List.of(root, leaf));
+
+        assertThat(effective.packId()).isEqualTo(new PackIdentifier("org-base"));
+        assertThat(effective.directiveReferences())
+                .extracting(DirectiveReference::code)
+                .containsExactly("built-in::DIRECTIVE_001", "DIRECTIVE_038");
+        assertThat(effective.tacticReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("built-in::tactic:t");
+        assertThat(effective.toolguideReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("other::g");
+        assertThat(effective.styleguideReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("built-in::s");
+        assertThat(effective.collaboration().operatingProcedures()).containsExactly("built-in::review");
+        assertThat(effective.excluding())
+                .contains(new Exclusion.FieldValues(Map.of(
+                        "directive-references", List.of("built-in::DIRECTIVE_003"), "capabilities", List.of("x"))));
+        assertThat(effective.writtenReferences())
+                .extracting(Object::toString)
+                .contains("built-in::directive:DIRECTIVE_001", "directive:DIRECTIVE_038", "built-in::procedure:review");
     }
 
     @Test

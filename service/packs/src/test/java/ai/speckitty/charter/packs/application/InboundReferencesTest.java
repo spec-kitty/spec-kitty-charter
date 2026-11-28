@@ -303,23 +303,17 @@ class InboundReferencesTest {
     // ---- the data-only fields of ADR-0064 decision 11, each as a real pack file
     // ---------------------------------------
 
-    /** One data-only field: a real file of the dependent pack that names {@code target}, and the artifact it names. */
+    /**
+     * One data-only field: a real file of the dependent pack that names {@code target}, the artifact it names, as free
+     * text. An agent profile's selection data is no such field: its references are judged (#673), which {@code
+     * registration/profile-references.feature} answers.
+     */
     record NearMiss(String label, String file, String text, String removedFile, String target) {
         @Override
         public String toString() {
             return label;
         }
     }
-
-    private static final String T_FILE = "tactics/t-one.tactic.yaml";
-    private static final String PROFILE = """
-            profile-id: prof
-            name: Prof
-            role: implementer
-            purpose: x
-            specialization:
-              primary-focus: f
-            """;
 
     /** A term's examples are free text: naming an artifact there is data, not a reference (see_also holds terms). */
     private static final String GLOSSARY = """
@@ -336,21 +330,8 @@ class InboundReferencesTest {
             """;
 
     static Stream<NearMiss> nearMisses() {
-        return Stream.of(
-                new NearMiss(
-                        "agent-profile directive-references",
-                        "agent_profiles/prof.agent.yaml",
-                        PROFILE + "directive-references:\n  - code: A_ONE\n    name: A\n    rationale: r\n",
-                        A_FILE,
-                        "directive:A_ONE"),
-                new NearMiss(
-                        "agent-profile tactic-references",
-                        "agent_profiles/prof.agent.yaml",
-                        PROFILE + "tactic-references:\n  - id: t-one\n    rationale: r\n",
-                        T_FILE,
-                        "tactic:t-one"),
-                new NearMiss(
-                        "glossary term examples", "glossaries/g.glossary.yaml", GLOSSARY, A_FILE, "directive:A_ONE"));
+        return Stream.of(new NearMiss(
+                "glossary term examples", "glossaries/g.glossary.yaml", GLOSSARY, A_FILE, "directive:A_ONE"));
     }
 
     @ParameterizedTest(name = "{0} naming the removed artifact")
@@ -362,7 +343,7 @@ class InboundReferencesTest {
 
         assertThat(near.register("base", near.stage(withoutTarget), Preconditions.none())
                         .outcome())
-                .as("the %s is selection or cross-reference data, not an edge", field.label())
+                .as("the %s is cross-reference data, not an edge", field.label())
                 .isEqualTo(Outcome.REPLACED);
 
         Packs withEdge = withField.file("refs.graph.yaml", edge("directive:D_ONE", "base::" + field.target()));

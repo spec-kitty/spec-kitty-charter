@@ -129,28 +129,28 @@ self-review-protocol:
       gate: only files directly related to the task objective are modified
 
 directive-references:
-  - code: "010"
+  - code: DIRECTIVE_010
     name: Specification Fidelity Requirement
     rationale: Implementations must faithfully reflect design specifications without unauthorized deviations
-  - code: "024"
+  - code: DIRECTIVE_024
     name: Locality of Change
     rationale: Changes stay close to the problem — no drive-by refactoring unrelated to the current task
-  - code: "025"
+  - code: DIRECTIVE_025
     name: Boy Scout Rule
     rationale: Leave touched areas slightly better when safe and local to the active task
-  - code: "030"
+  - code: DIRECTIVE_030
     name: Test and Typecheck Quality Gate
     rationale: Code must pass tests and static analysis before handoff — regressions caught early
-  - code: "034"
+  - code: DIRECTIVE_034
     name: Test-First Development
     rationale: Tests define the contract before production code — TDD red-green-refactor is the default implementation rhythm
-  - code: "041"
+  - code: DIRECTIVE_041
     name: Tests as Scaffold, Not Friction
     rationale: Write tests that assert observable contracts and fail when the contract breaks; never mask a defect with xfail or pin a ratchet on a line number that benign edits will move
-  - code: "043"
+  - code: DIRECTIVE_043
     name: Close Defect Classes by Construction
     rationale: Python-specific gate authoring (AST walks, type constraints, ruff/mypy rules) to close recurrent defect classes by construction rather than discipline; tests and type checks implement the structural gate
-  - code: "044"
+  - code: DIRECTIVE_044
     name: Canonical Sources and Unification
     rationale: >-
       Use the canonical CLI commands, templates, and code surfaces for every task;
@@ -159,10 +159,10 @@ directive-references:
       prompt/skill/CLI surface on an unverified size assumption — measure or attempt to
       load it first, and if it is genuinely oversized, file an upstream gap rather than
       improvising a substitute (mirrors Rule 3's missing-command remedy)
-  - code: "045"
+  - code: DIRECTIVE_045
     name: PRs-Only and Read-Intent Before High-Risk Operations
     rationale: Never push directly to origin/main or run `gh pr merge` without explicit operator instruction; read mission context before any high-risk git operation (merge, rebase, deletion, force)
-  - code: "051"
+  - code: DIRECTIVE_051
     name: Supply-Chain Install Safety
     rationale: >-
       Every pip/uv dependency addition or upgrade is evaluated against the

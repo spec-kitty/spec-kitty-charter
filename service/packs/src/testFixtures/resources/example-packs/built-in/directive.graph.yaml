@@ -17,9 +17,18 @@ nodes:
 - urn: directive:DIRECTIVE_030
   kind: directive
   label: Test and Typecheck Quality Gate
+- urn: directive:DIRECTIVE_032
+  kind: directive
+  label: Conceptual Alignment
 - urn: directive:DIRECTIVE_037
   kind: directive
   label: Living Documentation Sync
+- urn: directive:DIRECTIVE_041
+  kind: directive
+  label: Tests as Scaffold, Not Friction
+- urn: directive:DIRECTIVE_051
+  kind: directive
+  label: Supply-Chain Install Safety
 edges:
 - source: directive:DIRECTIVE_010
   target: directive:DIRECTIVE_001

@@ -146,22 +146,22 @@ self-review-protocol:
       gate: only files directly related to the task objective are modified
 
 directive-references:
-  - code: "010"
+  - code: DIRECTIVE_010
     name: Specification Fidelity Requirement
     rationale: Implementations must faithfully reflect design specifications without unauthorized deviations
-  - code: "024"
+  - code: DIRECTIVE_024
     name: Locality of Change
     rationale: Changes stay close to the problem — no drive-by refactoring unrelated to the current task
-  - code: "025"
+  - code: DIRECTIVE_025
     name: Boy Scout Rule
     rationale: Leave touched areas slightly better when safe and local to the active task
-  - code: "030"
+  - code: DIRECTIVE_030
     name: Test and Typecheck Quality Gate
     rationale: Code must pass compilation and all tests before handoff — regressions caught early
-  - code: "034"
+  - code: DIRECTIVE_034
     name: Test-First Development
     rationale: Tests define the contract before production code — ATDD/TDD red-green-refactor is the default implementation rhythm
-  - code: "051"
+  - code: DIRECTIVE_051
     name: Supply-Chain Install Safety
     rationale: >-
       Every Maven/Gradle dependency addition or upgrade is evaluated against

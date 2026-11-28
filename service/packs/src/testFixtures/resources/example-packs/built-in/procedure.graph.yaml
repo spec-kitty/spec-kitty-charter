@@ -8,12 +8,18 @@ nodes:
 - urn: procedure:adversarial-squad-deployment
   kind: procedure
   label: Adversarial Squad Deployment
+- urn: procedure:disciplined-defect-diagnosis
+  kind: procedure
+  label: Disciplined Defect Diagnosis
 - urn: procedure:example-mapping-workshop
   kind: procedure
   label: Example Mapping Workshop
 - urn: procedure:git-flow
   kind: procedure
   label: Git Flow Branching Workflow
+- urn: procedure:issue-triage-state-machine
+  kind: procedure
+  label: Issue Triage State Machine
 - urn: anti_pattern:persona-without-profile
   kind: anti_pattern
   label: Persona without profile

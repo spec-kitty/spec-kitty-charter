@@ -20,6 +20,9 @@ nodes:
 - urn: tactic:change-apply-smallest-viable-diff
   kind: tactic
   label: Change Apply Smallest Viable Diff
+- urn: tactic:eisenhower-prioritisation
+  kind: tactic
+  label: Eisenhower Prioritisation
 - urn: tactic:problem-decomposition
   kind: tactic
   label: Problem Decomposition

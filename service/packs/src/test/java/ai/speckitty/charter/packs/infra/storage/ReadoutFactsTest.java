@@ -2,6 +2,7 @@ package ai.speckitty.charter.packs.infra.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
@@ -73,6 +74,34 @@ class ReadoutFactsTest {
             assertThat(Set.copyOf(built.facts().terms())).isEqualTo(expected.heldTerms());
             assertThat(Set.copyOf(built.facts().terms()))
                     .isEqualTo(Set.copyOf(strings(recorded.required("heldTerms"))));
+        });
+    }
+
+    /**
+     * An agent profile's selection references are references the compose judges, and no edge (#673; ADR-0064 decision
+     * 11): org-base's profiles name built-in's directives, tactic and procedures, each among the pack's references, and
+     * no typed edge leaves a profile for any of them, so the walks and the whole-pack store see what they saw before.
+     */
+    @Test
+    void anAgentProfilesSelectionReferencesAreReferencesAndNoEdge(@TempDir Path host) {
+        Path pack = ExamplePacks.copyOf(ExamplePacks.ORG, host);
+
+        PackReadout readout = read(ExamplePacks.ORG, pack);
+
+        assertThat(readout.facts()).isInstanceOfSatisfying(PackReadout.Built.class, built -> {
+            assertThat(built.facts().references())
+                    .contains(
+                            "built-in::directive:DIRECTIVE_001",
+                            "built-in::directive:DIRECTIVE_051",
+                            "directive:DIRECTIVE_038",
+                            "built-in::tactic:eisenhower-prioritisation",
+                            "built-in::procedure:disciplined-defect-diagnosis",
+                            "built-in::procedure:issue-triage-state-machine");
+            assertThat(built.facts().edges())
+                    .as("a profile's selection data mints no edge")
+                    .noneMatch(edge -> edge.from().kind() == NodeKind.AGENT_PROFILE
+                            && Set.of(NodeKind.DIRECTIVE, NodeKind.TACTIC, NodeKind.PROCEDURE)
+                                    .contains(edge.to().kind()));
         });
     }
 
