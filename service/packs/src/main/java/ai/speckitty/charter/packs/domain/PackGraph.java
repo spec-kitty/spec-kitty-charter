@@ -99,6 +99,26 @@ public final class PackGraph {
     }
 
     /**
+     * The pack graph of a composed closure for a walk that reads no pack's facts (the {@link Walk#PACKS} mode): the
+     * closure's packs in its merge order. The facts function throws by design, so a walk that reads facts it should not
+     * is a defect, never a silent read.
+     *
+     * @param closure the composed closure, in merge order, each configured pack once
+     * @return the graph
+     * @throws IllegalArgumentException when two packs are configured under the same identifier
+     */
+    public static PackGraph ofPacks(List<PackCompositionResolver.PackUnderResolution> closure) {
+        Objects.requireNonNull(closure, "closure");
+        return of(
+                closure.stream()
+                        .map(member -> new PackNode(member.configured(), member.descriptor()))
+                        .toList(),
+                pack -> {
+                    throw new IllegalStateException("the packs walk reads no pack's facts: " + pack.value());
+                });
+    }
+
+    /**
      * Walks the composition closure of the scope's roots (ADR-0082 decision 2): every pack whose {@code pack_id} the
      * closure holds, once each, in the graph's order. When packs share a {@code pack_id}, each is visited and the
      * closure follows what each of them builds on. After each pack come the elements the mode emits for it, in declared

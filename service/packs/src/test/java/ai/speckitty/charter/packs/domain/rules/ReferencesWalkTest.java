@@ -160,13 +160,8 @@ class ReferencesWalkTest {
     void aWalkThatHandsOverAPackOutsideTheClosureIsRefused() {
         List<PackUnderResolution> closure = closure(BASE, "alpha");
         PackUnderResolution extra = pack("extra", List.of(BASE));
-        PackGraph graph = PackGraph.of(
-                Stream.concat(closure.stream(), Stream.of(extra))
-                        .map(member -> new PackNode(member.configured(), member.descriptor()))
-                        .toList(),
-                pack -> {
-                    throw new AssertionError("the packs walk reads no pack's facts: " + pack.value());
-                });
+        PackGraph graph = PackGraph.ofPacks(
+                Stream.concat(closure.stream(), Stream.of(extra)).toList());
 
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> PackRulesets.referencesCheck(closure, this::factsOf)
@@ -184,15 +179,9 @@ class ReferencesWalkTest {
     private List<ClosureFault> run(List<PackUnderResolution> closure, String... unselected) {
         Set<String> excluded = Set.of(unselected);
         GraphCheck check = PackRulesets.referencesCheck(closure, this::factsOf);
-        PackGraph graph = PackGraph.of(
-                closure.stream()
-                        .map(member -> new PackNode(member.configured(), member.descriptor()))
-                        .toList(),
-                pack -> {
-                    throw new AssertionError("the packs walk reads no pack's facts: " + pack.value());
-                });
+        PackGraph graph = PackGraph.ofPacks(closure);
         Scope scope = new Scope(
-                closure.stream().map(member -> member.configured().id()).toList(),
+                Scope.allOf(closure).roots(),
                 node -> node instanceof PackNode pack
                         && !excluded.contains(pack.pack().value()));
         return check.run(graph, scope).faults();
