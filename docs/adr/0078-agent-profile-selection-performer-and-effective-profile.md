@@ -2,8 +2,8 @@
 title: "ADR-0078: A role selects its profile, a profile names its performer, and the effective profile is resolved"
 description: "Slice G: profile selection by role under an activation and per step, role pins, the human performer, the effective profile with lineage, and the enhancement drop refusal."
 doc_status: active
-updated: 2026-11-15T00:00:00Z
-decision_status: Accepted
+updated: 2026-11-26T00:00:00Z
+decision_status: Accepted, with Amendments 2026-11-26 to decisions 5 and 6 on agent-profile references (#673)
 decision_date: '2026-11-14'
 type: ADR
 kind: ADR
@@ -135,6 +135,12 @@ It **amends**, each with a dated note where it stands:
      at registration and on each write judged over the closures its pack joins, and `500` on a read of content stored
      before the rule, the stored packs being at fault. The fallback and pin conflicts answer `422` on a read because
      ADR-0068 decision 7 fixed `422` for the conflict; a drop is a fault of stored content, so it keeps the `500`.
+   - *Amended 2026-11-26 (operator, #673): a selection reference (a `directive-references` code, a tactic, toolguide
+     or styleguide reference id, an operating procedure) is kept by what it names, not by how it is written. A bare
+     reference of the enhanced profile names its own pack's artifact, so an enhancer of another pack keeps it by
+     writing it qualified with that pack (`built-in::DIRECTIVE_001`); written bare, it names the enhancer's own pack
+     and drops it. An `excluding` value under one of those lists' keys is compared by what it names too, and is judged
+     as a reference.*
 6. **R8 is a contract operation: the effective profile is merged, then inherited** *(operator, D6; differs from the
    recommendation)*.
    - `getEffectiveAgentProfile` answers the effective profile. Each profile on the in-force `specializes_from` chain
@@ -147,6 +153,10 @@ It **amends**, each with a dated note where it stands:
    - An enhancer's own effective read answers its stored body and links what it enhances as `_links.enhances`. The
      pack read keeps the stored body.
    - Recommended and not chosen: no inheritance along `specializes_from`.
+   - *Amended 2026-11-26 (operator, #673): the effective profile is answered as its own pack writes it. A field
+     merged from an enhancer or inherited from an ancestor of another pack has each bare selection reference qualified
+     with that pack, and each one qualified with the answered profile's pack written bare, so every reference names
+     what it named where it was written (ADR-0053 decision 7).*
 7. **`excluding` on an enhancer is a declared drop** *(operator, D7)*. A non-empty `excluding` on a profile that
    enhances another is refused with `profile_enhancement_drops_field`, naming `excluding`. On any other profile it stays
    as authored. Removing the field from the schema is left to a later model pass.

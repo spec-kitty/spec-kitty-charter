@@ -2,7 +2,7 @@
 title: Check packs
 description: "Get the pack-doctor jar, check packs with no service, repair a pack's manifest, form and quoted numbers, read its report and exit codes, and know what only the service checks."
 doc_status: draft
-updated: 2026-11-27T00:00:00Z
+updated: 2026-11-28T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -176,10 +176,26 @@ count, as at registration.
 
 1. **The substep delegations.** A candidate of a substep's `delegates_to` that names a pack of the closure that does not
    hold it is `validation_failed`, with the violation `substep_delegation_unresolved` at the mission type file.
-2. **The references.** A reference a pack writes, in an artifact such as an agent profile or as a graph edge's
-   endpoint, is `pack_reference_unqualified` when it is bare and only another pack of the closure holds it,
-   `pack_reference_pack_missing` when it names a pack outside the `depends_on` closure, and
-   `pack_reference_artifact_missing` when it names a pack of that closure that does not hold it.
+2. **The references.** These are the references a pack writes:
+   - a graph edge's endpoints;
+   - a guard's `implemented_by`;
+   - a glossary term's `see_also`;
+   - an agent profile's `directive-references` codes, its `tactic-references`, `toolguide-references` and
+     `styleguide-references` ids, its `collaboration.operating-procedures`, and each `excluding` value
+     under one of those lists' keys.
+
+   A profile's entry names an artifact of its list's kind by the artifact's id: bare when the artifact is in the
+   profile's own pack, `<pack>::<id>` when it is in another pack, and the kind may be written out
+   (`<pack>::directive:DIRECTIVE_001`). A directive code is the directive's id, never a part of it, so the schema
+   refuses `001`.
+
+   Each reference gets one of three codes:
+   - `pack_reference_unqualified` when it is bare and only another pack of the closure holds it;
+   - `pack_reference_pack_missing` when it names a pack outside the `depends_on` closure;
+   - `pack_reference_artifact_missing` when it names a pack of that closure that does not hold it.
+
+   A bare reference that no pack holds is not a problem. A profile's references mint no edge: they say which doctrine
+   the profile is handed (ADR-0064 decision 11).
 3. **The step enhancements' targets.** A step enhancement whose target step does not exist is
    `pack_reference_pack_missing` or `pack_reference_artifact_missing`.
 

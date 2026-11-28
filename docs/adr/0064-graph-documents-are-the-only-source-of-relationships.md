@@ -2,8 +2,8 @@
 title: "ADR-0064: Relationships are authored only in a pack's graph documents"
 description: "Operator ruling of 2026-11-05 on #240: graph documents are the only home of an edge, putPackRelationship its only write, and every edge-minting field is dropped."
 doc_status: active
-updated: 2026-11-14T00:00:00Z
-decision_status: Accepted, with Amendments 2026-11-07, 2026-11-12 and 2026-11-13 (ADR-0077), and a note of 2026-11-14 on the glossary see_also
+updated: 2026-11-26T00:00:00Z
+decision_status: Accepted, with Amendments 2026-11-07, 2026-11-12 and 2026-11-13 (ADR-0077), a note of 2026-11-14 on the glossary see_also, and a note of 2026-11-26 on agent-profile references (#673)
 decision_date: '2026-11-05'
 type: ADR
 kind: ADR
@@ -218,7 +218,7 @@ such pair. Several later records kept their reference fields "until #189 rules o
     | Field | Why it is not an edge |
     |---|---|
     | guard `implemented_by` | runtime data; its `IMPLEMENTED_BY` relation is derived (decision 7) |
-    | agent-profile `directive-references` and its tactic, toolguide and styleguide references | selection data: they say which doctrine the profile is handed, not how two artifacts relate |
+    | agent-profile `directive-references` and its tactic, toolguide and styleguide references | selection data: they say which doctrine the profile is handed, not how two artifacts relate. *Amended 2026-11-26, see the note below the table* |
     | skill `enhances` and `overrides` | the skill's own install and replacement data |
     | pack `depends_on` | a pack-level dependency, not an artifact edge ([ADR-0048](/adr/0048-pack-composition-and-the-named-packs-split/)) |
     | `activated_*` and `selected_*` | a preset's or charter's selection |
@@ -226,6 +226,12 @@ such pair. Several later records kept their reference fields "until #189 rules o
     | mission-step-contract delegations | a runtime handoff. *Amended 2026-11-13 (ADR-0077): a substep's `delegates_to`, with a `scope` edge per candidate* |
     | lifecycle guards | a transition's guard |
     | per-value `impacts` | the artifact's value list ([ADR-0028](/adr/0028-impacts-is-a-value-list-and-tension-is-a-relationship/)) |
+
+    *Amended 2026-11-26 (operator, #673):* an agent profile's `directive-references` codes, its tactic,
+    toolguide and styleguide reference ids and its `collaboration.operating-procedures` entries are each
+    a reference to an artifact of its list's kind by the artifact's id. A directive code is the
+    directive's id, never a part of it. A reference may name its pack and write its kind, and is judged
+    as an edge's endpoint is (ADR-0053 decision 7). It still mints no edge.
 
     An agent profile can also be the source of a graph edge. That edge relates the profile to an
     artifact; the profile's references choose what it is handed. The two answer different questions, so
