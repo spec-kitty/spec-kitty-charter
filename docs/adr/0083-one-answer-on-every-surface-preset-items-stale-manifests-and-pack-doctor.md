@@ -182,6 +182,11 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
    epic [#636](https://github.com/spec-kitty/spec-kitty-charter/issues/636) slices 2 to 4 and 7. Registration keeps
    refusing each of them. The own-closure rules (`FallbackProfileRule`, `RolePinRule`, `ProfileEnhancementRule`) join
    `PackRulesets` beside `PresetItemRules` in #636 slice 3. #632 is referenced, not closed, for that remainder.
+
+   **Amendment 2026-11-28 (built, slice 4, #639):** the relation checks and the edge-index refusals are built. They are
+   judged by `RelationRules` and `EdgeIndexRules` in `PackRulesets` (the `RELATIONS` and `EDGE_INDEX` phases, run on
+   `PackGraph#walk`); `ImpactRelations` and `OwnClosureWalk` are deleted, and the own-closure rules landed in slice 3.
+   What `--full` still does not judge is unchanged by this note.
 10. **The report** (R-i, R-n). The report file is the same tree as the standard-output problem JSON, schema
     `contracts/charter/schemas/PackDoctorReport.yaml`, with `Problems.Problem` reused as it was. Standard output gains
     three required keys, `tool`, `inputs` and `summary`; the keys it had (`checks`, `packs`, `skipped`, `problems`) are
