@@ -362,6 +362,9 @@ class SlotComposeTest {
 
     /** The merge, or the refusal it met, thrown, as a read meets it. */
     private static MergedClosure mergedOrRefused(LayerMerge.Attempt attempt) {
-        return attempt.merged().orElseThrow(() -> attempt.refused().orElseThrow());
+        return switch (attempt) {
+            case LayerMerge.Merged merged -> merged.closure();
+            case LayerMerge.Refused refused -> throw refused.refusal();
+        };
     }
 }

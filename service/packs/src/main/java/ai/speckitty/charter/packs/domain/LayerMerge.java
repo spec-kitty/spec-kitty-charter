@@ -49,28 +49,43 @@ public final class LayerMerge {
      * What merging a closure answered: the merge, or the refusal the merge met and the layer overrides it had placed
      * before it, in the order it met them, so a caller judges the overrides it met first (C21) ahead of the refusal, as
      * the merge met them (#639).
-     *
-     * @param merged the merge; empty when the merge refused
-     * @param overrides the layer overrides placed before the refusal; every one when the merge answered
-     * @param refused the refusal the merge met; empty when it answered
      */
-    public record Attempt(
-            Optional<MergedClosure> merged, List<LayerOverride> overrides, Optional<CharterRefusal> refused) {
+    public sealed interface Attempt permits Merged, Refused {}
+
+    /**
+     * The merge answered.
+     *
+     * @param closure the merge; its {@link MergedClosure#layerOverrides()} are every override placed
+     */
+    public record Merged(MergedClosure closure) implements Attempt {
+
+        /**
+         * Checks the field.
+         *
+         * @param closure the merge
+         */
+        public Merged {
+            Objects.requireNonNull(closure, "closure");
+        }
+    }
+
+    /**
+     * The merge refused.
+     *
+     * @param refusal the refusal the merge met
+     * @param overrides the layer overrides placed before the refusal, in the order the merge met them
+     */
+    public record Refused(CharterRefusal refusal, List<LayerOverride> overrides) implements Attempt {
 
         /**
          * Checks and copies the fields.
          *
-         * @param merged the merge
+         * @param refusal the refusal
          * @param overrides the overrides placed
-         * @param refused the refusal
          */
-        public Attempt {
-            Objects.requireNonNull(merged, "merged");
+        public Refused {
+            Objects.requireNonNull(refusal, "refusal");
             overrides = List.copyOf(Objects.requireNonNull(overrides, "overrides"));
-            Objects.requireNonNull(refused, "refused");
-            if (merged.isPresent() == refused.isPresent()) {
-                throw new IllegalArgumentException("a merge either answers or refuses");
-            }
         }
     }
 
@@ -101,7 +116,7 @@ public final class LayerMerge {
             try {
                 byLevel = levelWinners(held.getValue(), settledBy(urn, closure, holdersByUrn));
             } catch (CharterRefusal refused) {
-                return new Attempt(Optional.empty(), overrides, Optional.of(refused));
+                return new Refused(refused, overrides);
             }
             if (byLevel.isEmpty()) {
                 // Every copy is a step of a mission type that lost its contest: none is in force (C15, #358).
@@ -120,7 +135,7 @@ public final class LayerMerge {
                 languagesOf(winners, closure, factsByConfiguredId),
                 presets,
                 floorOf(closure, factsByConfiguredId, winners.keySet()));
-        return new Attempt(Optional.of(merged), merged.layerOverrides(), Optional.empty());
+        return new Merged(merged);
     }
 
     private static RefusalPack refusalPack(PackUnderResolution pack) {

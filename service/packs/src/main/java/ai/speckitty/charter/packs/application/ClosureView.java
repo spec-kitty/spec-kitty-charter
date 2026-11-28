@@ -218,25 +218,32 @@ public record ClosureView(
                         faults,
                         Optional.empty());
             }
-            LayerMerge.Attempt attempt = LayerMerge.attempt(packs, facts, policy);
-            if (attempt.merged().isEmpty()) {
-                MergedRelations stopped = MergedRelations.stopped(packs, policy, attempt.overrides());
-                return new Judged(Optional.empty(), stopped, PackRulesets.edgeIndexFaults(stopped), attempt.refused());
-            }
-            MergedClosure merged = attempt.merged().get();
-            EdgeIndex placed = edges.merged(merged);
-            MergedRelations judged = MergedRelations.of(
-                    packs,
-                    pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
-                            .edges(),
-                    policy,
-                    merged,
-                    edges.placedEdges(),
-                    placed.placedEdges());
-            faults = PackRulesets.edgeIndexFaults(judged);
-            relations = judged;
-            built = new MergedView(merged, placed);
-            return new Judged(Optional.of(built), judged, faults, Optional.empty());
+            return switch (LayerMerge.attempt(packs, facts, policy)) {
+                case LayerMerge.Refused refused -> {
+                    MergedRelations stopped = MergedRelations.stopped(packs, policy, refused.overrides());
+                    yield new Judged(
+                            Optional.empty(),
+                            stopped,
+                            PackRulesets.edgeIndexFaults(stopped),
+                            Optional.of(refused.refusal()));
+                }
+                case LayerMerge.Merged answered -> {
+                    MergedClosure merged = answered.closure();
+                    EdgeIndex placed = edges.merged(merged);
+                    MergedRelations judged = MergedRelations.of(
+                            packs,
+                            pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
+                                    .edges(),
+                            policy,
+                            merged,
+                            edges.placedEdges(),
+                            placed.placedEdges());
+                    faults = PackRulesets.edgeIndexFaults(judged);
+                    relations = judged;
+                    built = new MergedView(merged, placed);
+                    yield new Judged(Optional.of(built), judged, faults, Optional.empty());
+                }
+            };
         }
     }
 
