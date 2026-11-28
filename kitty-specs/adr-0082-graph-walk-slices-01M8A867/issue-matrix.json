@@ -37,7 +37,7 @@
       "wp": "WP01"
     },
     "#638": {
-      "evidence_ref": "WP02+WP03; branch refactor/638-graph-walker dc10633df",
+      "evidence_ref": "Landed on main via PR #674 (slice 3: typed nodes, the driver, the walker and the own-closure rules)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,7 +45,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP03"
     },
     "#639": {
