@@ -21,6 +21,26 @@ The work toward the next candidate (`0.1.0-rc.3`) or the final `0.1.0`, after th
 
 ### Breaking
 
+- An agent profile's references are patterned (#673; operator rulings of 2026-11-26), in `agent-profile.schema.json`.
+  - **Directive codes:** a `directive-references` `code` is the directive's id, written
+    `^([a-z0-9]+(-[a-z0-9]+)*::)?(directive:)?[A-Z][A-Z0-9_-]*$`. A short code such as `001` no longer validates.
+  - **The other lists:** a `tactic-references`, `toolguide-references` or `styleguide-references` `id`, and a
+    `collaboration.operating-procedures` entry, is its kind's id, bare or `<pack>::`-qualified, with the kind optionally
+    written out (`<pack>::tactic:<id>`). Another kind written out no longer validates.
+  - **The shared definition:** `$defs/ArtifactRef` is replaced by `TacticRef`, `ToolguideRef` and `StyleguideRef`, one
+    per list.
+  - **Packs stored before:** the service reads a stored pack without the schema. A stored bare short code names no
+    artifact and is no fault, so a profile that writes a bare `001` keeps being served as it is, until the pack is
+    registered again and the schema refuses the code; a stored qualified one (`foundation::003`) is refused
+    `pack_reference_artifact_missing` by the reads that compose its closure, until the pack is registered again
+    with the directive's id.
+    A stored profile whose entry writes another kind, or names a pack past the pack-id cap, breaks the profile's
+    invariant: the reads that build the stored pack's artifacts leave it out, recording an `artifact_schema_error` at
+    its file, until the pack is registered again.
+  - **Consumer impact:** a pack author, or a tool that writes or validates agent profiles against this schema, rewrites
+    each short directive code as the directive's id (`"010"` becomes `DIRECTIVE_010`, `foundation::003` becomes
+    `foundation::DIRECTIVE_003`) and stops naming `$defs/ArtifactRef`. spec-kitty-open-packs migrates its content in
+    [spec-kitty-open-packs#356](https://github.com/spec-kitty/spec-kitty-open-packs/issues/356).
 - The classifier judges a letter-case variant of a file in lower case (#661, operator rulings 2026-11-25 and
   2026-11-26; the cases of #645). Rule globs still match as written, but the rules are also run with the path and
   the globs in lower case, precedence included, and that run decides where it reaches another rule: an

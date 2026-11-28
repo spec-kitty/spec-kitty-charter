@@ -2,26 +2,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.spec-kitty.ai/charter/packs/agent-profile.schema.json",
   "$defs": {
-    "ArtifactRef": {
-      "description": "Reference to a doctrine artifact with usage rationale.",
-      "properties": {
-        "id": {
-          "title": "Id",
-          "type": "string"
-        },
-        "rationale": {
-          "title": "Rationale",
-          "type": "string"
-        }
-      },
-      "required": [
-        "id",
-        "rationale"
-      ],
-      "title": "ArtifactRef",
-      "type": "object",
-      "additionalProperties": false
-    },
     "CollaborationContract": {
       "description": "Agent collaboration patterns and outputs.",
       "properties": {
@@ -55,10 +35,12 @@
         },
         "operating-procedures": {
           "items": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::)?(procedure:)?[a-z0-9]+(-[a-z0-9]+)*$"
           },
           "title": "Operating-Procedures",
-          "type": "array"
+          "type": "array",
+          "description": "The procedures the profile follows, each by the procedure's id: bare when it is in the profile's own pack, `<pack>::<id>` when it is in another pack, and the kind may be written out (`<pack>::procedure:<id>`)."
         },
         "canonical-verbs": {
           "items": {
@@ -73,11 +55,12 @@
       "additionalProperties": false
     },
     "DirectiveRef": {
-      "description": "Reference to a directive with usage rationale.",
+      "description": "A directive the profile cites, with usage rationale. The code is the directive's id (DIRECTIVE_001, QA_001), never a part of it: bare when the directive is in the profile's own pack, `<pack>::<id>` when it is in another pack, and the kind may be written out (`<pack>::directive:<id>`).",
       "properties": {
         "code": {
           "title": "Code",
-          "type": "string"
+          "type": "string",
+          "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::)?(directive:)?[A-Z][A-Z0-9_-]*$"
         },
         "name": {
           "title": "Name",
@@ -248,6 +231,69 @@
       "title": "SpecializationContext",
       "type": "object",
       "additionalProperties": false
+    },
+    "StyleguideRef": {
+      "description": "A styleguide the profile cites, with usage rationale. The id is the styleguide's id: bare when the styleguide is in the profile's own pack, `<pack>::<id>` when it is in another pack, and the kind may be written out (`<pack>::styleguide:<id>`).",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::)?(styleguide:)?[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "rationale"
+      ],
+      "title": "StyleguideRef",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "TacticRef": {
+      "description": "A tactic the profile cites, with usage rationale. The id is the tactic's id: bare when the tactic is in the profile's own pack, `<pack>::<id>` when it is in another pack, and the kind may be written out (`<pack>::tactic:<id>`).",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::)?(tactic:)?[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "rationale"
+      ],
+      "title": "TacticRef",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "ToolguideRef": {
+      "description": "A toolguide the profile cites, with usage rationale. The id is the toolguide's id: bare when the toolguide is in the profile's own pack, `<pack>::<id>` when it is in another pack, and the kind may be written out (`<pack>::toolguide:<id>`).",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "pattern": "^([a-z0-9]+(-[a-z0-9]+)*::)?(toolguide:)?[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "rationale"
+      ],
+      "title": "ToolguideRef",
+      "type": "object",
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,
@@ -408,21 +454,21 @@
     },
     "tactic-references": {
       "items": {
-        "$ref": "#/$defs/ArtifactRef"
+        "$ref": "#/$defs/TacticRef"
       },
       "title": "Tactic-References",
       "type": "array"
     },
     "toolguide-references": {
       "items": {
-        "$ref": "#/$defs/ArtifactRef"
+        "$ref": "#/$defs/ToolguideRef"
       },
       "title": "Toolguide-References",
       "type": "array"
     },
     "styleguide-references": {
       "items": {
-        "$ref": "#/$defs/ArtifactRef"
+        "$ref": "#/$defs/StyleguideRef"
       },
       "title": "Styleguide-References",
       "type": "array"

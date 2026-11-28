@@ -62,8 +62,8 @@ Feature: An agent profile is only ever added to, never quietly weakened
     And the field at "/agentProfile/name" is "Reviewer Renata"
     And the field at "/agentProfile/capabilities/0" is "code-review"
     And the field at "/agentProfile/directiveReferences" holds exactly 7 items
-    And the field at "/agentProfile/directiveReferences/5/code" is "051"
-    And the field at "/agentProfile/directiveReferences/6/code" is "038"
+    And the field at "/agentProfile/directiveReferences/5/code" is "DIRECTIVE_051"
+    And the field at "/agentProfile/directiveReferences/6/code" is "org-base::DIRECTIVE_038"
     And the field at "/lineage" holds exactly 0 items
     And the answer has no link "enhances"
     When I follow the link "artifact"

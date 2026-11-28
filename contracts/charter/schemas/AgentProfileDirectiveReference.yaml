@@ -9,7 +9,9 @@ required:
 properties:
   code:
     type: string
-    description: The directive's code.
+    description: >-
+      The directive's id, as the profile writes it: bare when the directive is in the profile's own pack,
+      `<pack>::<id>` when it is in another pack, or with the kind written out (`<pack>::directive:<id>`).
     x-source:
       path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/DirectiveReference.java
       symbol: DirectiveReference.code

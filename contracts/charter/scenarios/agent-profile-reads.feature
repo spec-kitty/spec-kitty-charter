@@ -86,7 +86,7 @@ Feature: A pack's agent profile is read with its governance
           - low
           - medium
       directive-references:
-        - code: "034"
+        - code: DIRECTIVE_034
           name: Test-First Development
           rationale: Tests define the contract.
       tactic-references:
@@ -235,7 +235,7 @@ Feature: A pack's agent profile is read with its governance
     And the field at "/agentProfile/performer" is "agent"
     And the field at "/agentProfile/specializationContext/complexityPreference/1" is "medium"
     And the field at "/agentProfile/selfReviewProtocol/steps/0/command" is "mvn compile"
-    And the field at "/agentProfile/directiveReferences/0/code" is "034"
+    And the field at "/agentProfile/directiveReferences/0/code" is "DIRECTIVE_034"
     And the field at "/_links/self/href" is "/api/v1/packs/built-in/artifacts/agent_profile/java-jenny"
     And the governance holds exactly the entries:
       """
