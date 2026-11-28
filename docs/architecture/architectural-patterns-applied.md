@@ -2,7 +2,7 @@
 title: Architectural patterns applied
 description: How the charter service applies hexagonal, onion and screaming architecture - the layout, the pattern role of each concern, and a walk through Pack, Tactic and its steps.
 doc_status: active
-updated: 2026-11-23T00:00:00Z
+updated: 2026-11-27T00:00:00Z
 type: Architecture
 kind: Explanation
 related:
@@ -303,14 +303,24 @@ generic functional interfaces such as `Predicate<T>`.
 
 - *Exists:* `{@link ai.speckitty.charter.packs.domain.rules.PackRulesets}` with `content()` and `closure()`;
   `ModularRuleset.of` builds a ruleset.
-- *Proposed:* `PackRulesets` grows `relations()`, `ownClosure()`, `mutability(policies)` and `dependents()`, and the
-  scopes `activeSet(..)`, `selection(..)`, `ancestorsOf(..)` and `closuresHolding(..)`.
+- *Proposed:* `PackRulesets` grows `mutability(policies)` and `dependents()`, and the scopes `activeSet(..)`,
+  `selection(..)`, `ancestorsOf(..)` and `closuresHolding(..)`. `ownClosure(..)` and `relations(..)` are built (below).
 - *Built (slice 3, #638):* `PackRulesets.ownClosure(closureFacts, profiles, merge)` hands out a `GraphCheck` (the
   `PACKS` mode, one phase: fallback profile, own role pins, pin conflicts, profile enhancements), run over
   `ownClosureOf(declaring)`; `references(..)` runs its three checks as three phases of the walker.
-  Interim: `references(..)` feeds the walker its members directly, not through `PackGraph#walk`, because its nodes are
-  the callers' members (a subset of the closure, in the caller's order), not a scope's composition closure; slice 4
-  moves it onto a graph walk.
+- *Built (slice 4, #639):* `PackRulesets.relations(composedRelations)` hands out a `GraphCheck` (the `RELATIONS` mode,
+  one phase of eight whole-closure checks in the old order). `ComposedRelations` in `packs.domain` is the subject: the
+  placed `enhances` and `overrides` edges, the `specializes_from` graph, the enhances cycles computed once, and the
+  policies scoped by `ScopedPolicies`, which moved into `packs.domain` from `PackMutabilityPolicy`. `ImpactRelations`
+  and `SpecializationCycleRule` are deleted. `PackRulesets.edgeIndex(merged)` hands out the edge-index phase over the
+  layer merge (`MergedRelations`: C21, the inherited lock, the re-pointed self-override, another pack's stray step
+  link), which a read runs alone (`edgeIndexFaults`), and `composedClosure(..)` the relations, edge-index and, for a
+  declaring pack, own-closure phases as one walker, which `ClosureImpactCheck` runs per closure.
+  `REFERENCES` runs on `PackGraph#walk` too ([changelog](/changelog/2026-11-27-references-run-on-a-graph-walk/)):
+  `referencesCheck(closure, factsOf)` hands out a `GraphCheck` (the `PACKS` mode; three phases, one per check), and
+  `references(closure, factsOf)` runs it over the closure's graph, every pack a root and selected, so the members come
+  in the closure's order. No class but `GraphCheck` calls `ValidationWalker.run`, and `GraphCheck` feeds it from
+  `PackGraph.walk` (`PackGraphWalkBoundaryTest`, over `packs` and `pack-validation`).
 
 Reference: Bloch, *Effective Java*, 3rd edition, Item 1.
 

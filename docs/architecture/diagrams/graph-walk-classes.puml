@@ -126,12 +126,16 @@ package "packs.domain (owns HOW to walk)" {
     stable order, cycles, strongly connected groups
   }
   class PackRulesets <<rule factory>> {
-    + {static} content()
-    + {static} closure()
-    + {static} references(..)
-    + {static} ownClosure(..) : GraphCheck
+    + {static} content() : ModularRuleset<PackContents>
+    + {static} closure(factsOf) : ModularRuleset<List<PackUnderResolution>>
+    + {static} references(closure, factsOf) : List<ClosureFault>
+    ~ {static} referencesCheck(closure, factsOf) : GraphCheck
+    ~ {static} ownClosure(closure, profiles, merge) : GraphCheck
     + {static} ownClosureOf(declaring) : Scope
-    + {static} relations() <<proposed>>
+    ~ {static} relations(ComposedRelations) : GraphCheck
+    ~ {static} edgeIndex(Supplier<MergedRelations>) : GraphCheck
+    + {static} composedClosure(relations, merged) : GraphCheck
+    + {static} composedClosure(relations, merged, closure, declaring, profiles, merge) : GraphCheck
     + {static} mutability(policies) <<proposed>>
     + {static} dependents() <<proposed>>
     + {static} activeSet(..) / selection(..) <<proposed>>
