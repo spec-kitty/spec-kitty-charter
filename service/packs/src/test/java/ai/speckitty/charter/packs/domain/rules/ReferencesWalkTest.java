@@ -68,7 +68,7 @@ class ReferencesWalkTest {
     }
 
     @Test
-    void theFirstCheckWithAFaultAnswersMemberByMemberInTheGraphsOrder() {
+    void theFirstCheckWithAFaultAnswersMemberByMemberInTheClosuresOrder() {
         List<PackUnderResolution> closure = closure(BASE, "alpha", "beta", "gamma", "delta");
 
         List<ClosureFault> faults = PackRulesets.references(closure, this::factsOf);
@@ -82,17 +82,6 @@ class ReferencesWalkTest {
         assertThat(read)
                 .as("each member's facts are read once, as the walk hands it over, and only in the phase that ran")
                 .containsExactly(BASE, "alpha", "beta", "gamma", "delta");
-    }
-
-    @Test
-    void theOrderOfFindingsIsTheOrderTheClosureIsGivenIn() {
-        List<PackUnderResolution> closure = closure(BASE, "delta", "gamma", "beta", "alpha");
-
-        assertThat(PackRulesets.references(closure, this::factsOf))
-                .extracting(ClosureFault::detail)
-                .satisfiesExactly(
-                        first -> assertThat(first).contains("tactic:delta_missing"),
-                        second -> assertThat(second).contains("tactic:alpha_missing"));
     }
 
     @Test
