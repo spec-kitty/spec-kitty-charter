@@ -76,12 +76,12 @@
     },
     {
       "criterion_id": "FR-008",
-      "description": "Verify FR-008 is satisfied",
+      "description": "The relation rules and the specialization cycle come from PackRulesets over a domain subject; no application class builds a relation refusal",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "RelationRulesTest, RelationRulesEnhancementTest (PR #683); main 06cdfbe94, targeted run 2026-11-28 (exit 0) plus CI on each PR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-28T09:02:37.498916+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
