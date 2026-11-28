@@ -184,8 +184,9 @@ public record ClosureView(
          * ({@code self_override}); and another pack's step link that names no step of the type in force
          * ({@code pack_reference_artifact_missing}). A merge that refuses before it ends (a step contest no entry
          * settles) answers its own refusal, unless a layer override it placed first breaks C21: the fault the merge
-         * met first is the answer, as when C21 refused at the first artifact that broke it. A refused merge is not
-         * kept, so it is judged again on the next call.
+         * met first is the answer, as when C21 refused at the first artifact that broke it. A merge that stops before
+         * it ends is not kept and is attempted again on the next call; a merge with edge-index faults is kept and
+         * refused from its kept faults.
          */
         synchronized MergedView merged(PerPackPolicy policy, EdgeIndex edges) {
             Judged judged = judged(policy, edges);
