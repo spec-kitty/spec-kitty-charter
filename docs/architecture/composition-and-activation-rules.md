@@ -2,7 +2,7 @@
 title: Composition and activation rules
 description: Every composition, registration, activation-write and effective-read rule as sets, relations, closures and invariants, each with its source and build status.
 doc_status: draft
-updated: 2026-11-23T00:00:00Z
+updated: 2026-11-26T00:00:00Z
 type: Architecture
 kind: Reference
 related:
@@ -278,17 +278,19 @@ An edge the overridden artifact declared leaves with it.
 
 **C20 Edges to a loser.** `(p, x)` loses and `r(y, (p, x)) ⇒ r(y, win(x))`, bare or `<pack>::` written.
 What depended on the overridden id stays connected to the version in force. An `overrides` edge whose re-pointed
-target is its own source never forms: it is refused at registration (C36).
+target is its own source never forms: it is refused `self_override` at registration and on a read alike (C36).
 *Source:* ADR-0059 D3; spec FR-010; research R3; A12, decision `DM-01M6RA8S9G57W4BW55SNVHBQ10`. **Built (PR B).**
 
-**C21 Override gate.** A layer override of `u` by the winning pack `w` is allowed iff `μ_{C∖{w}}(u) = open`, else the
-read refuses `500 pack_unreadable` naming the artifact, both packs and the level.
+**C21 Override gate.** A layer override of `u` by the winning pack `w` is allowed iff `μ_{C∖{w}}(u) = open`, else
+`override_not_permitted` naming the artifact, both packs and the level: `500` on a read, `422` at registration and on
+the impact-checked writes (#639, operator rulings D2, Q-A and Q-B), every such override named.
 Only an `open` artifact may be replaced by a later level; `extendable` and `locked` refuse it.
 *Source:* ADR-0012 d1, d8; ADR-0059 D3 ("where the owning pack's level allows it"); spec FR-011; research R3.
 **Built (PR B)**, judged over `C ∖ {w}` (DIV-217).
-> ⚠ **Unclear:** ADR-0012 d9 names the refusal `governance_policy_violation`; the layer-merge plan surfaces it as
-> `500 pack_unreadable` carrying the violation, and that is what is built. The judging set without the winning pack is
-> a planning decision, not a ruling. A write over a closure that does not merge answers the same `500` (E20).
+> ⚠ **Unclear:** ADR-0012 d9 names the refusal `governance_policy_violation`; the layer-merge plan surfaced it as
+> `500 pack_unreadable`, and operator ruling Q-B (2026-11-25) gives it `override_not_permitted`, the code of the other
+> path to the same gate (C25). The judging set without the winning pack is a planning decision, not a ruling. An
+> activation write over a closure that does not merge answers the same `500` (E20).
 
 **C22 Mutability along the closure.** `μ_C(u) = max_{p ∈ C} μ_p(u)`; `setBy(u)` is the first `p` in closure order with
 `μ_p(u) = μ_C(u) > open`.
@@ -301,12 +303,14 @@ only for what it or a pack it builds on holds (notation, A15): a pack may lock t
 type's. For a step enhancement `u` held by `p` whose sole `enhances` target is `action:M/s`, the level judged is
 `μ_{C ∖ {p}}(mission_type:M)`, without the enhancing pack's own policy (B8); a level declared on the step itself is not
 judged. `locked` refuses the enhancement: `422 override_not_permitted` at registration and on the impact-checked writes,
-naming the enhancing pack and then the locking pack (C25), and `500 pack_unreadable` on the reads and the activation
-writes, whatever the activation selects, as C21 refuses a forbidden layer override. `extendable` and `open` take it.
+naming the enhancing pack and then the locking pack (C25), and `500 override_not_permitted` on the reads and the
+activation writes, every such enhancement named, whatever the activation selects, as C21 refuses a forbidden layer
+override (#639, operator ruling D2). `extendable` and `open` take it.
 **Built (slice C).** *Pinned by:* `EnhancementComposeTest` (`anEnhancementOfAStepWhoseMissionTypeIsLockedIsNamedWithTheLockingPack`,
 `theTwinAnExtendableMissionTypeTakesTheEnhancement`, `theEnhancingPacksOwnLockIsLeftOut`,
 `aLevelOnTheStepItselfIsNotTheSubject`), `ClosureViewTest`
-(`anEnhancementOfAStepWhoseMissionTypeIsLockedMakesTheMergeUnreadableWhateverIsSelected`,
+(`anEnhancementOfAStepWhoseMissionTypeIsLockedRefusesTheMergeWhateverIsSelected`,
+`everyEnhancementOfAStepWhoseMissionTypeIsLockedIsAFaultOfTheOneRefusal`,
 `theTwinAnEnhancementOfAStepWhoseMissionTypeIsExtendableIsMerged`) and the scenarios of
 `step-enhancement-compose.feature` `An enhancement of a step whose mission type is locked makes the activation reads
 unreadable, whatever is selected` and its twin.
@@ -332,7 +336,7 @@ refuses its own write.
 a step whose mission type is `locked` along `C({p}) ∖ {p}` is refused `422 override_not_permitted`, not
 `409 governance_policy_violation`: it is the inherited lock of C22, judged by the impact check (G8) on the registration
 and on every impact-checked write. And an `overrides` edge from a kind outside `Kₐ` is refused before the gate is
-asked (C27, #447). **Built (slice C).** *Pinned by:* `ImpactRelationsEnhancementTest`
+asked (C27, #447). **Built (slice C).** *Pinned by:* `RelationRulesEnhancementTest`
 (`anEnhancementOfAStepWhoseMissionTypeIsLockedIsOverrideNotPermittedNamingBothPacks`,
 `theTwinAnExtendableMissionTypeTakesTheEnhancement`, `theEnhancingPacksOwnLockOnTheMissionTypeIsLeftOut`) and the
 scenarios of `step-enhancement-compose.feature` `A registration that enhances a step whose mission type is locked is
@@ -467,9 +471,11 @@ An enhancement never stands alone and always links to a real artifact; an artifa
 target; nothing overrides itself.
 *Source:* A8, decision `DM-01M6RA8G0RGRWSFW4DERH8W319`; A11 and A12, decision `DM-01M6RA8S9G57W4BW55SNVHBQ10`; operator
 ruling Q8 ("enhancers do not stand on their own"). **Built:** the registration refusal (PR A: `enhances_cycle`,
-`conflicting_relations`, `self_override`, `422`). PR B adds a merge-time refusal: an `overrides` edge that, re-pointed
-to the winner, ends at its own source is refused at `merged()` as `500 pack_unreadable` (`self_override`), on a read and
-on a write.
+`conflicting_relations`, `self_override`, `422`). PR B added a merge-time refusal: an `overrides` edge that, re-pointed
+to the winner, ends at its own source is refused at `merged()`. Since #639 (ADR-0082 slice 4, operator ruling D2) it is
+an edge-index rule (`PackRulesets.edgeIndex`) judged on the re-pointed index on both surfaces with one code,
+`self_override`: `500` on a read, `422` at registration and on the impact-checked writes (ruling Q-A), which run it
+after the relation rules, so an edge that breaks a relation rule is refused for that alone.
 
 **C37 Step enhancement target held.** For a step enhancement `u` held by `p` whose sole `enhances` edge names
 `action:M/s`, bare or qualified `n::action:M/s`: let `q = p` for a bare target, else the pack of `C` whose `name(q) = n`.
@@ -505,7 +511,7 @@ or with no place, declares none and is not judged), else
 No fragment is ever dropped silently: a prompt override that drops a slot an enhancement in force fills is refused,
 and one that drops a slot no enhancement in force fills composes. Moments and statuses (OD-4 (i)):
 
-- every composing read answers `500`, after the composition codes and the merge's `pack_unreadable` (F6), through an
+- every composing read answers `500`, after the composition codes and the merge's refusals (F6), through an
   explicit `ClosureView.requireSlots(states)` that the read session calls, so the in-force resolution stays pure;
 - a registration and the impact-checked pack writes answer `422`, judged for each stored activation whose closure the
   change joins, on that closure as the write leaves it, through the gate `ActivationImpact.requireComposable`, the
@@ -592,8 +598,9 @@ A registration never leaves a closure it joins unable to compose or merge, and n
 does not join.
 *Source:* plan IC-04 step 8; A5, decision `DM-01M6RA8225EXG6GAT1MM2R9T6C`. **Partly built (PR A):** the check judges the
 composition and the relation rules (C1–C16, C25, C27, C28, C34–C36) over every closure the pack joins and refuses `422`
-naming the packs (DIV-604). The registration code does not run the layer merge, so C21 is judged at read, not at
-registration, and a floor that stops holding is reported as a notice (G20), not refused. The scope replaces the plan's
+naming the packs (DIV-604). Since #639 the check also runs the layer merge's edge-index rules after the relation rules
+(C20's re-pointed self-override, C21, the inherited lock and another pack's stray step link), with the codes a read
+answers, as `422`; a floor that stops holding is reported as a notice (G20), not refused. The scope replaces the plan's
 one global compose.
 *Amended 2026-11-12 (slice C):* the check also judges the compose checks of a step enhancement.
 
@@ -907,7 +914,8 @@ judges the named target whether or not its deny entry is already stored (a secon
 with `force` and a select with `includeDeactivated` add no deny entry and judge none (W6, W25, DIV-204). A replace that
 adds the override and the deny entry together is accepted. The floor judgement asks the resolution once, and only for a
 deny entry on a required, not locked artifact; the per-artifact writes also ask it, through `warned()`, whenever they
-apply anything, so a closure whose merge refuses (C21, C28, E7) reaches them as `500 pack_unreadable` (E20, DIV-230).
+apply anything, so a closure whose merge refuses reaches them as its `500`: `pack_unreadable` for C28 or E7,
+`override_not_permitted` for C21 since #639 (E20, DIV-230).
 A later write that removes the override (an unselect) is not refused: it judges no stored entry (only a deactivate of
 `T` itself would), and the read lists the entry in `denyNotApplied` and puts `T` back in force (E5, E21).
 *Source:* decision `DM-01M6R3YX23H46PXGNEFC31E6CT` (operator, Q9); research R12; plan IC-13; ADR-0059 amendment R6.
@@ -1360,17 +1368,19 @@ and the scenario `Research R10 - the ETag changes with a fragment's bytes and no
 `effective-step-prompt.feature`.
 
 **E18 Read refusals.** `404 activation_not_found` for an unknown activation; `500` with the composition code, or
-`pack_unreadable` for C21, C28 or E7, when `C` cannot compose or merge.
+`pack_unreadable` for C28 or E7, when `C` cannot compose or merge; `500 override_not_permitted` for C21 and the
+inherited lock, `500 self_override` for C20's re-pointed self-override and `500 pack_reference_artifact_missing` for
+another pack's stray step link, every such fault of the merge in one refusal (#639, operator ruling D2).
 *Source:* spec FR-021. **Built (PR B).** `getActivation` answers the same `500`s. **Built (PR C)** for the graph and the context
 (the context adds the `404`s of E16).
 *Amended 2026-11-12 (slice C, OD-5, Decision Moment `01M774HSKK0SSA4147QEG9ZCKR`):* the effective step prompt (F8)
 answers, in this order and every one before a `304`: `404 activation_not_found`; then the closure's composition codes
-and the merge's `pack_unreadable` (the names are judged on the merged closure, so a closure that cannot compose or merge
+and the merge's refusals (the names are judged on the merged closure, so a closure that cannot compose or merge
 answers its `500` first); then `404 mission_type_not_found` and `404 action_not_found` as E16 judges them; then
 `409 mission_type_not_in_force` for a mission type the closure holds and the activation does not put in force; then
 `500 prompt_slot_missing` (F6). The action context answers `200` with an empty context for the
 same mission type (E16); the two reads differ on purpose, and ADR-0066's annotation of decision 9 records why. Every
-composing effective read also answers C37's codes, the inherited lock's `pack_unreadable` and C38's
+composing effective read also answers C37's codes, the inherited lock's `override_not_permitted` and C38's
 `500 prompt_slot_missing`. **Built (slice C).** *Pinned by:* `EffectiveReadServiceTest.thePromptIsTheSessionsPromptOfTheStepUnderItsOwnTagWithTheReadsFingerprints`,
 `ActivationControllerTest.thePromptAnswersItsBodyWithItsTagAndTheFingerprintItVerified`, `RefusalHandlerTest` and the
 scenarios of `effective-step-prompt.feature` `FR-004 - a mission type the closure holds and the activation does not put
@@ -1386,7 +1396,8 @@ to 3 times on `stale_input`.
 so a cascade never follows an edge a losing version declared; W26 and W33 read `Eff` over `M`.
 *Source:* research R2 (open point), open review item 3; plan IC-07, IC-13; decision `DM-01M6R4W1H9P3451V89KHP97XKM`
 (merged edges). **Built (PR B)** (DIV-230): the cascade walks the merged edges, builds the merge, and so a write over a closure that
-does not merge answers `500` with `pack_unreadable` or `pack_sibling_conflict`.
+does not merge answers `500` with the merge's code: `override_not_permitted` or `self_override` for an edge-index fault
+(#639), `pack_unreadable` or `pack_sibling_conflict`.
 > ⚠ **Unclear:** W23–W24 treat every `Fl(C)` item as active, while at read a required item may be hidden by an override
 > and a floor enhancer may be ungrounded (E6). Whether the keep set should use `Eff` is not ruled.
 
@@ -1521,7 +1532,7 @@ activations it affects (G20), and every stored deny entry that the floor overrid
 | G5 Archive validity | FR-003, NFR-004, NFR-005 | Built (PR A) |
 | G6 Preconditions | FR-003; research R-lock | Built (PR A) |
 | G7 Write gate on the diff | ADR-0063 D3; plan IC-04; B8 | Built (PR A) |
-| G8 Impact check | plan IC-04; A5; slice C R7 | Partly built (PR A): composition and relation rules; not C21 or a floor refusal. C37, the inherited lock and the C38 gate per stored activation built (slice C) |
+| G8 Impact check | plan IC-04; A5; slice C R7 | Partly built (PR A): composition and relation rules; C21 and the merge's edge-index rules since #639; not a floor refusal. C37, the inherited lock and the C38 gate per stored activation built (slice C) |
 | G9 Reference check | operator 2026-11-06; `DM-01M6R0TEM8`, `DM-01M6R2WSAR`, `DM-01M6R2WVRK`; A10, B3 | Built (PR A) |
 | G10 Artifact `DELETE` | operator 2026-11-06; FR-005 | Built (PR A) |
 | G11 Relationship `DELETE` | `DM-01M6R0TEM8`; FR-006 | Built (PR A) |
@@ -1679,7 +1690,8 @@ registration lists them all.
 *Source:* research P9; plan IC-02. **Built.**
 *Amended 2026-11-12 (slice C):* the compose checks come after the load. A composing read answers, in this order: the
 composition codes (C1 to C16, C34 to C36 and C37's `pack_reference_pack_missing` and `pack_reference_artifact_missing`),
-then the merge's `pack_unreadable` (C21, C28, E7, the inherited lock of C22 and #447's `overrides` source of C27), then
+then the merge's refusals (`pack_unreadable` for C28, E7 and #447's `overrides` source of C27; since #639 the
+edge-index rules' codes for C21, C20's self-override and the inherited lock of C22), then
 C38's `prompt_slot_missing`. So a slot is judged only on a closure that composes and merges, and the answer stays one
 code whatever else is wrong. **Built (slice C).** *Pinned by:* the scenario `Research R10 - a closure whose
 enhancement in force names a slot the prompt in force does not declare is 500 before the 304` of

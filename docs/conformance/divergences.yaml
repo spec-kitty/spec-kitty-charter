@@ -760,7 +760,8 @@
     entry in denyNotApplied. The floor judgement of a create, a replace and a deactivate asks the
     resolution only for a deny entry on a required artifact; the per-artifact writes ask it
     whenever they apply anything (DIV-230). A layer merge that refuses (DIV-217, DIV-218)
-    therefore reaches a write as 500 pack_unreadable, where it answered 409 before PR C. The
+    therefore reaches a write as its 500 (override_not_permitted for a forbidden layer override
+    since #639), where it answered 409 before PR C. The
     requirement follows A1 (DIV-205). Where the write and the read can disagree, each
     failing closed on the write except the last (#447): an overrider of a non-activatable kind (a
     template, a guard, a lifecycle) hides a required artifact in the read but satisfies nothing on
@@ -1079,10 +1080,11 @@
   service: >-
     A layer override is allowed only when the overridden artifact is `open`. The level is judged
     along the closure with the winning pack left out, so the losers' own files and any pack that
-    raised the level count, and a pack never blocks its own override. Otherwise the read refuses
-    `500 pack_unreadable`, naming the artifact, both packs and the level; it is not
-    `governance_policy_violation`, which ADR-0012 d9 names. Every write that builds the merge
-    answers it too (DIV-230).
+    raised the level count, and a pack never blocks its own override. Otherwise it is refused
+    `override_not_permitted`, naming the artifact, both packs and the level: `500` on a read and on
+    every activation write that builds the merge (DIV-230), `422` at registration and on the
+    impact-checked writes, every such override named (#639, operator rulings D2, Q-A and Q-B); it
+    is not `governance_policy_violation`, which ADR-0012 d9 names.
   rationale: >-
     Only an `open` artifact may be replaced by a later level (ADR-0012 d1). The contract answers
     a read that cannot merge with the composition's `500` codes, and a refusal of the closure is
@@ -1092,7 +1094,7 @@
   status: open
   since: 2026-11-08
   evidence:
-    - "charter: contracts/charter/scenarios/layer-merge.feature (A layer override the overridden artifact's level forbids is 500 pack_unreadable, and one of an open artifact is served)"
+    - "charter: contracts/charter/scenarios/layer-merge.feature (A layer override the overridden artifact's level forbids is 500 override_not_permitted, and one of an open artifact is served)"
     - "charter: service/packs/src/test/java/ai/speckitty/charter/packs/domain/LayerMergeTest.java"
     - "corpus case: layer-override-mutability-gate"
 
@@ -1155,15 +1157,18 @@
     The service's understanding of core, to be confirmed against core: core merges artifacts by
     file, and a graph document's node holds nothing.
   service: >-
-    The merge counts every holder of a URN, a node a graph document declares included. An org
-    pack whose graph only declares the node of a built-in step replaces that step whole at its
-    level and drops the step's built-in edges. A qualified source (`built-in::action:<mission
+    The merge counts every holder of a URN by what a reference can name in the pack (its
+    referable artifacts, ADR-0083 R-v): every artifact file it holds, and every step node its
+    graph documents declare of a mission type it holds. A pack that holds the mission type and
+    declares the node of a step replaces that step whole at its level and drops the step's
+    lower-level edges. A step node of a mission type the pack does not hold, and a node of any
+    other kind without its file, hold nothing. A qualified source (`built-in::action:<mission
     type>/<step>`) restates an edge without holding the node.
   rationale: >-
     One winner function over every holder keeps provenance and edges on one rule. A pack author
     who restates a node replaces it; the record says so.
   ruling: >-
-    ADR-0059 D3; ADR-0064; WP21 review, cycle 1
+    ADR-0059 D3; ADR-0064; ADR-0083 R-v; WP21 review, cycle 1
   status: open
   since: 2026-11-08
   evidence:
@@ -1420,15 +1425,17 @@
 
 - id: DIV-230
   surface: >-
-    The write cascade walks the merged edges, so a write can answer `500 pack_unreadable`
+    The write cascade walks the merged edges, so a write can answer the merge's `500`
   core: >-
     The service's understanding of core, to be confirmed against core: the cascade walks the one
     graph core merges (DIV-216).
   service: >-
     The cascade of a select or a deactivate walks the edges of the merged closure, so it never
     follows an edge a losing version declared. Where no layer override exists the answer is
-    unchanged. A write over a closure whose layer merge refuses (DIV-217, DIV-218) answers `500
-    pack_unreadable` or `pack_sibling_conflict`, as a read does; before PR B no write could. A
+    unchanged. A write over a closure whose layer merge refuses (DIV-217, DIV-218) answers `500`
+    with the merge's code (`override_not_permitted` for a forbidden layer override, `self_override`
+    for an `overrides` edge re-pointed to its own source since #639, `pack_unreadable`, or
+    `pack_sibling_conflict`), as a read does; before PR B no write could. A
     write's preconditions are judged before the packs are read, except that an `If-Match` that
     is a closure tag reads the closure to judge its `412` (DIV-234).
   rationale: >-
