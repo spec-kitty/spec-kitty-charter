@@ -106,12 +106,12 @@
     },
     {
       "criterion_id": "FR-011",
-      "description": "Verify FR-011 is satisfied",
+      "description": "A read and a registration answer an edge-index fault and C21 with one code",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "ClosureViewMergedTest, LayerMergeTest, RefusalHandlerTest, contract scenarios via FullPassParityTest and the BDD suite (PR #683; closes #667); main 06cdfbe94, targeted run 2026-11-28 (exit 0) plus CI on each PR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-28T09:02:50.168073+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
