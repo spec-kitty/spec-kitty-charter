@@ -96,12 +96,12 @@
     },
     {
       "criterion_id": "FR-010",
-      "description": "Verify FR-010 is satisfied",
+      "description": "The gates between the relations, edge-index and own-closure phases are the walker's; relationFaults and the hand-written gates are deleted",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "ClosureImpactCheckTest write-path and census cases (PR #683); main 06cdfbe94, targeted run 2026-11-28 (exit 0) plus CI on each PR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-28T09:02:45.989046+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
