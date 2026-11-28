@@ -95,7 +95,7 @@ class ReferencesPhaseTest {
     }
 
     private List<ClosureFault> faults(PackUnderResolution... set) {
-        return ReferencesPhase.faults(List.of(set), this::factsOf);
+        return ReferencesPhase.judged(List.of(set), this::factsOf).faults();
     }
 
     private static Relationship enhances(String from, String to) {
