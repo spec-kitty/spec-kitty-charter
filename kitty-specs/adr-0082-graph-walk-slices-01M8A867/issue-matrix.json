@@ -1,7 +1,7 @@
 {
   "rows": {
     "#632": {
-      "evidence_ref": "item 3 only (operator ruling D3); WP06",
+      "evidence_ref": "Item 3 relations part landed via PR #684; Follow-up: the edge-index and own-closure parts stay with #636 slice 7",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,7 +9,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "deferred-with-followup",
       "wp": "WP06"
     },
     "#636": {
