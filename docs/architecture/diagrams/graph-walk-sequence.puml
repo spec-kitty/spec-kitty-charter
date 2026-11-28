@@ -62,5 +62,6 @@ API --> Client : PackRegistrationStatus: succeeded, or refused\nwith the problem
 note over Client, Refusals
   pack-doctor takes the same path: PackCheck asks PackRulesets for the rules and a determined selection,
   walks with the same ValidationWalker, and PackVerdicts maps the Rationale to the report and the exit code.
+  With --full, PackSetCheck runs PackRulesets.references, then relationFaults, per root.
 end note
 @enduml

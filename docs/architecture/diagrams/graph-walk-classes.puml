@@ -124,6 +124,7 @@ package "packs.domain (owns HOW to walk)" {
     built over a closure's packs, one thread
     + {static} of(packs, factsOf)
     + {static} ofPacks(closure)
+    + {static} ofPacks(closure, factsOf)
     + walk(scope, mode, visitor)
     stable order, cycles, strongly connected groups
   }
@@ -155,6 +156,7 @@ package "packs.domain (owns HOW to walk)" {
     + {static} ownClosureOf(declaring) : Scope
     ~ {static} relations(ComposedRelations) : GraphCheck
     + {static} relationsOf(packs, factsOf) : ComposedRelations
+    + {static} relationFaults(closure, factsOf) : List<ClosureFault>
     ~ {static} edgeIndex(Supplier<List<ClosureFault>>) : GraphCheck
     + {static} edgeIndexFaults(MergedRelations) : List<ClosureFault>
     + {static} closureFaults(packs, factsOf) : List<ClosureFault>

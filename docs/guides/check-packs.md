@@ -2,7 +2,7 @@
 title: Check packs
 description: "Get the pack-doctor jar, check packs with no service, repair a pack's manifest, form and quoted numbers, read its report and exit codes, and know what only the service checks."
 doc_status: draft
-updated: 2026-11-25T00:00:00Z
+updated: 2026-11-27T00:00:00Z
 type: Guide
 kind: How-To
 related:
@@ -26,9 +26,9 @@ audience:
 `pack-doctor` checks a set of packs on your machine, with no service to build or start
 ([ADR-0075](/adr/0075-one-pack-validation-module-on-the-kernel-rule-vocabulary-and-pack-check/) decision 9). Its
 `validate` command runs the checks a registration runs on each pack, in the same codes and words, plus the placement
-checks and the composition of the set (`CLOSURE`, with its presets). When you ask, it also runs the reference checks
-registration runs on each pack's closure (`--full`) and the round trip through the charter's model (`--round-trip`). It
-writes one report, in the contract's problem JSON
+checks and the composition of the set (`CLOSURE`, with its presets). When you ask, it also runs the reference and
+relation checks registration runs on each pack's closure (`--full`) and the round trip through the charter's model
+(`--round-trip`). It writes one report, in the contract's problem JSON
 ([ADR-0083](/adr/0083-one-answer-on-every-surface-preset-items-stale-manifests-and-pack-doctor/)).
 
 It is one file, `pack-doctor-<version>.jar`, and it needs **Java 25**. It has no native build. Run it under a UTF-8
@@ -81,13 +81,13 @@ Give `validate` the packs in one of two forms:
 
 Add `--round-trip` to round-trip every pack through the charter's model as well: each file is read, written back from
 the model and compared by meaning ([ADR-0036](/adr/0036-round-trip-fidelity-is-equality-of-meaning/)). Add `--full`
-to run the reference checks as well; see [Check what registration checks](#check-what-registration-checks).
+to run the reference and relation checks as well; see [Check what registration checks](#check-what-registration-checks).
 
 ```bash
 # A config root: packs/built-in, packs/org-base and packs/project under ./governance
 java -jar pack-doctor-<version>.jar validate --config-root governance --round-trip
 
-# The same, with the reference checks, as an open-packs CI gate runs it
+# The same, with the reference and relation checks, as an open-packs CI gate runs it
 java -jar pack-doctor-<version>.jar validate --config-root governance --round-trip --full
 
 # The same packs, given one by one with their levels
@@ -163,15 +163,16 @@ pack's bytes is `manifest_stale`, one violation per field, naming it. `remediate
 
 ## Check what registration checks
 
-`--full` adds the check `REFERENCES`. For each pack of the set taken as a root, over the closure it composes (the pack
-and every pack it reaches over `depends_on` and `parent_pack`), it runs three checks a registration runs on every pack
-of that closure, in the registration's order and with its codes, as registering that pack would. So a dependency's bare
-reference that only its dependent holds is reported when you give the dependent too. A problem several roots find is
-reported once; a qualified reference into a pack outside its writer's `depends_on`, but inside a root's closure, is
-reported once per root, each in that root's words, as registering each root answers it. Packs that only an activation
-lists together are judged by a registration alone: pack-doctor does not see activations. A pack named in a reference, a
-delegation candidate or an enhancement target must be in the pack's `depends_on` closure: the pack and every pack it
-reaches over `depends_on`. Its `parent_pack` does not count, as at registration.
+`--full` adds two checks, `REFERENCES` and then `RELATIONS`. For each pack of the set taken as a root, over the
+closure it composes (the pack and every pack it reaches over `depends_on` and `parent_pack`), `REFERENCES` runs three
+checks a registration runs on every pack of that closure, in the registration's order and with its codes, as
+registering that pack would. So a dependency's bare reference that only its dependent holds is reported when you give
+the dependent too. A problem several roots find is reported once; a qualified reference into a pack outside its
+writer's `depends_on`, but inside a root's closure, is reported once per root, each in that root's words, as
+registering each root answers it. Packs that only an activation lists together are judged by a registration alone:
+pack-doctor does not see activations. A pack named in a reference, a delegation candidate or an enhancement target must
+be in the pack's `depends_on` closure: the pack and every pack it reaches over `depends_on`. Its `parent_pack` does not
+count, as at registration.
 
 1. **The substep delegations.** A candidate of a substep's `delegates_to` that names a pack of the closure that does not
    hold it is `validation_failed`, with the violation `substep_delegation_unresolved` at the mission type file.
@@ -189,8 +190,34 @@ problem: a pack whose closure does not compose (an unknown dependency, a cycle, 
 a case-only problem does not stop it: those are reported beside `REFERENCES`' own. When `CLOSURE` is skipped,
 `REFERENCES` is skipped too.
 
+`RELATIONS` then runs the relation rules a registration runs on each closure, over the same closure of each root, with
+the registration's codes, in this order:
+
+1. **A self-override.** An `overrides` edge whose target is its own source is `self_override`.
+2. **A conflicting relation.** An artifact that both enhances and overrides one target is `conflicting_relations`.
+3. **An override that is not permitted.** An override of an artifact that is not `open`, or an enhancement of a step
+   whose mission type is locked, is `override_not_permitted`.
+4. **An override cycle.** `overrides` edges that form a cycle are `override_cycle`.
+5. **An enhances cycle.** `enhances` edges that form a cycle, or an enhancer whose chain reaches no artifact that
+   enhances nothing, are `enhances_cycle`.
+6. **A specialization cycle.** `specializes_from` edges among agent profiles that form a cycle are
+   `specialization_cycle`, naming the profiles in order. A cycle a dependent closes across its dependency is found
+   from the dependent's root, as registering the dependent refuses it.
+
+A rule runs only when the closure writes an `enhances` or `overrides` edge; the specialization cycle is always judged.
+Each rule reports every fault it finds. A problem several roots find is reported once. `RELATIONS` runs after
+`REFERENCES` and is skipped when it is. A root whose closure has a `REFERENCES` problem is not judged, as registration's
+phases 2 to 4 (the delegations, the references and the targets) gate its relation checks: a broken reference would be
+reported again as a relation. `RELATIONS` is listed in `checks` only when at least one root was judged. A preset
+contest, a preset-item problem or a case-only problem does not stop it, though registration would stop at those first:
+they stand beside `RELATIONS`' problems, as beside `REFERENCES`'.
+
+Within one root's closure, its `REFERENCES` problems come before its `RELATIONS` problems, so that closure's first
+problem is the one registering the root answers. Across roots the report lists every `REFERENCES` problem, then every
+`RELATIONS` problem, where a registration judges one closure after another.
+
 `--full` does not yet judge everything a registration does. A pack it passes can still be refused when you register it
-for a `specializes_from` cycle, a relation between artifacts, or the closure walk of its own profiles; see
+for an edge rule that needs the layer merge, or the closure walk of its own profiles; see
 [What only the service checks](#what-only-the-service-checks).
 
 ## Exit codes
@@ -324,23 +351,25 @@ The report goes to standard output, as one JSON object. Its schema is the contra
 - **`inputs`:** what you gave, as you wrote it: the `config_root`, or the `packs` (each `--pack` value), and the
   `options` that choose the checks: `round_trip` and `full`, each `true` or `false`.
 - **`checks`:** the checks that ran over the set, in order: `PACK` always, `CLOSURE` when every pack's composition
-  could be read and its `pack.yaml` is well formed, `REFERENCES` with `--full` when `CLOSURE` found no problem, and
-  `ROUND_TRIP` with `--round-trip`.
+  could be read and its `pack.yaml` is well formed, `REFERENCES` with `--full` when `CLOSURE` found no composition
+  problem, `RELATIONS` after it when at least one root's closure passed `REFERENCES`, and `ROUND_TRIP` with
+  `--round-trip`.
 - **`packs`:** each pack checked, with its pack id as `name` (its `=<id>`, or its directory's name), its level and
   its path as you gave it. Every problem, warning and `skipped` reason names a pack by that id.
 - **`skipped`:** present only when a check was asked for and could not run. That is `CLOSURE`, and with `--full`
-  `REFERENCES`, when a pack could not be read, its `pack.yaml` is malformed, or its level is unknown; its `reason`
-  names the pack. `REFERENCES` left out because `CLOSURE` found a composition problem is not listed here. The pack's own
-  fault is its one problem, under `PACK`. One such pack skips `CLOSURE` for the whole set, on purpose: judging the
-  others without it would report false `pack_dependency_unknown` faults for the packs that depend on it. A closure
-  fault among the other packs shows once that pack is fixed; the exit is `1` either way.
+  `REFERENCES` and `RELATIONS`, when a pack could not be read, its `pack.yaml` is malformed, or its level is unknown;
+  its `reason` names the pack. `REFERENCES` and `RELATIONS` left out because `CLOSURE` found a composition problem are
+  not listed here, nor is `RELATIONS` left out because no root's closure passed `REFERENCES`. The pack's own fault is
+  its one problem, under `PACK`. One such pack skips `CLOSURE` for the whole set, on purpose: judging the others
+  without it would report false `pack_dependency_unknown` faults for the packs that depend on it. A closure fault among
+  the other packs shows once that pack is fixed; the exit is `1` either way.
 - **`problems`:** each a `Problem` of the contract, with the code and the shape a registration answers for the same
   fault. A pack's violations are one `validation_failed` problem, with each violation's code, file and detail. Its
   `instance` is the `file:` URI of the pack's directory, so you can tell the packs apart. A composition fault has its
   own code (`pack_dependency_unknown`, `pack_duplicate_id` and the others of
   [Compose packs](/guides/compose-packs/), `preset_item_not_held`, `preset_item_undeclared`, and
   `pack_reference_artifact_missing` for a case-only answer) and names each of its packs once; so does a `REFERENCES`
-  fault. The round trip's faults are one more `validation_failed` problem per pack, with
+  or `RELATIONS` fault. The round trip's faults are one more `validation_failed` problem per pack, with
   `round_trip_red` or `round_trip_written_unpaired` for each file. The list is empty when the set is valid.
 - **`summary`:** the counts: the `packs` checked, the `violations` the problems state (all of them, also those a
   problem's list leaves out), the `warnings` and `notices`, and the `exit_code`.
@@ -402,7 +431,9 @@ a mission type that names it as a step's prompt or guidelines is not refused bes
 `pack-doctor` reaches no service state, and even with `--full` it does not yet run every closure check. These stay in
 the service (ADR-0075, decision 6; ADR-0083), so a pack that passes here can still be refused when you register it:
 
-- a `specializes_from` cycle, and the relations between artifacts (overrides, enhancements, the graph's edge rules);
+- the edge rules that judge the layer merge: an override the level of the overridden artifact forbids, a `self_override`
+  that only the layer merge creates (a re-pointed override; the declared one is `RELATIONS` rule 1), an enhancement of a
+  step whose mission type only the merge locks (a lock the closure declares is `RELATIONS` rule 3), and another pack's step link that names no step of the mission type in force;
 - the closure walk of a pack's own profiles: the fallback profile it declares
   ([ADR-0068](/adr/0068-a-pack-declares-its-fallback-profile/)), its role pins and its profile enhancements;
 - the impact of a registration on the packs already registered, and the closures stored activations compose: a
@@ -411,4 +442,5 @@ the service (ADR-0075, decision 6; ADR-0083), so a pack that passes here can sti
 - whether a pack may be changed (its mutability).
 
 The first two move into the checks `pack-doctor validate --full` shares with registration when epic
-[#636](https://github.com/spec-kitty/spec-kitty-charter/issues/636) lands them.
+[#636](https://github.com/spec-kitty/spec-kitty-charter/issues/636) slice 7 gives pack-doctor the layer merge and a
+profile reader.
