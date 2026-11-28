@@ -8,7 +8,7 @@ Feature: A step enhancement in force fills only a slot the prompt in force decla
   pack that holds the prompt in force:
 
   - on a composing read of an activation that puts the enhancement in force, 500 (the configured packs are broken, F6:
-    after the composition codes and the merge's pack_unreadable);
+    after the composition codes and the merge's refusals);
   - at registration and on the impact-checked pack writes, 422, once per stored activation whose closure the write
     joins, the activation named in the detail (OD-4 (i), squad A2);
   - on an activation write that would put the enhancement in force, 422, and nothing is stored (squad A3).

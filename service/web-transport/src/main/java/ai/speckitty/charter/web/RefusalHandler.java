@@ -34,8 +34,8 @@ import org.springframework.web.servlet.HandlerMapping;
 
 /**
  * Maps domain refusals to the contract's {@code CharterRefusal} problem bodies, and a registration's unmet
- * {@code If-Match} precondition to a plain {@code Problem}. It runs before {@link ProblemHandler}, whose catch-all would
- * otherwise answer either as an unexpected failure.
+ * {@code If-Match} precondition to a plain {@code Problem}. It runs before {@link ProblemHandler}, whose catch-all
+ * would otherwise answer either as an unexpected failure.
  */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -101,10 +101,11 @@ public class RefusalHandler {
      * The refusal codes an operation answers with a status other than the code's own, by the operation's
      * {@code operationId} (the name of its controller method): the {@code operations} map of the code's entry in the
      * contract's {@code x-refusal}, which the contract scenarios hold this table to. A refused registration, and each
-     * write that is judged over the closures its pack joins, answers the eleven composition codes as 422 where a read
-     * is refused by packs that do not compose (500): the request is what leaves them unable to. Each of them, and each
-     * activation write, answers {@code prompt_slot_missing} as 422 (OD-4 (i), squad R4): the request is what would leave
-     * a step enhancement in force without its slot, where a composing read is refused 500.
+     * write that is judged over the closures its pack joins, answers the eleven composition codes, and the two codes of
+     * a closure's layer merge, as 422 where a read is refused by packs that do not compose (500): the request is what
+     * leaves them unable to. Each of them, and each activation write, answers {@code prompt_slot_missing} as 422 (OD-4
+     * (i), squad R4): the request is what would leave a step enhancement in force without its slot, where a composing
+     * read is refused 500.
      */
     private static final Map<String, Map<RefusalCode, HttpStatus>> STATUS_BY_OPERATION = statusByOperation();
 
@@ -126,14 +127,17 @@ public class RefusalHandler {
     }
 
     /**
-     * A registration's and each impact-checked write's: the eleven composition codes, the slot check and the profile
-     * enhancement merge (ruling D5), all 422.
+     * A registration's and each impact-checked write's: the eleven composition codes, the slot check, the profile
+     * enhancement merge (ruling D5) and the two codes a read and a registration share for the faults of a closure's
+     * layer merge, {@code self_override} and {@code override_not_permitted} (#639, rulings D2 and Q-A), all 422.
      */
     private static Map<RefusalCode, HttpStatus> impactCheckedStatusCodes() {
         Map<RefusalCode, HttpStatus> codes = new java.util.EnumMap<>(RefusalCode.class);
         codes.putAll(registrationStatusCodes());
         codes.put(RefusalCode.PROMPT_SLOT_MISSING, HttpStatus.UNPROCESSABLE_CONTENT);
         codes.put(RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD, HttpStatus.UNPROCESSABLE_CONTENT);
+        codes.put(RefusalCode.SELF_OVERRIDE, HttpStatus.UNPROCESSABLE_CONTENT);
+        codes.put(RefusalCode.OVERRIDE_NOT_PERMITTED, HttpStatus.UNPROCESSABLE_CONTENT);
         return Map.copyOf(codes);
     }
 
@@ -211,9 +215,9 @@ public class RefusalHandler {
     }
 
     /**
-     * Answers an unmet registration precondition: a stale {@code If-Match} is {@code 412 Precondition Failed}, a missing
-     * one on a write that requires it {@code 428 Precondition Required}. Both are plain {@code Problem} bodies, not
-     * refusal codes (ADR-0020).
+     * Answers an unmet registration precondition: a stale {@code If-Match} is {@code 412 Precondition Failed}, a
+     * missing one on a write that requires it {@code 428 Precondition Required}. Both are plain {@code Problem} bodies,
+     * not refusal codes (ADR-0020).
      *
      * @param failure the precondition failure
      * @return the {@code application/problem+json} response
@@ -343,11 +347,11 @@ public class RefusalHandler {
      * The HTTP status a refusal code is answered with. A not-found is 404; a validation failure is 422; a conflict or
      * policy refusal is 409; the pack registration codes keep the status of their {@code x-refusal} entry (a refused
      * source or relation rule is 422, an unavailable source or a full disk 503, a timed-out registration 504); every
-     * other code is 500, {@code stale_input} and {@code internal_error} and the codes of the pack composition
-     * included: the request is fine and the configured packs are not. An operation that declares
-     * another status for a code in the per-operation statuses of the contract's x-refusal ({@link #STATUS_BY_OPERATION})
-     * answers that one. The {@code 412}/{@code 428} preconditions are not refusal codes: {@link #precondition} answers
-     * those as plain problem bodies.
+     * other code is 500, {@code stale_input} and {@code internal_error} and the codes of the pack composition included:
+     * the request is fine and the configured packs are not. An operation that declares another status for a code in the
+     * per-operation statuses of the contract's x-refusal ({@link #STATUS_BY_OPERATION}) answers that one. The
+     * {@code 412}/{@code 428} preconditions are not refusal codes: {@link #precondition} answers those as plain problem
+     * bodies.
      *
      * @param code the refusal code
      * @param operation the id of the operation that raised it, when known
@@ -392,10 +396,8 @@ public class RefusalHandler {
                 RefusalCode.VALIDATION_FAILED,
                 RefusalCode.ACTIVATION_INVALID,
                 RefusalCode.PACK_SOURCE_REFUSED,
-                RefusalCode.OVERRIDE_NOT_PERMITTED,
                 RefusalCode.ENHANCES_CYCLE,
                 RefusalCode.CONFLICTING_RELATIONS,
-                RefusalCode.SELF_OVERRIDE,
                 RefusalCode.OVERRIDE_CYCLE,
                 RefusalCode.FALLBACK_PROFILE_UNKNOWN,
                 RefusalCode.FALLBACK_PROFILE_NOT_LOCKED,
@@ -449,6 +451,10 @@ public class RefusalHandler {
                 RefusalCode.PROMPT_FRAGMENT_INVALID,
                 RefusalCode.PROMPT_SLOT_MISSING,
                 RefusalCode.PROFILE_ENHANCEMENT_DROPS_FIELD,
+                // A read and a registration answer the edge-index faults of a closure's merge with one code (#639,
+                // ruling D2): the read 500, as the packs are what is broken; the impact-checked writes 422 (Q-A).
+                RefusalCode.SELF_OVERRIDE,
+                RefusalCode.OVERRIDE_NOT_PERMITTED,
                 RefusalCode.INTERNAL_ERROR,
                 RefusalCode.STALE_INPUT);
 

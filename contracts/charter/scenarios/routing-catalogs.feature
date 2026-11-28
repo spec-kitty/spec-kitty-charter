@@ -157,10 +157,10 @@ Feature: A pack's routing catalogs are listed and read, as their files declare t
       | /packs/built-in/artifacts/routing_catalog/Default    |
       | /packs/built-in/artifacts/routing_catalog/de--fault  |
 
-  Scenario: A same-id catalog over a catalog its level locks is 500 pack_unreadable, and over an open one it is served
+  Scenario: A same-id catalog over a catalog its level locks is 500 override_not_permitted, and over an open one it is served
     FR-005, ADR-0063 D3: core (built-in) locks its routing catalog default and leaves spare open. The org pack mandate
     replaces default, which a locked artifact does not allow, so a read of an activation over core and mandate refuses
-    500 pack_unreadable, naming the catalog and the level. The org pack replaces-spare replaces the open spare: the
+    500 override_not_permitted (#639, ruling Q-B), naming the catalog and the level. The org pack replaces-spare replaces the open spare: the
     control, an activation over core and replaces-spare, answers 200 and lists spare with that pack's provenance.
     Given the built-in pack "core" with the file "pack.yaml":
       """
@@ -239,7 +239,7 @@ Feature: A pack's routing catalogs are listed and read, as their files declare t
       """
     When I GET "/activations/a-1/artifacts/routing_catalog/default"
     Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the problem code is "override_not_permitted"
     And the field at "/detail" contains "routing_catalog:default"
     And the field at "/detail" contains "locked"
     When I GET "/activations/a-2/artifacts/routing_catalog/spare"

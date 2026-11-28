@@ -123,8 +123,11 @@ description: >-
   mission_step_unlinked (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN, FR-011) is a third: every step and on-demand
   step of a mission type is linked by an authored requires edge from its type, and no such edge names an action that
   is not one of its steps. A registration lists one violation per unlinked step at the mission type file and one per
-  stray edge at its graph document, and a composing read answers 500 pack_unreadable, also when another pack writes a
-  requires edge at the mission type in force that names no step of the type. putPackRelationship of such a stray edge
+  stray edge at its graph document, and a composing read answers 500 pack_unreadable. A requires edge another pack
+  writes at the mission type in force that names no step of the type is judged once the layer merge has placed it
+  (operator rulings D2 and Q-C): pack_reference_artifact_missing, with one violation mission_step_unlinked per such
+  edge, 500 on a composing read and 422 on getPackRegistration and the impact-checked writes. putPackRelationship of
+  such a stray edge
   answers 422 validation_failed with the violation at /to, and deletePackRelationship of the last edge that links a
   step answers 422 validation_failed with the violation at /to.
   substep_delegation_unresolved and substep_delegation_unscoped (operator ruling DM-01M7B1YH1GF15RD0G4ZPSA8KW9,
@@ -178,12 +181,17 @@ description: >-
   detail; a filesystem source refuses every path it will not read with the same path_refused, so the answer does
   not reveal what exists. pack_source_unavailable (503): registration, or the source kind, is switched
   off, or the system git is missing or older than 2.50.1. override_not_permitted, enhances_cycle, conflicting_relations,
-  self_override and override_cycle (422): a relation the registration impact check refuses, naming the root pack of the
+  self_override and override_cycle: a relation the registration impact check refuses, naming the root pack of the
   closure and the packs involved (IC-15): an overrides edge onto a target that is not open, or an enhancement of a step
-  whose mission type is locked (a step takes its mission type's level, OD-2; a read of such a closure answers 500
-  pack_unreadable, as a forbidden layer override does), an enhances cycle or an enhancer with no route to a
-  non-enhancer, an artifact that both enhances and overrides one target, an overrides edge that resolves to its own
-  source, and an overrides cycle. registration_timed_out (504): the registration job's end
+  whose mission type is locked (a step takes its mission type's level, OD-2), an enhances cycle or an enhancer with no
+  route to a non-enhancer, an artifact that both enhances and overrides one target, an overrides edge that resolves to
+  its own source, and an overrides cycle. enhances_cycle, conflicting_relations and override_cycle are 422.
+  override_not_permitted and self_override are also answered by a composing read, since a read and a registration of
+  one closure answer each fault of its layer merge with one code (operator ruling D2): a layer override the overridden
+  artifact's level forbids (C21, ruling Q-B) and an enhancement of a step whose mission type is locked are
+  override_not_permitted, and an overrides edge the layer merge re-points to its own source (C36, A12) is
+  self_override, every fault reported. Both codes are therefore 500, as the composition codes are, and 422 on
+  getPackRegistration and the twelve impact-checked writes (ADR-0056, ruling Q-A). registration_timed_out (504): the registration job's end
   state at the source deadline plus 30 seconds (NFR-008); the 504 is the planner's proposal, no earlier text gave the
   code a status, and this contract confirms it. pack_storage_full (503): less than the
   per-job peak (about three times the archive bound) is free on the staging or the pack volume (NFR-009), checked before
@@ -192,7 +200,8 @@ description: >-
   Where they are declared (ADR-0056). A registration is asynchronous: its 409 and 422 answers, and these codes, are the
   problem of a refused status, returned in the 200 body of getPackRegistration. So the operations map of a code names
   getPackRegistration only where the problem carries another status than the entry's: the eleven composition codes,
-  as 422 in place of 500, and no entry repeats the status of its own code. A code with no entry for getPackRegistration
+  prompt_slot_missing, profile_enhancement_drops_field, self_override and override_not_permitted, as 422 in place of
+  500, and no entry repeats the status of its own code. A code with no entry for getPackRegistration
   is carried there with the status of its entry (pack_version_conflict 409, pack_source_refused 422,
   pack_source_unavailable 503, registration_timed_out 504, pack_storage_full 503, registration_conflict 409,
   validation_failed 422). registerPackFromArchive and registerPackFromSource declare only
@@ -202,7 +211,8 @@ description: >-
   getPackArtifact. The per-artifact writes (registerPack and putPack of a directive, a paradigm, a styleguide or a
   toolguide, and putPackRelationship) are synchronous as well and run the same impact check over the pack as it will be
   after the write (operator ruling DM-01M6VG6GC40AKYYFRR35SV8HVW, IC-15): they answer the composition codes as 422 and
-  the five relation codes, naming the closure's root pack and the packs involved. registration_conflict, governance_policy_violation and
+  the five relation codes, naming the closure's root pack and the packs involved, and the edge-index faults of the
+  closure's layer merge with the codes a composing read answers them with. registration_conflict, governance_policy_violation and
   validation_failed are existing codes that these operations also raise.
 
   The eleven codes of the pack composition are 500 like pack_unreadable, and for the same reason: the request is
@@ -867,10 +877,40 @@ x-refusal:
     raised: true
     description: registration or the source kind is switched off, or the system git is missing or older than 2.50.1
   override_not_permitted:
-    status: 422
+    status: 500
     retryable: false
     raised: true
-    description: an overrides edge onto a target that is not open, or an enhancement of a step whose mission type is locked
+    description: >-
+      an overrides edge onto a target that is not open, an enhancement of a step whose mission type is locked, or a
+      layer override the overridden artifact's level forbids (C21); 500 on a composing read, 422 where the request
+      leaves the closure so (ruling Q-A)
+    operations:
+      getPackRegistration:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
+      putPackRelationship:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePack:
+        status: 422
+      deletePackRelationship:
+        status: 422
   enhances_cycle:
     status: 422
     retryable: false
@@ -882,10 +922,39 @@ x-refusal:
     raised: true
     description: an artifact that both enhances and overrides one target
   self_override:
-    status: 422
+    status: 500
     retryable: false
     raised: true
-    description: an overrides edge that resolves to its own source
+    description: >-
+      an overrides edge that resolves to its own source, judged once the layer merge re-points it (C36, A12); 500 on a
+      composing read, 422 where the request leaves the closure so (ruling Q-A)
+    operations:
+      getPackRegistration:
+        status: 422
+      registerPackDirective:
+        status: 422
+      putPackDirective:
+        status: 422
+      registerPackParadigm:
+        status: 422
+      putPackParadigm:
+        status: 422
+      registerPackStyleguide:
+        status: 422
+      putPackStyleguide:
+        status: 422
+      registerPackToolguide:
+        status: 422
+      putPackToolguide:
+        status: 422
+      putPackRelationship:
+        status: 422
+      deletePackArtifact:
+        status: 422
+      deletePack:
+        status: 422
+      deletePackRelationship:
+        status: 422
   override_cycle:
     status: 422
     retryable: false

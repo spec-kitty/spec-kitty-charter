@@ -6,51 +6,48 @@ put:
   operationId: deactivateActivationArtifact
   summary: Deactivate an artifact, optionally with a cascade.
   description: >-
-    Adds the artifact to deactivated and removes it from selected, as charter deactivate does. With cascade, walks
-    as a cascading select does, the specializes_from lineage included (ADR-0059 amendment of 2026-11-06), removes
-    the reached artifacts from selected, records a deny entry only for the named artifact, and keeps an artifact
-    another active one still reaches, over any cascade relation, enhances included (skippedShared). A cascade never removes an
-    artifact a pack requires or locks: it is kept, with what it reaches, and a selected one the cascade reached is
-    reported in skippedShared when another active artifact still references it, named by that artifact; one only the
-    floor keeps is not reported. A named artifact a pack locks is 409 artifact_locked, and one a pack requires is 409
+    Adds the artifact to deactivated and removes it from selected, as charter deactivate does. With cascade, walks as a
+    cascading select does, the specializes_from lineage included (ADR-0059 amendment of 2026-11-06), removes the reached
+    artifacts from selected, records a deny entry only for the named artifact, and keeps an artifact another active one
+    still reaches, over any cascade relation, enhances included (skippedShared). A cascade never removes an artifact a
+    pack requires or locks: it is kept, with what it reaches, and a selected one the cascade reached is reported in
+    skippedShared when another active artifact still references it, named by that artifact; one only the floor keeps is
+    not reported. A named artifact a pack locks is 409 artifact_locked, and one a pack requires is 409
     artifact_required, naming every requiring pack, unless an active override of it satisfies the requirement in the
     document as it will be stored: an artifact that overrides it (an overrides edge of the merged closure) and is in
     force, selected or required, within the language filter and bound to a mission type in force, not denied and not
     hidden by an override itself. An enhancement never satisfies, and a locked artifact is never satisfied by an
     override (operator ruling Q9, research R12); nothing is stored on a refusal (A1: The requirement of a governing
     preset id is the union, across the levels (built-in, org, project), of the must-have items of the copy in force at
-    each level. Within one level the copy of the pack last in closure order replaces the others, a child pack's copy
-    its parent's, and a replaced copy requires nothing. A deny of an artifact only an earlier level's copy requires,
-    which a later level's copy replaced, is 409 artifact_required naming that earlier level's pack.); the named
-    artifact is judged against that floor whether or not its deny entry is already stored (a second deactivate of a
-    locked artifact is 409 artifact_locked, and of a required one whose override was unselected is 409
-    artifact_required, ADR-0059 D4 and amendment R6), and removing the satisfying override later (an unselect of it)
-    is not refused: the deny entry is then read as not applied and listed in denyNotApplied. A closure whose layer
-    merge refuses reaches this write as 500 pack_unreadable (DIV-230). Requires If-Match (ADR-0020
-    D6), the quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer
-    keeps the revision as its ETag). An If-Match that is neither * nor one quoted sha256 tag (the revision or the
-    getActivation tag) breaks its pattern and is 400 before anything
-    else is judged. Then the preconditions, in this order: 428 without If-Match, 404 activation_not_found, 412 when
-    stale; each comes before any 422, a fault of the body included. A cascading deactivate removes the reached artifacts from selected only where the kind holds a list; an absent
-    kind selects none (absent means none), so there is nothing to remove, and the deny entry on the named artifact
-    excludes it. A write that changes nothing (the id is already denied and not selected) answers 200 with the same
-    revision and an empty applied and cleared. A path id the activation's closure does not hold is 404
-    artifact_not_found (mission_type_not_found for kind mission_type); a kind outside the path's enum is 422
-    activation_invalid with a violation at the path. A mission type is denied like any kind (one kind model, IC-20;
-    Q2, decision DM-01M6RCXZ9HSHT4K3443YYZ8ZFC): it joins deactivated.mission_type, and a mission type a pack
-    requires or locks is 409 artifact_required or artifact_locked, naming every requiring pack (a required one is
-    judged as any kind, so an override satisfies it). A cascading
-    deactivate of a mission type walks the steps it holds as a cascading select does (rule W20), and unselects what
-    only it kept (rule W23). Stale ids are dropped on write (ADR-0059 amendment of 2026-11-06): the write first
-    removes from the
-    stored document every id the activation's closure no longer declares (a pack upgrade removed it), in selected,
-    deactivated and selected.mission_type, and lists them in dropped; such a write is never a no-op, so it answers a
-    new revision. A pack pinned to a version no pack of the closure holds is dropped too (B1, decision
-    DM-01M6RN5Y406SB4KA13QYMQ2P8J): the pin leaves packs and is listed in droppedPins, which also makes a new
-    revision. A path id the closure no longer holds is still 404 artifact_not_found and nothing is dropped, even when
-    the stored document still names it. An
-    unknown pack is not dropped: the write is still 422 activation_invalid (unknown_pack), and only a
-    replaceActivation recovers the document.
+    each level. Within one level the copy of the pack last in closure order replaces the others, a child pack's copy its
+    parent's, and a replaced copy requires nothing. A deny of an artifact only an earlier level's copy requires, which a
+    later level's copy replaced, is 409 artifact_required naming that earlier level's pack.); the named artifact is
+    judged against that floor whether or not its deny entry is already stored (a second deactivate of a locked artifact
+    is 409 artifact_locked, and of a required one whose override was unselected is 409 artifact_required, ADR-0059 D4
+    and amendment R6), and removing the satisfying override later (an unselect of it) is not refused: the deny entry is
+    then read as not applied and listed in denyNotApplied. A closure whose layer merge refuses reaches this write as its
+    500, override_not_permitted for a forbidden layer override (DIV-230, #639). Requires If-Match (ADR-0020 D6), the
+    quoted revision or the current getActivation tag (a closure tag that no longer matches is 412; the answer keeps the
+    revision as its ETag). An If-Match that is neither * nor one quoted sha256 tag (the revision or the getActivation
+    tag) breaks its pattern and is 400 before anything else is judged. Then the preconditions, in this order: 428
+    without If-Match, 404 activation_not_found, 412 when stale; each comes before any 422, a fault of the body included.
+    A cascading deactivate removes the reached artifacts from selected only where the kind holds a list; an absent kind
+    selects none (absent means none), so there is nothing to remove, and the deny entry on the named artifact excludes
+    it. A write that changes nothing (the id is already denied and not selected) answers 200 with the same revision and
+    an empty applied and cleared. A path id the activation's closure does not hold is 404 artifact_not_found
+    (mission_type_not_found for kind mission_type); a kind outside the path's enum is 422 activation_invalid with a
+    violation at the path. A mission type is denied like any kind (one kind model, IC-20; Q2, decision
+    DM-01M6RCXZ9HSHT4K3443YYZ8ZFC): it joins deactivated.mission_type, and a mission type a pack requires or locks is
+    409 artifact_required or artifact_locked, naming every requiring pack (a required one is judged as any kind, so an
+    override satisfies it). A cascading deactivate of a mission type walks the steps it holds as a cascading select does
+    (rule W20), and unselects what only it kept (rule W23). Stale ids are dropped on write (ADR-0059 amendment of
+    2026-11-06): the write first removes from the stored document every id the activation's closure no longer declares
+    (a pack upgrade removed it), in selected, deactivated and selected.mission_type, and lists them in dropped; such a
+    write is never a no-op, so it answers a new revision. A pack pinned to a version no pack of the closure holds is
+    dropped too (B1, decision DM-01M6RN5Y406SB4KA13QYMQ2P8J): the pin leaves packs and is listed in droppedPins, which
+    also makes a new revision. A path id the closure no longer holds is still 404 artifact_not_found and nothing is
+    dropped, even when the stored document still names it. An unknown pack is not dropped: the write is still 422
+    activation_invalid (unknown_pack), and only a replaceActivation recovers the document.
   tags:
   - Activation
   parameters:
