@@ -25,7 +25,7 @@
       "wp": null
     },
     "#637": {
-      "evidence_ref": "lane-a kitty/mission-adr-0082-graph-walk-slices-01M8A867-lane-a; PR #665",
+      "evidence_ref": "Landed on main via PR #665 (slice 2: PackGraph holds every pack-graph walk)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -33,7 +33,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP01"
     },
     "#638": {
