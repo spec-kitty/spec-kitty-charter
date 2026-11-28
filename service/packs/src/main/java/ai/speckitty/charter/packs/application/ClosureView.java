@@ -163,18 +163,14 @@ public record ClosureView(
         }
 
         /**
-         * The union floor (A1): the merged closure's when it was built and is sound, else computed with no override
-         * judged.
+         * The union floor (A1), always computed from the composed closure and its facts ({@link LayerMerge#floorOf}),
+         * never from the merge: it judges no layer override, so it is the same whether or not the merge was built, and
+         * what the impact check compares before and after a write cannot move because a merge was judged. The merged
+         * closure's own floor is restricted to its winners and so could differ only by an artifact held by a step that
+         * lost its contest; a preset item names an artifact kind, never an action, so it cannot name one and the two
+         * floors are equal for every merge that is built.
          */
-        synchronized RequiredFloor floor() {
-            return built != null && faults.isEmpty() ? built.closure().floor() : LayerMerge.floorOf(packs, facts);
-        }
-
-        /**
-         * The union floor computed with no override judged, whether or not the merge was built: what the impact
-         * check's notices compare, so building the merge never changes them.
-         */
-        RequiredFloor floorJudgingNoOverride() {
+        RequiredFloor floor() {
             return LayerMerge.floorOf(packs, facts);
         }
 
@@ -528,16 +524,6 @@ public record ClosureView(
      */
     public RequiredFloor mergedFloor() {
         return mergeInputs.floor();
-    }
-
-    /**
-     * The union floor computed with no layer override judged, whether or not this view's merge was built: what the
-     * impact check's notices compare before and after a write, so judging the merge never changes them (#639).
-     *
-     * @return the union floor, with no override judged
-     */
-    RequiredFloor floorJudgingNoOverride() {
-        return mergeInputs.floorJudgingNoOverride();
     }
 
     /**

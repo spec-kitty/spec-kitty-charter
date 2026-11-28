@@ -542,10 +542,10 @@ class ClosureViewMergedTest {
 
     @Test
     void theFloorTheNoticesCompareIsTheMergedFloorOfASoundMerge() {
-        // Review F3 and N2: the notices compare the floor judged with no override on both sides of a write, and that
-        // floor is the merged one for a merge that passes, so judging the after view's merge leaves the notices as
-        // they were. A preset item names an artifact kind, never an action, so it cannot name the one kind of held
-        // URN a sound merge leaves without a winner (a step of a mission type that lost its contest).
+        // Review F3 and N2: the notices compare the floor on both sides of a write, and it is the same whether or
+        // not the merge was judged, so judging the after view's merge leaves the notices as they were. A preset item
+        // names an artifact kind, never an action, so it cannot name the one kind of held URN a sound merge leaves
+        // without a winner (a step of a mission type that lost its contest).
         pack(
                 "org",
                 PackLevel.ORG,
@@ -565,12 +565,12 @@ class ClosureViewMergedTest {
                         List.of()));
         pack("project", PackLevel.PROJECT, List.of("org"), holding("directive:D"));
         ClosureView view = snapshot();
-        RequiredFloor unmerged = view.floorJudgingNoOverride();
+        RequiredFloor unmerged = view.mergedFloor();
 
         view.merged();
 
         assertThat(view.mergedFloor())
-                .as("the merged floor, now that the merge is built")
+                .as("the floor, now that the merge is built")
                 .isEqualTo(unmerged);
         assertThat(unmerged.requiredBy()).containsOnlyKeys(D, new Urn(NodeKind.DIRECTIVE, "E"));
     }

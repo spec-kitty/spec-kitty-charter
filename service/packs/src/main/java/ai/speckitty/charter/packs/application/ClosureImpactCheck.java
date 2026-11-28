@@ -79,7 +79,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
 
         static Force of(ClosureView view) {
             Set<String> floor = new TreeSet<>();
-            view.floorJudgingNoOverride().requiredBy().keySet().forEach(urn -> floor.add(urn.toString()));
+            view.mergedFloor().requiredBy().keySet().forEach(urn -> floor.add(urn.toString()));
             Set<String> locks = new TreeSet<>();
             for (Urn urn : view.holderOf().keySet()) {
                 if (view.isLocked(urn)) {
