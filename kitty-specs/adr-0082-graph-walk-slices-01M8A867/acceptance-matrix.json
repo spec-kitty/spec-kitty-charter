@@ -46,12 +46,12 @@
     },
     {
       "criterion_id": "FR-005",
-      "description": "Verify FR-005 is satisfied",
+      "description": "The walker reports rule first then subject in input order, and a phase with a violation stops later phases",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "ValidationWalkerTest, ClosureImpactCheckTest (PR #674); main 06cdfbe94, targeted run 2026-11-28 (exit 0) plus CI on each PR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-28T09:02:24.393930+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
