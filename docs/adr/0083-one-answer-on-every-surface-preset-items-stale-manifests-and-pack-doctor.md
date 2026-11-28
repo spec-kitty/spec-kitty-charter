@@ -3,7 +3,7 @@ title: "ADR-0083: One answer on every surface: preset items, stale manifests and
 description: "Registration and pack-doctor refuse an unheld or undeclared preset item and a stale manifest hash alike; pack-check becomes pack-doctor; #154 lands whole."
 doc_status: active
 updated: 2026-11-25T00:00:00Z
-decision_status: Accepted, with an amendment of decision 11 (2026-11-25, #651)
+decision_status: Accepted, with an amendment of decision 11 (2026-11-25, #651) and of decision 9 (2026-11-27, #632 item 3)
 decision_date: '2026-11-22'
 type: ADR
 kind: ADR
@@ -175,7 +175,8 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
    compose (`CompositionRules`) has no order to judge, so it gates `REFERENCES`. A preset contest, a preset-item fault or
    a case-only answer does not: it is reported beside `REFERENCES`' own faults. When `CLOSURE` is skipped, `REFERENCES`
    is skipped too, naming the same packs.
-9. **What `--full` does not judge yet** (R-s). The `specializes_from` cycle check (it needs the set's composed closure,
+9. **What `--full` does not judge yet** (R-s). (Amended 2026-11-27 and 2026-11-28 below: only the edge-index refusals
+   and the own-closure walk remain.) The `specializes_from` cycle check (it needs the set's composed closure,
    since siblings are not in each other's own closure, and `ImpactRelations.cyclesIn` moved into `PackGraph`), the
    relation checks (`ImpactRelations`), the edge-index refusals (`EdgeIndex`) and the own-closure walk
    (`OwnClosureWalk`: the fallback profile, the role pins and the profile enhancements) land in the domain factory with
@@ -183,10 +184,19 @@ Two more problems sat beside these. The checker had no way to repair a manifest 
    refusing each of them. The own-closure rules (`FallbackProfileRule`, `RolePinRule`, `ProfileEnhancementRule`) join
    `PackRulesets` beside `PresetItemRules` in #636 slice 3. #632 is referenced, not closed, for that remainder.
 
+   **Amendment 2026-11-27 (#632 item 3, operator ruling D3, FR-012):**
+   `--full` adds a second check, `RELATIONS`, after `REFERENCES`. Per root whose closure passed `REFERENCES`, over the
+   closure the root composes, it runs the factory's relation rules, the `specializes_from` cycle among them
+   (`PackRulesets.relationFaults`), with the registration's codes, a fault several roots find reported once. The
+   edge-index refusals and the own-closure walk stay with registration until #636 slice 7 gives pack-doctor the layer
+   merge and a profile reader. [Check packs](/guides/check-packs/#check-what-registration-checks) holds the
+   detail.
+
    **Amendment 2026-11-28 (built, slice 4, #639):** the relation checks and the edge-index refusals are built. They are
    judged by `RelationRules` and `EdgeIndexRules` in `PackRulesets` (the `RELATIONS` and `EDGE_INDEX` phases, run on
    `PackGraph#walk`); `ImpactRelations` and `OwnClosureWalk` are deleted, and the own-closure rules landed in slice 3.
-   What `--full` still does not judge is unchanged by this note.
+   What `--full` still does not judge is unchanged by this note; the 2026-11-27 amendment above moved the relation
+   checks and the `specializes_from` cycle into `--full`.
 10. **The report** (R-i, R-n). The report file is the same tree as the standard-output problem JSON, schema
     `contracts/charter/schemas/PackDoctorReport.yaml`, with `Problems.Problem` reused as it was. Standard output gains
     three required keys, `tool`, `inputs` and `summary`; the keys it had (`checks`, `packs`, `skipped`, `problems`) are
