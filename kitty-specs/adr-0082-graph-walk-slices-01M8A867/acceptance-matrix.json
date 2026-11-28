@@ -86,12 +86,12 @@
     },
     {
       "criterion_id": "FR-009",
-      "description": "Verify FR-009 is satisfied",
+      "description": "The edge-index refusals are relations-phase rules behind the relations gate",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "EdgeIndexTest, ClosureViewMergedTest, ClosureImpactCheckTest mixed-fault cases (PR #683); main 06cdfbe94, targeted run 2026-11-28 (exit 0) plus CI on each PR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-28T09:02:41.840576+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
