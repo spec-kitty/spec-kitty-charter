@@ -2,12 +2,12 @@
 ' Sources:
 '   service/kernel (kernel.domain): GraphWalker, Descent, CharterRefusal
 '   service/kernel (kernel.validation): Rule, ModularRuleset, Constraint, Rationale, Reason, ReasonCode, Severity, Location, Origin
-'   service/packs (packs.domain): ValidationWalker, PackGraph, GraphCheck, Ledger, ClosureFault
+'   service/packs (packs.domain): ValidationWalker, PackGraph, GraphCheck, Ledger, ClosureFault, ComposedRelations, MergedRelations, ScopedPolicies
 '   service/packs (packs.domain.graph): PackGraphNode, PackNode, ArtifactNode, EdgeNode, EdgeKind, Scope
-'   service/packs (packs.domain.rules): PackRulesets; (packs.application): PackRefusals
+'   service/packs (packs.domain.rules): PackRulesets, RelationRules, EdgeIndexRules; (packs.application): PackRefusals
 '   service/packs (packs.infra.api): PackRegistrationController
 '   service/pack-validation: PackVerdicts, PackCheck; service/pack-doctor: PackDoctorMain
-'   Decided: ADR-0082 (the domain owns every graph walk). Slices 1 to 3 (#614, #637, #638) are built; the type design is on architectural-patterns-applied.md.
+'   Decided: ADR-0082 (the domain owns every graph walk). Slices 1 to 4 (#614, #637, #638, #639) are built; the type design is on architectural-patterns-applied.md.
 ' Notation: a <<proposed>> class or member is part of the approved target design, not built yet; every other one exists.
 !include _style.iuml
 set separator none
@@ -117,13 +117,34 @@ package "packs.domain (owns HOW to walk)" {
   class Scope <<record>> {
     + roots
     + selection : Predicate<PackGraphNode>
+    + {static} of(roots) / allOf(closure)
     given by the caller; a selection filter only
   }
   class PackGraph {
     built over a closure's packs, one thread
     + {static} of(packs, factsOf)
+    + {static} ofPacks(closure)
     + walk(scope, mode, visitor)
     stable order, cycles, strongly connected groups
+  }
+  enum "PackGraph.Walk" as Walk {
+    PACKS
+    RELATIONS
+  }
+  class ComposedRelations {
+    the closure's placed enhances and overrides edges,\nthe specializes_from graph, the enhances cycles
+  }
+  class MergedRelations {
+    the closure under the layer merge, as the\nedge-index rules judge it
+  }
+  class ScopedPolicies {
+    the mutability policies, scoped as the\nmutability check scopes them
+  }
+  class RelationRules <<package-private>> {
+    selfOverride / conflicting / notPermitted\nlockedStepEnhanced / cycles / ungroundedEnhancer
+  }
+  class EdgeIndexRules <<package-private>> {
+    forbiddenLayerOverride / lockedStepEnhanced\nselfOverride / strayStepLink
   }
   class PackRulesets <<rule factory>> {
     + {static} content() : ModularRuleset<PackContents>
@@ -133,9 +154,13 @@ package "packs.domain (owns HOW to walk)" {
     ~ {static} ownClosure(closure, profiles, merge) : GraphCheck
     + {static} ownClosureOf(declaring) : Scope
     ~ {static} relations(ComposedRelations) : GraphCheck
-    ~ {static} edgeIndex(Supplier<MergedRelations>) : GraphCheck
-    + {static} composedClosure(relations, merged) : GraphCheck
-    + {static} composedClosure(relations, merged, closure, declaring, profiles, merge) : GraphCheck
+    + {static} relationsOf(packs, factsOf) : ComposedRelations
+    ~ {static} edgeIndex(Supplier<List<ClosureFault>>) : GraphCheck
+    + {static} edgeIndexFaults(MergedRelations) : List<ClosureFault>
+    + {static} closureFaults(packs, factsOf) : List<ClosureFault>
+    + {static} presetItemFaults(packs, factsOf) : List<ClosureFault>
+    + {static} composedClosure(relations, edgeIndexFaults) : GraphCheck
+    + {static} composedClosure(relations, edgeIndexFaults, closure, declaring, profiles, merge) : GraphCheck
     + {static} mutability(policies) <<proposed>>
     + {static} dependents() <<proposed>>
     + {static} activeSet(..) / selection(..) <<proposed>>
@@ -168,6 +193,8 @@ Ledger o-- ClosureFault
 ClosureFault --> Reason
 GraphCheck --> ValidationWalker : runs its phases
 GraphCheck --> PackGraph : walks
+GraphCheck --> Walk : walks in a mode
+PackGraph +-- Walk
 Rationale o-- Reason
 Reason --> ReasonCode
 ReasonCode --> Severity
@@ -185,6 +212,12 @@ PackGraph --> GraphWalker : drives (the one driver)
 PackRulesets ..> Scope : builds
 PackRulesets ..> GraphCheck : hands out
 PackRulesets ..> ModularRuleset : builds
+PackRulesets ..> RelationRules : relation phase
+PackRulesets ..> EdgeIndexRules : edge-index phase
+PackRulesets ..> ComposedRelations : builds (relationsOf)
+RelationRules ..> ComposedRelations : reads
+EdgeIndexRules ..> MergedRelations : reads
+ComposedRelations --> ScopedPolicies
 
 PackRegistrationController ..> PackRulesets : imports rules and scope
 PackDoctorMain ..> PackCheck
