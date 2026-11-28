@@ -15,7 +15,7 @@ import java.util.Set;
 
 /**
  * What the layer merge answers for one composed closure (FR-009 to FR-012): which version of each held artifact is in
- * force and every version a later level replaced. It is a value of {@link LayerMerge#merge}, so the records travel with
+ * force and every version a later level replaced. It is a value of {@link LayerMerge#attempt}, so the records travel with
  * the winners and no second channel can disagree (research R3).
  *
  * @param winners each held URN with the version in force, in the order the closure first holds the URNs

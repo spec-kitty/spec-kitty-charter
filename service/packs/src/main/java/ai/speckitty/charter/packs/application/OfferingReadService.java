@@ -425,7 +425,7 @@ public final class OfferingReadService {
             // (C37, ADR-0066 decision 8, FR-002), after the references so a reference refusal keeps its precedence.
             // Every member is judged; the first check that finds a fault answers. The one body pack-doctor's --full
             // runs too.
-            List<ClosureFault> phases2to4 = PackRulesets.references(composed, composed, factsOfMember);
+            List<ClosureFault> phases2to4 = PackRulesets.references(composed, factsOfMember);
             if (!phases2to4.isEmpty()) {
                 return Judged.refused(phases2to4);
             }

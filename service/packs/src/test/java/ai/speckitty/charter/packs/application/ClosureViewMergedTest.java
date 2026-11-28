@@ -3,6 +3,7 @@ package ai.speckitty.charter.packs.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackDependency;
@@ -26,7 +27,10 @@ import ai.speckitty.charter.packs.domain.PackCatalogRepository;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
+import ai.speckitty.charter.packs.domain.Preset;
+import ai.speckitty.charter.packs.domain.PresetItem;
 import ai.speckitty.charter.packs.domain.RequiredFloor;
+import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packs.fixtures.ClosureViews;
 import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
@@ -192,7 +196,9 @@ class ClosureViewMergedTest {
 
         assertThat(view.holderOf()).containsKey(D);
         assertThatThrownBy(view::merged).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
+            assertThat(refusal.code())
+                    .as("ruling Q-B: C21 answers the registration's code on the read")
+                    .isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
             assertThat(refusal.getMessage()).contains("directive:D", "locked");
         });
     }
@@ -220,7 +226,7 @@ class ClosureViewMergedTest {
         assertThatThrownBy(view::merged)
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED));
     }
 
     @Test
@@ -428,5 +434,144 @@ class ClosureViewMergedTest {
             assertThat(state.active()).isFalse();
             assertThat(state.reason()).isEqualTo(InForceStates.Reason.ENHANCED_TARGET_NOT_IN_FORCE);
         });
+    }
+
+    // ---- the edge-index faults of the merge, in the order the merge met them (#639, review F1, F6b) ---------------
+
+    private static PackCompositionFacts held(MutabilityPolicySource policy, List<Relationship> edges, String... held) {
+        return holding(policy, Map.of(), edges, held);
+    }
+
+    /** org-a locks L and holds L and the step M/s, in the order given; org-b holds M/s too; proj replaces L. */
+    private void aForbiddenOverrideBesideAnUnsettledStepContest(String... orgAHolds) {
+        pack(
+                "org-a",
+                PackLevel.ORG,
+                List.of(),
+                held(
+                        MutabilityPolicySource.builder()
+                                .entry(new Urn(NodeKind.DIRECTIVE, "L"), MutabilityLevel.LOCKED)
+                                .build(),
+                        List.of(),
+                        orgAHolds));
+        pack("org-b", PackLevel.ORG, List.of(), holding("action:M/s"));
+        pack("project", PackLevel.PROJECT, List.of("org-a"), holding("directive:L"));
+    }
+
+    @Test
+    void aForbiddenLayerOverrideTheMergeMeetsBeforeAnUnsettledStepContestIsTheAnswer() {
+        // Review F1: C21 refused at the first artifact that broke it, before the merge met a later step contest, so
+        // the fault the merge meets first stays the answer, whichever kind it is.
+        aForbiddenOverrideBesideAnUnsettledStepContest("directive:L", "action:M/s");
+
+        assertThatThrownBy(snapshot()::merged).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+            assertThat(refusal.getMessage()).contains("directive:L", "locked");
+        });
+    }
+
+    @Test
+    void theTwinAnUnsettledStepContestTheMergeMeetsFirstIsTheAnswer() {
+        aForbiddenOverrideBesideAnUnsettledStepContest("action:M/s", "directive:L");
+
+        assertThatThrownBy(snapshot()::merged).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT);
+            assertThat(refusal.getMessage()).contains("action:M/s");
+        });
+    }
+
+    @Test
+    void aMergeThatRefusesWithItsOwnCodeGivesTheWritesNoEdgeIndexFault() {
+        // Review F1: what registration and the impact-checked writes judge is the merged relations, never refused. A
+        // merge that refuses with a code no ruling covers (an unsettled step contest) has no edge-index fault there, so
+        // the write is judged as before the edge-index phase; the read still answers the merge's refusal. The compose
+        // keeps every action out of the sibling contest (contestableDefinitions), so only the merge judges this one.
+        // The fixture gives both packs the step as held; a stored pack holds a step only with its mission type
+        // (PackCompositionFacts.referable), so a sibling that merely declares the step's node holds nothing.
+        pack("org-a", PackLevel.ORG, List.of(), holding("action:M/s"));
+        pack("org-b", PackLevel.ORG, List.of(), holding("action:M/s"));
+        ClosureView view = snapshot();
+
+        assertThat(PackRulesets.edgeIndexFaults(view.mergedRelations())).isEmpty();
+        assertThatThrownBy(view::merged)
+                .isInstanceOfSatisfying(
+                        CharterRefusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_SIBLING_CONFLICT));
+    }
+
+    @Test
+    void aReadOfAClosureWithAForbiddenOverrideASelfOverrideAndAStrayStepLinkNamesThemInTheRulesOrder() {
+        // Review F6b: every edge-index fault in one refusal, rule by rule: C21, then the self-override, then the link.
+        pack(
+                "org",
+                PackLevel.ORG,
+                List.of(),
+                held(
+                        MutabilityPolicySource.builder()
+                                .entry(X, MutabilityLevel.LOCKED)
+                                .build(),
+                        List.of(edge("mission_type:rx", RelationType.REQUIRES, "action:rx/a")),
+                        "directive:X",
+                        "directive:D",
+                        "mission_type:rx",
+                        "action:rx/a",
+                        "action:rx/c"));
+        pack(
+                "project",
+                PackLevel.PROJECT,
+                List.of("org"),
+                held(
+                        MutabilityPolicySource.empty(),
+                        List.of(
+                                edge("org::mission_type:rx", RelationType.REQUIRES, "org::action:rx/c"),
+                                edge("directive:D", RelationType.OVERRIDES, "org::directive:D")),
+                        "directive:X",
+                        "directive:D"));
+
+        assertThatThrownBy(snapshot()::merged).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
+            assertThat(refusal.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+            assertThat(refusal.violations())
+                    .extracting(violation -> violation.code())
+                    .containsExactly(
+                            "override_not_permitted",
+                            "self_override",
+                            "pack_reference_artifact_missing",
+                            "mission_step_unlinked");
+        });
+    }
+
+    @Test
+    void theFloorTheNoticesCompareIsTheMergedFloorOfASoundMerge() {
+        // Review F3 and N2: the notices compare the floor judged with no override on both sides of a write, and that
+        // floor is the merged one for a merge that passes, so judging the after view's merge leaves the notices as
+        // they were. A preset item names an artifact kind, never an action, so it cannot name the one kind of held
+        // URN a sound merge leaves without a winner (a step of a mission type that lost its contest).
+        pack(
+                "org",
+                PackLevel.ORG,
+                List.of(),
+                CompositionFacts.of(
+                        List.of(),
+                        List.of("directive:D", "directive:E"),
+                        List.of(),
+                        List.of(),
+                        MutabilityPolicySource.empty(),
+                        List.of(new Preset(
+                                "team",
+                                "a preset",
+                                Map.of(
+                                        ArtifactKind.DIRECTIVE,
+                                        List.of(PresetItem.mustHave("D"), PresetItem.mustHave("E"))))),
+                        List.of()));
+        pack("project", PackLevel.PROJECT, List.of("org"), holding("directive:D"));
+        ClosureView view = snapshot();
+        RequiredFloor unmerged = view.floorJudgingNoOverride();
+
+        view.merged();
+
+        assertThat(view.mergedFloor())
+                .as("the merged floor, now that the merge is built")
+                .isEqualTo(unmerged);
+        assertThat(unmerged.requiredBy()).containsOnlyKeys(D, new Urn(NodeKind.DIRECTIVE, "E"));
     }
 }

@@ -1,4 +1,4 @@
-package ai.speckitty.charter.packs.application;
+package ai.speckitty.charter.packs.domain.rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
  * pack's own policy, as the {@code overrides} rule beside it judges ({@code judgedWithout}). Each case has a twin that
  * differs only in the level.
  */
-class ImpactRelationsEnhancementTest {
+class RelationRulesEnhancementTest {
 
     private final List<PackUnderResolution> packs = new ArrayList<>();
     private final Map<String, PackCompositionFacts> facts = new LinkedHashMap<>();
@@ -90,7 +90,7 @@ class ImpactRelationsEnhancementTest {
                 enhancerPolicy,
                 List.of("step_enhancement:spdd-plan"),
                 enhances("step_enhancement:spdd-plan", "base::action:software-dev/plan"));
-        return ImpactRelations.check(new OfferingReadService.ComposedClosure(packs, facts));
+        return RelationRulesTest.relationsOf(packs, facts);
     }
 
     @Test

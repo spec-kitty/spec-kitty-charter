@@ -2,34 +2,27 @@ package ai.speckitty.charter.packs.application;
 
 import ai.speckitty.charter.kernel.domain.ArtifactKind;
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.NodeKind;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.kernel.domain.PackQualifiedReference;
 import ai.speckitty.charter.kernel.domain.PackUlid;
-import ai.speckitty.charter.kernel.domain.RefusalCode;
-import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.packs.domain.ClosureFault;
-import ai.speckitty.charter.packs.domain.ClosureVerdict;
 import ai.speckitty.charter.packs.domain.ComponentResolver;
 import ai.speckitty.charter.packs.domain.ComposeResolver;
 import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.MergedClosure;
-import ai.speckitty.charter.packs.domain.MissionStepLinkRule;
+import ai.speckitty.charter.packs.domain.MergedRelations;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
-import ai.speckitty.charter.packs.domain.PackCompositionResolver.ResolvedReference;
 import ai.speckitty.charter.packs.domain.StepHolding;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,7 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -157,65 +149,28 @@ public final class EdgeIndex implements ComposeResolver {
     }
 
     /**
-     * What indexing a closure's edges answers (#556): the index, or every fault of its qualified endpoints, so a
-     * caller places each fault and never receives one refusal of several inside another.
-     *
-     * @param index the index; empty when an endpoint is at fault
-     * @param faults every qualified endpoint outside its writer's {@code depends_on} closure, pack by pack, in closure
-     *     order; empty when the closure indexes
-     */
-    public record Indexed(Optional<EdgeIndex> index, List<ClosureFault> faults) {
-
-        /**
-         * Checks the fields and copies the faults.
-         *
-         * @param index the index, when every endpoint resolves
-         * @param faults the faults, when one does not
-         */
-        public Indexed {
-            Objects.requireNonNull(index, "index");
-            faults = List.copyOf(Objects.requireNonNull(faults, "faults"));
-            if (index.isPresent() == !faults.isEmpty()) {
-                throw new IllegalArgumentException("a closure either indexes or has faults");
-            }
-        }
-
-        /**
-         * The index, or the closure edge's one refusal of every fault (#556, D1), as a read refuses it.
-         *
-         * @return the index
-         * @throws ai.speckitty.charter.kernel.domain.CharterRefusal every fault, when an endpoint is at fault
-         */
-        public EdgeIndex orRefuse() {
-            return index.orElseThrow(() -> PackRefusals.of(new ClosureVerdict(faults)));
-        }
-    }
-
-    /**
      * Indexes the edges of a composed closure. The holding pack of an edge's source is the pack whose facts carry the
      * edge, unless the source is written {@code <pack>::}: then it is that pack, and a bare target keeps meaning the
-     * writer's artifact. A {@code <pack>::} reference outside the writer's {@code depends_on} closure is a fault, as
-     * the compose judges it; that cannot happen after a successful compose.
+     * writer's artifact. A {@code <pack>::} reference outside the writer's {@code depends_on} closure is the compose's
+     * fault, which its references check refuses before any index is built ({@code PackRulesets.references}: every
+     * endpoint an edge writes is a reference of its pack's facts), so the index judges none; an edge whose qualified
+     * source the compose gives no pack is not indexed.
      *
      * @param closure the composed closure, in closure order
      * @param factsByConfiguredId the facts each pack was read with, by configured identifier
-     * @return the index, or every pack's faults
+     * @return the index
      */
-    public static Indexed of(List<PackUnderResolution> closure, Map<String, PackCompositionFacts> factsByConfiguredId) {
+    public static EdgeIndex of(
+            List<PackUnderResolution> closure, Map<String, PackCompositionFacts> factsByConfiguredId) {
         Objects.requireNonNull(factsByConfiguredId, "factsByConfiguredId");
         EdgeIndex index = new EdgeIndex(Objects.requireNonNull(closure, "closure"), Map.of(), Visits.NONE);
-        List<ClosureFault> faults = new ArrayList<>();
         for (PackUnderResolution pack : index.closure) {
-            List<Relationship> edges = factsByConfiguredId
+            factsByConfiguredId
                     .getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
-                    .edges();
-            List<ClosureFault> outside = index.qualifiedFaults(pack, edges);
-            faults.addAll(outside);
-            if (outside.isEmpty()) {
-                edges.forEach(edge -> index.add(pack, edge));
-            }
+                    .edges()
+                    .forEach(edge -> index.add(pack, edge));
         }
-        return faults.isEmpty() ? new Indexed(Optional.of(index), List.of()) : new Indexed(Optional.empty(), faults);
+        return index;
     }
 
     /**
@@ -224,18 +179,19 @@ public final class EdgeIndex implements ComposeResolver {
      * @return an index that holds nothing
      */
     public static EdgeIndex empty() {
-        return of(List.of(), Map.of()).orRefuse();
+        return of(List.of(), Map.of());
     }
 
     /**
      * The index as the layer merge sees it (FR-010, rules C19, C20 and C36): the edges that start at a losing place are
      * dropped, the edges that end at one end at the winner's place, and a losing place no longer holds its artifact.
      *
+     * It judges nothing: an {@code overrides} edge that, re-pointed to the winner, ends at its own source, and another
+     * pack's {@code requires} edge at a mission type in force that names no step of the type, are the edge-index rules'
+     * faults ({@code PackRulesets.edgeIndex}), judged on {@link #placedEdges()} of this index and of the merged one.
+     *
      * @param merged the layer merge of this index's closure
      * @return the merged index
-     * @throws CharterRefusal with {@code PACK_UNREADABLE} when an {@code overrides} edge, re-pointed to the winner, ends
-     *     at its own source, or when another pack's {@code requires} edge at a mission type in force names an action
-     *     that is no step of the type ({@value MissionStepLinkRule#CODE})
      */
     public EdgeIndex merged(MergedClosure merged) {
         return merged(merged, visits);
@@ -248,7 +204,6 @@ public final class EdgeIndex implements ComposeResolver {
      * @param merged the layer merge of this index's closure
      * @param visits the count
      * @return the merged index
-     * @throws CharterRefusal as {@link #merged(MergedClosure)} does
      */
     EdgeIndex merged(MergedClosure merged, Visits visits) {
         Objects.requireNonNull(merged, "merged");
@@ -267,9 +222,21 @@ public final class EdgeIndex implements ComposeResolver {
                 });
             }
         });
-        view.refuseSelfOverrides();
-        view.refuseStrayMissionTypeEdges(ownSteps());
         return view;
+    }
+
+    /**
+     * Every edge of the index at the place of its source, as the edge-index rules read it ({@link MergedRelations}):
+     * the holding pack, the source, the edge as the index holds it, the pack its target is placed in and whether
+     * another pack wrote it. Counts no visit: it is the rules' read, not a walk's.
+     *
+     * @return the edges, source by source, each source's in the order they were indexed
+     */
+    public List<MergedRelations.PlacedEdge> placedEdges() {
+        List<MergedRelations.PlacedEdge> placed = new ArrayList<>();
+        outgoing.forEach((place, edges) -> edges.forEach(edge -> placed.add(new MergedRelations.PlacedEdge(
+                place.pack(), place.urn(), edge, neighbour(edge).map(Place::pack), foreign.contains(edge)))));
+        return List.copyOf(placed);
     }
 
     private PackUnderResolution packOf(Place place) {
@@ -303,79 +270,6 @@ public final class EdgeIndex implements ComposeResolver {
                 Objects.requireNonNull(view.winners.get(judged(lost.get()).urn()), "a lost place has a winner");
         return edge.qualified(
                 edge.fromPack(), Optional.of(packOf(winner).descriptor().name()));
-    }
-
-    /** Refuses an {@code overrides} edge that, re-pointed to the winner, ends at its own source (C36, A12). */
-    private void refuseSelfOverrides() {
-        for (Map.Entry<Place, List<Relationship>> held : outgoing.entrySet()) {
-            for (Relationship edge : held.getValue()) {
-                if (edge.type() == RelationType.OVERRIDES
-                        && neighbour(edge).filter(held.getKey()::equals).isPresent()) {
-                    PackUnderResolution writer = packOf(held.getKey());
-                    throw new CharterRefusal(
-                            RefusalCode.PACK_UNREADABLE,
-                            "pack `" + writer.descriptor().name() + "` writes the overrides edge `" + edge.from()
-                                    + "` -> `" + edge.toReference()
-                                    + "`, which resolves to its own source in the merged closure (self_override)",
-                            List.of(refusalPack(writer)));
-                }
-            }
-        }
-    }
-
-    /**
-     * The steps of each mission type as its own packs link them: the targets of the {@code requires} edges each pack that
-     * holds the type writes from it. The load refuses a pack whose type file and own edges disagree
-     * ({@link MissionStepLinkRule}), so these are the steps the type files declare, and a merged type keeps the steps of
-     * every version it layers over.
-     */
-    private Map<Urn, Set<String>> ownSteps() {
-        Map<Urn, Set<String>> steps = new LinkedHashMap<>();
-        outgoing.forEach((place, edges) -> {
-            if (place.urn().kind() == NodeKind.MISSION_TYPE) {
-                for (Relationship edge : edges) {
-                    if (!foreign.contains(edge)
-                            && isStepLink(edge)
-                            && edge.toPack().isEmpty()) {
-                        steps.computeIfAbsent(place.urn(), ignored -> new LinkedHashSet<>())
-                                .add(edge.to().id());
-                    }
-                }
-            }
-        });
-        return steps;
-    }
-
-    /**
-     * Refuses a {@code requires} edge that another pack writes at a mission type in force and that names an action that
-     * is no step of the type (operator ruling DM-01M7B1YQR5ZKQPDW6DX64KPNRN). Each pack's own edges are judged when it
-     * loads; an edge written at another pack's type is judged here, once the merge has placed it.
-     */
-    private void refuseStrayMissionTypeEdges(Map<Urn, Set<String>> steps) {
-        outgoing.forEach((place, edges) -> {
-            if (place.urn().kind() != NodeKind.MISSION_TYPE) {
-                return;
-            }
-            Set<String> known = steps.getOrDefault(place.urn(), Set.of());
-            for (Relationship edge : edges) {
-                if (foreign.contains(edge)
-                        && isStepLink(edge)
-                        && !known.contains(edge.to().id())) {
-                    PackUnderResolution holder = packOf(place);
-                    throw new CharterRefusal(
-                            RefusalCode.PACK_UNREADABLE,
-                            "the mission type in force `" + place.urn() + "` of pack `"
-                                    + holder.descriptor().name()
-                                    + "` is required to `" + edge.to() + "` by another pack's edge, which names no"
-                                    + " step of the type (" + MissionStepLinkRule.CODE + ")",
-                            List.of(refusalPack(holder)));
-                }
-            }
-        });
-    }
-
-    private static boolean isStepLink(Relationship edge) {
-        return edge.type() == RelationType.REQUIRES && edge.to().kind() == NodeKind.ACTION;
     }
 
     @Override
@@ -649,25 +543,6 @@ public final class EdgeIndex implements ComposeResolver {
                 : Optional.empty();
     }
 
-    /**
-     * Every qualified endpoint a pack writes outside its {@code depends_on} closure, as the compose judges it (#556,
-     * FR-006).
-     */
-    private List<ClosureFault> qualifiedFaults(PackUnderResolution pack, List<Relationship> edges) {
-        List<ResolvedReference> qualified = edges.stream()
-                .flatMap(edge -> Stream.of(edge.fromReference(), edge.toReference()))
-                .filter(PackQualifiedReference::qualified)
-                .distinct()
-                .map(reference -> PackCompositionResolver.resolveReference(
-                        closure, pack.configured().id(), reference))
-                .toList();
-        return PackCompositionResolver.referenceFaults(
-                        closure, pack.descriptor().packId(), qualified)
-                .stream()
-                .map(PackCompositionResolver.Refusal::toFault)
-                .toList();
-    }
-
     private void add(PackUnderResolution writer, Relationship edge) {
         PackUlid writerId = idOf(writer);
         Optional<Place> source = edge.fromPack().isEmpty()
@@ -697,10 +572,5 @@ public final class EdgeIndex implements ComposeResolver {
 
     private static PackUlid idOf(PackUnderResolution pack) {
         return pack.descriptorId();
-    }
-
-    private static RefusalPack refusalPack(PackUnderResolution pack) {
-        return new RefusalPack(
-                pack.descriptorId(), pack.configured().id(), pack.descriptor().name());
     }
 }

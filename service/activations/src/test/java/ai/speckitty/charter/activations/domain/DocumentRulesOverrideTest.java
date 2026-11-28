@@ -313,7 +313,7 @@ class DocumentRulesOverrideTest {
 
     @Test
     void aRefusalOfTheFactsReachesTheWriteThatAddsADenyEntryOnARequiredArtifactAndNoOther() {
-        CharterRefusal merge = new CharterRefusal(RefusalCode.PACK_UNREADABLE, "A layer override is forbidden.");
+        CharterRefusal merge = new CharterRefusal(RefusalCode.OVERRIDE_NOT_PERMITTED, "A layer override is forbidden.");
         Facts facts = new Facts().refusing(merge);
         ActivationDocument required =
                 document().deactivated(DIRECTIVE, List.of("T")).build().document();

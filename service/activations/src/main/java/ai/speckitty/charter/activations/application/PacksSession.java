@@ -49,9 +49,10 @@ public interface PacksSession {
      * and {@link #inForce} never read the packs again (NFR-007); the merge is built on the first call.
      *
      * @return the merged closure, as values; empty for a session that holds no closure
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code pack_unreadable} when a layer override
-     *     breaks the owner's level or an {@code overrides} edge resolves to its own source, or with
-     *     {@code pack_sibling_conflict} when a sibling contest is not settled
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with every edge-index fault of the merge (#639):
+     *     {@code override_not_permitted} when a layer override breaks the owner's level, {@code self_override} when an
+     *     {@code overrides} edge resolves to its own source once re-pointed; or with {@code pack_sibling_conflict} when
+     *     a sibling contest is not settled
      */
     MergedSnapshot merged();
 

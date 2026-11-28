@@ -3,21 +3,37 @@ package ai.speckitty.charter.packs.domain;
 import ai.speckitty.charter.kernel.validation.Rationale;
 import ai.speckitty.charter.kernel.validation.Severity;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
- * The ledger of one walk (ADR-0082 decision 4): every fault the walker's phases found, in the order they report them.
+ * The ledger of one walk (ADR-0082 decision 4): every fault the walker's phases found, in the order they report them,
+ * and the phase whose violation stopped the walk, so a caller that places a phase's faults apart (the impact check's
+ * own-closure breaches, ADR-0082 slice 4) reads where they came from and never guesses it from their codes.
  *
  * @param faults the faults, phase by phase, each phase's in check order
+ * @param gate the name of the phase whose violation stopped the walk; empty when every phase ran
  */
-public record Ledger(List<ClosureFault> faults) {
+public record Ledger(List<ClosureFault> faults, Optional<String> gate) {
 
     /**
      * Copies the faults.
      *
      * @param faults the faults
+     * @param gate the phase that stopped the walk
      */
     public Ledger {
         faults = List.copyOf(faults);
+        Objects.requireNonNull(gate, "gate");
+    }
+
+    /**
+     * The ledger of a walk that no phase stopped.
+     *
+     * @param faults the faults
+     */
+    public Ledger(List<ClosureFault> faults) {
+        this(faults, Optional.empty());
     }
 
     /**

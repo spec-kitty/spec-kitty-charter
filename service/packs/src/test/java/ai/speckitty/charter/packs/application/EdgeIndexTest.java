@@ -1,10 +1,8 @@
 package ai.speckitty.charter.packs.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.CharterArtifact;
-import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.PackDependency;
 import ai.speckitty.charter.kernel.domain.PackDescriptor;
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
@@ -16,15 +14,16 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RelationType;
 import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.Urn;
-import ai.speckitty.charter.kernel.validation.Origin;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.LayerMerge;
 import ai.speckitty.charter.packs.domain.MergedClosure;
+import ai.speckitty.charter.packs.domain.MergedRelations;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
+import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
@@ -32,6 +31,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -120,11 +120,22 @@ class EdgeIndexTest {
         }
 
         EdgeIndex index() {
-            return indexed().orRefuse();
+            return EdgeIndex.of(packs, facts);
         }
 
-        EdgeIndex.Indexed indexed() {
-            return EdgeIndex.of(packs, facts);
+        /**
+         * The edge-index faults of the closure under its layer merge ({@link PackRulesets#edgeIndexFaults}): the rules
+         * judge the edges of this index and of the merged one.
+         */
+        List<ClosureFault> edgeIndexFaults() {
+            MergedClosure merge = mergedClosure();
+            return PackRulesets.edgeIndexFaults(MergedRelations.of(
+                    packs,
+                    pack -> facts.get(pack.configured().id().value()).edges(),
+                    new PerPackPolicy(Map.of()),
+                    merge,
+                    index().placedEdges(),
+                    index().merged(merge).placedEdges()));
         }
 
         /** The index under the layer merge of the closure, whose packs were added in merge order. */
@@ -146,7 +157,7 @@ class EdgeIndexTest {
 
         /** The layer merge of the closure, whose packs were added in merge order. */
         MergedClosure mergedClosure() {
-            return LayerMerge.merge(packs, facts, new PerPackPolicy(Map.of()));
+            return mergedOrRefused(LayerMerge.attempt(packs, facts, new PerPackPolicy(Map.of())));
         }
     }
 
@@ -280,51 +291,11 @@ class EdgeIndexTest {
     }
 
     @Test
-    void aQualifiedTargetOutsideTheWritersDependsOnClosureIsRefusedAsTheComposeRefusesIt() {
-        Closure closure = new Closure()
-                .pack("beta", List.of("tactic:T"))
-                .pack("alpha", List.of("directive:D"), edge("directive:D", RelationType.REQUIRES, "beta::tactic:T"));
-
-        assertThatThrownBy(closure::index)
-                .isInstanceOfSatisfying(
-                        CharterRefusal.class,
-                        refused -> assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING));
-    }
-
-    @Test
-    void everyPacksQualifiedEdgeFaultIsAFaultOfTheIndexNeverAnAggregatedRefusal() {
-        // #556, PR #618 review residual (operator ruling): the index answers its faults, so a caller places each one.
-        Closure closure = new Closure()
-                .pack("beta", List.of("tactic:T"))
-                .pack("alpha", List.of("directive:D"), edge("directive:D", RelationType.REQUIRES, "beta::tactic:T"))
-                .pack("gamma", List.of("directive:G"), edge("directive:G", RelationType.REQUIRES, "beta::tactic:T"));
-
-        EdgeIndex.Indexed indexed = closure.indexed();
-
-        assertThat(indexed.index()).as("no index of a closure with a fault").isEmpty();
-        assertThat(indexed.faults())
-                .as("every pack's fault, not only the first pack's, and none of them a refusal of several")
-                .extracting(ClosureFault::code)
-                .containsExactly(RefusalCode.PACK_REFERENCE_PACK_MISSING, RefusalCode.PACK_REFERENCE_PACK_MISSING);
-        assertThat(indexed.faults())
-                .noneSatisfy(fault -> assertThat(fault.detail()).contains("fault(s)"));
-    }
-
-    @Test
-    void anIndexedAnswerIsEitherAnIndexOrFaultsNeverBothNorNeither() {
-        ClosureFault fault =
-                ClosureFault.of(Origin.NONE, RefusalCode.PACK_REFERENCE_PACK_MISSING, "outside", List.of());
-
-        assertThatThrownBy(() -> new EdgeIndex.Indexed(java.util.Optional.empty(), List.of()))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new EdgeIndex.Indexed(java.util.Optional.of(EdgeIndex.empty()), List.of(fault)))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThat(new EdgeIndex.Indexed(java.util.Optional.of(EdgeIndex.empty()), List.of()).orRefuse())
-                .isNotNull();
-    }
-
-    @Test
-    void everyQualifiedEndpointOutsideTheClosureIsInTheOneRefusal() {
+    void aQualifiedEndpointOutsideTheWritersClosureIsTheReferencesChecksFaultAndTheIndexJudgesNone() {
+        // T020: every endpoint an edge writes is a reference of its pack's facts (the facts builder's edge facts), so
+        // the compose's references check refuses a qualified endpoint outside the writer's depends_on closure, every
+        // one of them, before an index is built; the index itself judges nothing.
+        List<String> written = List.of("directive:D", "beta::tactic:T", "beta::tactic:U");
         Closure closure = new Closure()
                 .pack("beta", List.of("tactic:T", "tactic:U"))
                 .pack(
@@ -332,15 +303,30 @@ class EdgeIndexTest {
                         List.of("directive:D"),
                         edge("directive:D", RelationType.REQUIRES, "beta::tactic:T"),
                         edge("directive:D", RelationType.REQUIRES, "beta::tactic:U"));
+        Map<String, PackCompositionFacts> facts = new HashMap<>(closure.facts);
+        PackCompositionFacts alpha = facts.get("alpha");
+        facts.put(
+                "alpha",
+                CompositionFacts.of(
+                        List.of(),
+                        alpha.held(),
+                        List.of(),
+                        written,
+                        MutabilityPolicySource.empty(),
+                        List.of(),
+                        alpha.edges()));
 
-        assertThatThrownBy(closure::index).isInstanceOfSatisfying(CharterRefusal.class, refused -> {
-            assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
-            assertThat(refused.getMessage()).endsWith("(2 fault(s); every one is in violations)");
-            assertThat(refused.violations())
-                    .extracting(violation -> violation.code())
-                    .containsExactly("pack_reference_pack_missing", "pack_reference_pack_missing");
-            assertThat(refused.violations().get(1).detail()).contains("beta::tactic:U");
-        });
+        assertThat(PackRulesets.references(
+                        closure.packs,
+                        pack -> Objects.requireNonNull(
+                                facts.get(pack.configured().id().value()), "facts")))
+                .extracting(ClosureFault::code, fault -> fault.detail().contains("beta::tactic:"))
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(RefusalCode.PACK_REFERENCE_PACK_MISSING, true),
+                        org.assertj.core.groups.Tuple.tuple(RefusalCode.PACK_REFERENCE_PACK_MISSING, true));
+        assertThat(closure.index().placedEdges())
+                .as("the index judges nothing: it holds the edges as written")
+                .hasSize(2);
     }
 
     @Test
@@ -476,21 +462,38 @@ class EdgeIndexTest {
     }
 
     @Test
-    void anotherPacksEdgeToAnActionThatIsNoStepOfTheTypeInForceRefusesTheMerge() {
+    void anotherPacksEdgeToAnActionThatIsNoStepOfTheTypeInForceIsTheReferencesFaultWithTheStepLinkViolation() {
+        // Ruling Q-C: pack_reference_artifact_missing, with the violation mission_step_unlinked.
         Closure closure = baseRdev()
                 .pack(
                         "project",
                         PackLevel.PROJECT,
                         List.of("org"),
                         List.of("directive:D"),
-                        edge("org::mission_type:rdev", RelationType.REQUIRES, "org::action:rdev/c"));
+                        edge("org::mission_type:rdev", RelationType.REQUIRES, "org::action:rdev/c"),
+                        edge("org::mission_type:rdev", RelationType.REQUIRES, "org::action:rdev/d"));
 
-        assertThatThrownBy(closure::merged).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-            assertThat(refusal.getMessage())
-                    .contains(
-                            "mission_type:rdev", "action:rdev/c", "names no step of the type", "mission_step_unlinked");
-        });
+        assertThat(closure.edgeIndexFaults())
+                .as("every stray link, not only the first")
+                .satisfiesExactly(
+                        first -> {
+                            assertThat(first.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+                            assertThat(first.detail())
+                                    .isEqualTo("the mission type in force `mission_type:rdev` of pack `org` is required"
+                                            + " to `action:rdev/c` by another pack's edge, which names no step of the"
+                                            + " type");
+                            assertThat(first.violations()).singleElement().satisfies(violation -> {
+                                assertThat(violation.code()).isEqualTo("mission_step_unlinked");
+                                assertThat(violation.detail()).isEqualTo(first.detail());
+                            });
+                            assertThat(first.packs())
+                                    .extracting(pack -> pack.packId().value())
+                                    .containsExactly("org");
+                        },
+                        second -> assertThat(second.detail()).contains("action:rdev/d"));
+        assertThat(closure.merged().holds(new EdgeIndex.Place(pack("org"), urn("mission_type:rdev"))))
+                .as("the merge itself judges nothing")
+                .isTrue();
     }
 
     @Test
@@ -514,7 +517,8 @@ class EdgeIndexTest {
     }
 
     @Test
-    void c36AnOverridesEdgeThatResolvesToItsOwnSourceRefusesTheMerge() {
+    void c36AnOverridesEdgeThatResolvesToItsOwnSourceOnceRePointedIsASelfOverride() {
+        // Ruling D2: self_override, judged on the re-pointed index, on the read as on the registration.
         Closure closure = new Closure()
                 .pack("org", PackLevel.ORG, List.of("directive:D"))
                 .pack(
@@ -524,10 +528,25 @@ class EdgeIndexTest {
                         List.of("directive:D"),
                         edge("directive:D", RelationType.OVERRIDES, "org::directive:D"));
 
-        assertThatThrownBy(closure::merged).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-            assertThat(refusal.getMessage()).contains("directive:D", "project", "self_override");
+        assertThat(closure.edgeIndexFaults()).singleElement().satisfies(fault -> {
+            assertThat(fault.code()).isEqualTo(RefusalCode.SELF_OVERRIDE);
+            assertThat(fault.detail())
+                    .isEqualTo("pack `project` writes the overrides edge `directive:D` -> `project::directive:D`,"
+                            + " which resolves to its own source in the merged closure");
+            assertThat(fault.packs()).extracting(pack -> pack.packId().value()).containsExactly("project");
+            assertThat(fault.violations()).isEmpty();
         });
+        assertThat(new Closure()
+                        .pack("org", PackLevel.ORG, List.of("directive:D"))
+                        .pack(
+                                "project",
+                                PackLevel.PROJECT,
+                                List.of("org"),
+                                List.of("directive:X"),
+                                edge("directive:X", RelationType.OVERRIDES, "org::directive:D"))
+                        .edgeIndexFaults())
+                .as("the twin: the edge starts at an artifact that replaces nothing")
+                .isEmpty();
     }
 
     @Test
@@ -841,5 +860,10 @@ class EdgeIndexTest {
         assertThat(merged.scopeOwners()).isSameAs(merged.scopeOwners());
         assertThat(merged.heldUrns()).isSameAs(merged.heldUrns());
         assertThat(merged.heldUrns()).containsExactly(urn("directive:D"), urn("mission_type:M"), urn("tactic:T"));
+    }
+
+    /** The merge, or the refusal it met, thrown, as a read meets it. */
+    private static MergedClosure mergedOrRefused(LayerMerge.Attempt attempt) {
+        return attempt.merged().orElseThrow(() -> attempt.refused().orElseThrow());
     }
 }

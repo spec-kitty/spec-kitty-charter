@@ -357,7 +357,8 @@ class EffectiveReadServiceTest {
         assertThatThrownBy(() -> service.activation(ID, null)).isSameAs(compose);
 
         packs.answer(closure(CLOSURE));
-        CharterRefusal merge = new CharterRefusal(RefusalCode.PACK_UNREADABLE, "a layer override breaks the level");
+        CharterRefusal merge =
+                new CharterRefusal(RefusalCode.OVERRIDE_NOT_PERMITTED, "a layer override breaks the level");
         packs.resolves(query -> {
             throw merge;
         });

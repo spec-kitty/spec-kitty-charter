@@ -570,20 +570,253 @@ class ClosureImpactCheckTest {
         assertThat(rig.filesOf(rig.packs.resolve("acme"))).isEqualTo(before);
     }
 
+    // ---- the edge-index rules on the write path (#639, ADR-0082 slice 4, rulings D2, Q-B, Q-C; #667) --------------
+
+    private static final String OVERRIDES_OPEN_ONE_COPY =
+            "{source: 'directive:OPEN_ONE', target: 'base::directive:OPEN_ONE', relation: overrides}";
+
+    /** Derived holds base's OPEN_ONE, a layer override, and writes an overrides edge from it onto base's copy. */
+    private static Packs overridingItsOwnLayerOverride(String extraDescriptor) {
+        return Packs.of(DERIVED_ID, "derived", "1.0.0", "project", DEPENDS_ON_BASE + extraDescriptor)
+                .directive("DERIVED_ONE", "Own")
+                .directive("OPEN_ONE", "Mine")
+                .file("relations.graph.yaml", graph(OVERRIDES_OPEN_ONE_COPY));
+    }
+
     @Test
-    void anOverridesEdgeOntoAnArtifactOfALayerAboveIsNotASelfOverride(@TempDir Path host) {
+    void anOverridesEdgeOntoTheCopyItsSourceReplacesIsASelfOverrideOnceTheMergeRePointsIt(@TempDir Path host) {
+        // Ruling D2 (C36, A12): the merge re-points the edge to derived's own OPEN_ONE, the version in force, so the
+        // edge ends at its own source. The read refuses it self_override, and so does the registration now.
         Rig rig = new Rig(host);
         rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
-        Packs overrides = derived("1.0.0")
+
+        CharterRefusal refused = refusal(
+                () -> rig.register("derived", rig.stage(overridingItsOwnLayerOverride("")), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.SELF_OVERRIDE);
+        assertThat(refused.getMessage())
+                .isEqualTo("In the closure rooted at derived: pack `derived` writes the overrides edge"
+                        + " `directive:OPEN_ONE` -> `derived::directive:OPEN_ONE`, which resolves to its own source"
+                        + " in the merged closure");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).containsExactly("derived");
+        assertThat(rig.packs.resolve("derived")).as("nothing was created").doesNotExist();
+
+        assertThat(rig.register(
+                                "derived",
+                                rig.stage(derived("1.0.0").file("relations.graph.yaml", overridesFrom("OPEN_ONE"))),
+                                Preconditions.none())
+                        .outcome())
+                .as("the control: the edge starts at derived's own DERIVED_ONE, which replaces nothing")
+                .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void aRegistrationWhoseClosureDeclaresAFallbackAndARePointedSelfOverrideAnswersTheSelfOverride(@TempDir Path host) {
+        // #667: the fallback rule reads the winner of its profile, which runs the merge. The edge-index rules judge the
+        // merge first, so the registration answers the fault's code, never the merge's pack_unreadable.
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
+        Packs fallingBack = overridingItsOwnLayerOverride(
+                        "mutability_policy: policy.yaml\nfallback_profile: generic-agent\n")
+                .file("policy.yaml", "schema_version: 1\nartifacts:\n  agent_profile:generic-agent: locked\n")
+                .file("agent_profiles/generic-agent.agent.yaml", """
+                        profile-id: generic-agent
+                        name: Generic agent
+                        role: generic
+                        purpose: Serve when no profile fits.
+                        specialization:
+                          primary-focus: Any work
+                        """);
+
+        CharterRefusal refused = refusal(() -> rig.register("derived", rig.stage(fallingBack), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.SELF_OVERRIDE);
+        assertThat(rig.packs.resolve("derived")).as("nothing was created").doesNotExist();
+    }
+
+    private static final String RX_BASE_ID = PackRegistrationServiceTest.ulid('0');
+    private static final String RX_EXT_ID = PackRegistrationServiceTest.ulid('1');
+
+    /** A pack whose mission type rx has the one step a, and whose graph declares the action rx/c besides. */
+    private static Packs rxBase() {
+        return Packs.of(RX_BASE_ID, "rxbase", "1.0.0", "org")
+                .file("missions/rx/rx.mission-type.yaml", """
+                        schema_version: '1.0'
+                        id: rx
+                        title: Rx
+                        description: A mission type.
+                        steps:
+                        - id: a
+                          title: A
+                        """)
+                .file("mission_type.graph.yaml", """
+                        schema_version: '1.0'
+                        generated_at: STATIC
+                        nodes:
+                        - {urn: 'action:rx/a', kind: action, label: a}
+                        - {urn: 'action:rx/c', kind: action, label: c}
+                        edges:
+                        - {source: 'mission_type:rx', target: 'action:rx/a', relation: requires}
+                        """);
+    }
+
+    /** A pack that links rxbase's mission type to one of its actions. */
+    private static Packs rxExt(String action) {
+        return Packs.of(
+                        RX_EXT_ID,
+                        "rxext",
+                        "1.0.0",
+                        "org",
+                        "depends_on:\n  - pack_id: " + RX_BASE_ID + "\n    range: '>=1.0'\n")
+                .file(
+                        "extra.graph.yaml",
+                        graph("{source: 'rxbase::mission_type:rx', target: 'rxbase::action:rx/" + action
+                                + "', relation: requires}"));
+    }
+
+    @Test
+    void anotherPacksStepLinkToAnActionThatIsNoStepOfTheTypeIsRefusedAsTheReadRefusesIt(@TempDir Path host) {
+        // Ruling Q-C: the stray link is the reference's fault, with the violation mission_step_unlinked.
+        Rig rig = new Rig(host);
+        rig.register("rxbase", rig.stage(rxBase()), Preconditions.none());
+
+        CharterRefusal refused = refusal(() -> rig.register("rxext", rig.stage(rxExt("c")), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+        assertThat(refused.getMessage())
+                .startsWith("In the closure rooted at rxext: ")
+                .contains("mission_type:rx", "action:rx/c", "names no step of the type");
+        assertThat(refused.violations()).singleElement().satisfies(violation -> {
+            assertThat(violation.code()).isEqualTo("mission_step_unlinked");
+            assertThat(violation.detail()).contains("mission_type:rx", "action:rx/c");
+        });
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).containsExactly("rxbase", "rxext");
+        assertThat(rig.packs.resolve("rxext")).as("nothing was created").doesNotExist();
+
+        assertThat(rig.register("rxext", rig.stage(rxExt("a")), Preconditions.none())
+                        .outcome())
+                .as("the control: the link names a step of the type")
+                .isEqualTo(Outcome.CREATED);
+    }
+
+    @Test
+    void aReplacedPackThatLocksAnArtifactALaterLevelReplacesIsRefusedForTheReplacingPacksClosure(@TempDir Path host) {
+        // Ruling Q-B (C21): only an open artifact may be replaced by a later level, on the write as on the read.
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
+        rig.register("derived", rig.stage(derived("1.0.0").directive("OPEN_ONE", "Mine")), Preconditions.none());
+        Packs locking = Packs.of(BASE_ID, "base", "2.0.0", "org", "mutability_policy: policy.yaml\n")
+                .file("policy.yaml", "schema_version: 1\nartifacts:\n  directive:OPEN_ONE: locked\n")
+                .directive("LOCKED_ONE", "Locked")
+                .directive("OPEN_ONE", "Open");
+        Map<String, String> before = rig.filesOf(rig.packs.resolve("base"));
+
+        CharterRefusal refused = refusal(() -> rig.register("base", rig.stage(locking), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+        assertThat(refused.getMessage())
+                .startsWith("In the closure rooted at derived: ")
+                .contains("replaces `directive:OPEN_ONE`", "locked", "only an open artifact may be replaced");
+        assertThat(refused.packs()).extracting(pack -> pack.packId().value()).containsExactly("derived", "base");
+        assertThat(rig.filesOf(rig.packs.resolve("base"))).as("nothing changed").isEqualTo(before);
+
+        assertThat(rig.register(
+                                "base",
+                                rig.stage(Packs.of(BASE_ID, "base", "2.0.0", "org", "mutability_policy: policy.yaml\n")
+                                        .file("policy.yaml", POLICY)
+                                        .directive("LOCKED_ONE", "Locked")
+                                        .directive("OPEN_ONE", "Open")),
+                                Preconditions.none())
+                        .outcome())
+                .as("the control: OPEN_ONE stays open")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void aClosureThatBreaksARelationRuleAndAnEdgeIndexRuleIsRefusedForTheRelationFaultAlone(@TempDir Path host) {
+        // FR-009: the relations gate the edge index, so a client reads the root cause and not its knock-on fault.
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
+        Packs mixed = Packs.of(DERIVED_ID, "derived", "1.0.0", "project", DEPENDS_ON_BASE)
+                .directive("DERIVED_ONE", "Own")
+                .directive("SECOND_ONE", "Second")
                 .directive("OPEN_ONE", "Mine")
                 .file(
                         "relations.graph.yaml",
                         graph(
-                                "{source: 'directive:OPEN_ONE', target: 'base::directive:OPEN_ONE', relation: overrides}"));
+                                OVERRIDES_OPEN_ONE_COPY,
+                                edge("DERIVED_ONE", "enhances", "SECOND_ONE"),
+                                edge("SECOND_ONE", "enhances", "DERIVED_ONE")));
 
-        assertThat(rig.register("derived", rig.stage(overrides), Preconditions.none())
+        CharterRefusal refused = refusal(() -> rig.register("derived", rig.stage(mixed), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.ENHANCES_CYCLE);
+        assertThat(refused.violations()).as("one fault, the relation rule's").isEmpty();
+        assertThat(refused.getMessage())
+                .startsWith("In the closure rooted at derived: ")
+                .doesNotContain("self");
+    }
+
+    @Test
+    void theCensusReportsTheRelationFaultAloneOfAClosureThatBreaksBoth(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("base", base("1.0.0"));
+        rig.install(
+                "derived",
+                overridingItsOwnLayerOverride("")
+                        .directive("SECOND_ONE", "Second")
+                        .file(
+                                "cycle.graph.yaml",
+                                graph(
+                                        edge("DERIVED_ONE", "enhances", "SECOND_ONE"),
+                                        edge("SECOND_ONE", "enhances", "DERIVED_ONE"))));
+
+        assertThat(rig.impact.census()).singleElement().satisfies(finding -> {
+            assertThat(finding.pack()).isEqualTo("derived");
+            assertThat(finding.code()).isEqualTo(RefusalCode.ENHANCES_CYCLE);
+            assertThat(finding.refusal().violations())
+                    .as("one fault, the relation rule's")
+                    .isEmpty();
+            assertThat(finding.detail()).endsWith(" (packs derived)");
+        });
+    }
+
+    @Test
+    void theCensusNamesAnEdgeIndexFaultWithItsOwnCodeAndThePacksItNames(@TempDir Path host) {
+        Rig rig = new Rig(host);
+        rig.install("rxbase", rxBase());
+        rig.install("rxext", rxExt("c"));
+
+        assertThat(rig.impact.census()).singleElement().satisfies(finding -> {
+            assertThat(finding.pack()).isEqualTo("rxext");
+            assertThat(finding.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
+            assertThat(finding.detail()).contains("names no step of the type").endsWith(" (packs rxbase)");
+            assertThat(finding.refusal().violations())
+                    .extracting(RefusalViolation::code)
+                    .containsExactly("mission_step_unlinked");
+        });
+    }
+
+    @Test
+    void aQualifiedEndpointOutsideTheWritersClosureIsTheComposesReferenceFaultBeforeAnyEdgeIndex(@TempDir Path host) {
+        // T020: every endpoint an edge writes is a reference of its pack's facts, so the compose's references check
+        // refuses a qualified endpoint outside the writer's depends_on closure, and the edge index never meets one.
+        Rig rig = new Rig(host);
+        rig.register("base", rig.stage(base("1.0.0")), Preconditions.none());
+        Packs outside = Packs.of(DERIVED_ID, "derived", "1.0.0", "project")
+                .directive("DERIVED_ONE", "Own")
+                .file("relations.graph.yaml", overridesFrom("OPEN_ONE"));
+
+        CharterRefusal refused = refusal(() -> rig.register("derived", rig.stage(outside), Preconditions.none()));
+
+        assertThat(refused.code()).isEqualTo(RefusalCode.PACK_REFERENCE_PACK_MISSING);
+        assertThat(refused.getMessage()).contains("base::directive:OPEN_ONE");
+        assertThat(rig.register(
+                                "derived",
+                                rig.stage(derived("1.0.0").file("relations.graph.yaml", overridesFrom("OPEN_ONE"))),
+                                Preconditions.none())
                         .outcome())
-                .as("the target is base's OPEN_ONE, a place other than the source's")
+                .as("the control: derived depends on base")
                 .isEqualTo(Outcome.CREATED);
     }
 

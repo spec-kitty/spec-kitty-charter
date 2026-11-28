@@ -514,7 +514,7 @@ class PacksAvailabilityTest {
                     List.of(),
                     Map.of(),
                     "sha256:merged",
-                    EdgeIndex.of(packs, facts).orRefuse(),
+                    EdgeIndex.of(packs, facts),
                     new ClosureView.MergeInputs(packs, facts),
                     closureFingerprint);
         }
@@ -823,11 +823,11 @@ class PacksAvailabilityTest {
         assertThatThrownBy(session::merged)
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED));
         assertThatThrownBy(() -> session.inForce(new InForceQuery(Set.of(), Set.of(), Optional.empty(), Map.of())))
                 .isInstanceOfSatisfying(
                         CharterRefusal.class,
-                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE));
+                        refusal -> assertThat(refusal.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED));
     }
 
     @Test
