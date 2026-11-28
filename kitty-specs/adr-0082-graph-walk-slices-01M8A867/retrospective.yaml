@@ -1,0 +1,159 @@
+schema_version: 1
+mission_id: 01M8A867YM81MH0B3DMZ7PF521
+mission_slug: adr-0082-graph-walk-slices-01M8A867
+mission_number:
+friendly_name: 'ADR-0082 slices 2 to 4: one graph walk, rules from the factory'
+mission_type: software-dev
+target_branch: feat/adr-0082-graph-walk-slices
+created_at: '2026-11-28T20:42:00.154962+00:00'
+created_by:
+  kind: human
+  id: cli
+  display: spec-kitty retrospect
+provenance:
+  kind: explicit_create
+  invoked_at: '2026-11-28T20:42:00.154962+00:00'
+  policy_resolved_from:
+    enabled: <default>
+    timing: <default>
+    failure_policy: <default>
+    write_record: <default>
+    generate_proposals: <default>
+    apply_proposals: <default>
+    permissions.write_record: <default>
+    permissions.inspect_mission_artifacts: <default>
+    permissions.propose_glossary_changes: <default>
+    permissions.propose_drg_changes: <default>
+    permissions.propose_doctrine_changes: <default>
+    permissions.apply_low_risk_changes: <default>
+    permissions.apply_structural_changes: <default>
+    precedence: <default>
+    generator: <default>
+  command: spec-kitty retrospect create
+policy_source:
+  enabled: <default>
+  timing: <default>
+  failure_policy: <default>
+  write_record: <default>
+  generate_proposals: <default>
+  apply_proposals: <default>
+  permissions.write_record: <default>
+  permissions.inspect_mission_artifacts: <default>
+  permissions.propose_glossary_changes: <default>
+  permissions.propose_drg_changes: <default>
+  permissions.propose_doctrine_changes: <default>
+  permissions.apply_low_risk_changes: <default>
+  permissions.apply_structural_changes: <default>
+  precedence: <default>
+  generator: <default>
+findings_status: has_findings
+helped:
+- id: h-001
+  category: process
+  summary: In-session adversarial review per WP caught a behaviour change no ruling covered before it shipped
+  evidence_refs:
+  - e-003
+  details: WP05 round 1 found that building the layer merge on writes let pack_sibling_conflict refuse a write (F1).
+    It was folded back to the old behaviour, and a second round confirmed the fold.
+- id: h-002
+  category: process
+  summary: Red-first tests plus deliberate breaks showed the new tests bite where they could not go red on old code
+  evidence_refs:
+  - e-003
+  - e-004
+- id: h-003
+  category: process
+  summary: Alternating five-run NFR-003 medians on a quiet machine replaced misleading single runs (+17%/+25% read as +5%/+8%)
+  evidence_refs:
+  - e-005
+- id: h-004
+  category: process
+  summary: Operator rulings went through the dispatcher and were recorded as mission decisions and on #636, so scope changes stayed traceable
+  evidence_refs:
+  - e-006
+not_helpful:
+- id: n-001
+  category: process
+  summary: The signed-commit rule conflicts with the CLI's unsigned commits; re-signing moved approval stamps off the lanes
+  evidence_refs:
+  - e-007
+  details: Consolidate's dry run then refused APPROVAL_STAMP_NOT_ON_LANE for five WPs (core #5197). Lanes a and e
+    still carry unsigned CLI commits that were pushed before re-signing.
+- id: n-002
+  category: process
+  summary: Landing rewrites on main forced 3-way merges with an explicit base on every following slice
+  evidence_refs:
+  - e-008
+  details: Each slice landed with operator landing changes (new overloads, guards, a members.put fix). The next
+    slice's branch had to merge main against the previous PR head rather than the real merge base.
+- id: n-003
+  category: process
+  summary: Concurrent Gradle runs by reviewer subagents during verifyAll caused a timeout that looked like a regression
+  evidence_refs:
+  - e-009
+- id: n-004
+  category: process
+  summary: The mission was planned with a stale local merge target; per-slice PRs to main have no consolidate path
+  evidence_refs:
+  - e-010
+gaps:
+- id: g-001
+  category: process
+  summary: No canonical closeout for missions delivered by per-slice PRs (core #7903); WPs reached done by a forced move under an operator ruling
+  evidence_refs:
+  - e-010
+- id: g-002
+  category: process
+  summary: A claim recorded by the generic actor 'user' leaves no implementer of record, so REVIEW_NOT_INDEPENDENT cannot be lifted (core #7902)
+  evidence_refs:
+  - e-011
+- id: g-003
+  category: process
+  summary: retrospect create reads and writes the repository root checkout for an unlanded lanes_with_coord mission, so it finds no artifacts
+  evidence_refs:
+  - e-001
+- id: g-004
+  category: implementation
+  summary: Review agents ran checks without :deployable:checkstyleTest; a 63-line test method reached verifyAll before it was caught
+  evidence_refs:
+  - e-009
+proposals: []
+evidence_refs:
+- id: e-001
+  kind: file
+  path: kitty-specs/adr-0082-graph-walk-slices-01M8A867/meta.json
+- id: e-002
+  kind: file
+  path: kitty-specs/adr-0082-graph-walk-slices-01M8A867/spec.md
+- id: e-003
+  kind: url
+  path: https://github.com/spec-kitty/spec-kitty-charter/pull/683#issuecomment-7212830042
+- id: e-004
+  kind: url
+  path: https://github.com/spec-kitty/spec-kitty-charter/pull/684#issuecomment-7216606555
+- id: e-005
+  kind: url
+  path: https://github.com/spec-kitty/spec-kitty-charter/pull/674
+- id: e-006
+  kind: file
+  path: kitty-specs/adr-0082-graph-walk-slices-01M8A867/decisions/DM-01M8DT4CGSQZBPJCC6K9CN3ZX4.md
+- id: e-007
+  kind: url
+  path: https://github.com/spec-kitty/spec-kitty/issues/5197
+- id: e-008
+  kind: url
+  path: https://github.com/spec-kitty/spec-kitty-charter/pull/683
+- id: e-009
+  kind: url
+  path: https://github.com/spec-kitty/spec-kitty-charter/pull/684
+- id: e-010
+  kind: url
+  path: https://github.com/spec-kitty/spec-kitty/issues/7903
+- id: e-011
+  kind: url
+  path: https://github.com/spec-kitty/spec-kitty/issues/7902
+- id: e-012
+  kind: file
+  path: kitty-specs/adr-0082-graph-walk-slices-01M8A867/mission-review.md
+generator_version: '1.0'
+provenance_history: []
