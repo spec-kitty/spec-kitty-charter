@@ -33,6 +33,18 @@ final class EdgeIndexRules {
     private EdgeIndexRules() {}
 
     /**
+     * Every edge-index fault of a merged closure, rule by rule in the order the merge met them: a forbidden layer
+     * override, a locked step enhanced, a self-override, then a stray step link.
+     */
+    static List<ClosureFault> faults(MergedRelations relations) {
+        List<ClosureFault> faults = new ArrayList<>(forbiddenLayerOverride(relations));
+        faults.addAll(lockedStepEnhanced(relations));
+        faults.addAll(selfOverride(relations));
+        faults.addAll(strayStepLink(relations));
+        return List.copyOf(faults);
+    }
+
+    /**
      * Every layer override the overridden artifact's level forbids (C21, FR-011, ADR-0063 D3): only an {@code open}
      * artifact may be replaced by a later level. The level is judged along the closure with the winning pack left out,
      * so the losers' own files and any pack that raised the level count, and a pack never blocks its own override

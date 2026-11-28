@@ -15,7 +15,6 @@ import ai.speckitty.charter.packs.domain.ComposedRelations;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.Ledger;
-import ai.speckitty.charter.packs.domain.MergedRelations;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackGraph;
@@ -432,7 +431,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
                     new ClosureRoots.Roots(List.of(pack.id())),
                     composed,
                     own,
-                    () -> own.get().mergedRelations(),
+                    () -> own.get().edgeIndexFaults(),
                     Optional.of(new Own(
                             pack.id(), () -> stored.descriptors().get(pack.id()), profiles, enhancementsOfCensus)));
             List<ClosureFault> faults = isOwnClosure(ledger)
@@ -465,7 +464,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
             ClosureRoots.Roots roots,
             OfferingReadService.ComposedClosure composed,
             Memo<ClosureView> view,
-            Supplier<MergedRelations> merged,
+            Supplier<List<ClosureFault>> merged,
             Optional<Own> own) {
         List<PackNode> nodes = new ArrayList<>();
         Map<PackIdentifier, PackUnderResolution> members = new LinkedHashMap<>();
@@ -707,7 +706,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
                 throw new ViewRefused(refused);
             }
         });
-        Supplier<MergedRelations> merged = () -> view.get().mergedRelations();
+        Supplier<List<ClosureFault>> merged = () -> view.get().edgeIndexFaults();
         Optional<OwnVerdict> verdict;
         try {
             Ledger ledger = closureLedger(roots, composed, view, merged, own);

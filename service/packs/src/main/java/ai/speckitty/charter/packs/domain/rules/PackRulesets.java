@@ -186,7 +186,9 @@ public final class PackRulesets {
         if (closure.isEmpty()) {
             return List.of();
         }
-        return referencesCheck(closure, factsOf).run(PackGraph.ofPacks(closure), Scope.allOf(closure)).faults();
+        return referencesCheck(closure, factsOf)
+                .run(PackGraph.ofPacks(closure), Scope.allOf(closure))
+                .faults();
     }
 
     /**
@@ -373,32 +375,26 @@ public final class PackRulesets {
      * ({@code override_not_permitted}), an {@code overrides} edge that the merge re-points to its own source (C36, A12,
      * {@code self_override}), and another pack's step link at a mission type in force that names no step of it
      * ({@code pack_reference_artifact_missing}, with the violation
-     * {@value ai.speckitty.charter.packs.domain.MissionStepLinkRule#CODE}). Every fault of each rule is reported. Each
-     * rule reads the subject, so the answer does not depend on the elements the walk hands over; the subject is read
-     * only when the phase runs, and once. The reads run it through {@link #edgeIndexFaults}, registration and every
-     * write after the relation rules ({@link #composedClosure}).
+     * {@value ai.speckitty.charter.packs.domain.MissionStepLinkRule#CODE}). Every fault of each rule is reported. The
+     * phase is closure-scoped by design: it is one {@code OnClose} check over the faults of the merged closure, which
+     * the rules read from their subject, so the answer does not depend on the elements the walk hands over (it ignores
+     * the nodes the walk reaches) and a scope narrower than the closure changes nothing. The faults are read only when
+     * the phase runs, and once. The reads run it through {@link #edgeIndexFaults}, registration and every write after
+     * the relation rules ({@link #composedClosure}), which hand it the faults the merge was already judged with.
      *
-     * @param merged the merged closure's subject, read when the phase runs
+     * @param faults the merged closure's edge-index faults, read when the phase runs
      * @return the check: the packs walk and the one phase
      */
-    static GraphCheck edgeIndex(Supplier<MergedRelations> merged) {
-        return new GraphCheck(PackGraph.Walk.PACKS, List.of(edgeIndexPhase(merged)));
+    static GraphCheck edgeIndex(Supplier<List<ClosureFault>> faults) {
+        return new GraphCheck(PackGraph.Walk.PACKS, List.of(edgeIndexPhase(faults)));
     }
 
-    private static ValidationWalker.Phase<PackGraphNode> edgeIndexPhase(Supplier<MergedRelations> merged) {
-        Objects.requireNonNull(merged, "merged");
-        Supplier<MergedRelations> once = once(merged);
+    private static ValidationWalker.Phase<PackGraphNode> edgeIndexPhase(Supplier<List<ClosureFault>> faults) {
+        Objects.requireNonNull(faults, "faults");
+        Supplier<List<ClosureFault>> once = once(faults);
         return new ValidationWalker.Phase<PackGraphNode>(
                 EDGE_INDEX_PHASE,
-                List.of(
-                        new ValidationWalker.OnClose<PackGraphNode>(
-                                "forbidden_layer_override", nodes -> EdgeIndexRules.forbiddenLayerOverride(once.get())),
-                        new ValidationWalker.OnClose<PackGraphNode>(
-                                "locked_step_enhanced", nodes -> EdgeIndexRules.lockedStepEnhanced(once.get())),
-                        new ValidationWalker.OnClose<PackGraphNode>(
-                                "self_override", nodes -> EdgeIndexRules.selfOverride(once.get())),
-                        new ValidationWalker.OnClose<PackGraphNode>(
-                                "stray_step_link", nodes -> EdgeIndexRules.strayStepLink(once.get()))));
+                List.of(new ValidationWalker.OnClose<PackGraphNode>("edge_index_rules", nodes -> once.get())));
     }
 
     /**
@@ -413,7 +409,7 @@ public final class PackRulesets {
         if (merged.packs().isEmpty()) {
             return List.of();
         }
-        return edgeIndex(() -> merged)
+        return edgeIndex(() -> EdgeIndexRules.faults(merged))
                 .run(PackGraph.ofPacks(merged.packs()), Scope.allOf(merged.packs()))
                 .faults();
     }
@@ -425,11 +421,14 @@ public final class PackRulesets {
      * over {@code Scope.of} the closure's roots.
      *
      * @param relations the closure's typed edges, placed
-     * @param merged the merged closure's subject, read only when the edge-index phase runs, and once
+     * @param edgeIndexFaults the faults the closure's merge was judged with ({@link #edgeIndexFaults}), read only when
+     *     the edge-index phase runs, and once
      * @return the check
      */
-    public static GraphCheck composedClosure(ComposedRelations relations, Supplier<MergedRelations> merged) {
-        return new GraphCheck(PackGraph.Walk.RELATIONS, List.of(relationsPhase(relations), edgeIndexPhase(merged)));
+    public static GraphCheck composedClosure(
+            ComposedRelations relations, Supplier<List<ClosureFault>> edgeIndexFaults) {
+        return new GraphCheck(
+                PackGraph.Walk.RELATIONS, List.of(relationsPhase(relations), edgeIndexPhase(edgeIndexFaults)));
     }
 
     /**
@@ -443,7 +442,8 @@ public final class PackRulesets {
      * own-closure phase runs, so a refusal to read either never displaces or hides a relation or edge-index fault.
      *
      * @param relations the closure's typed edges, placed
-     * @param merged the merged closure's subject, read only when the edge-index phase runs, and once
+     * @param edgeIndexFaults the faults the closure's merge was judged with ({@link #edgeIndexFaults}), read only when
+     *     the edge-index phase runs, and once
      * @param closure the declaring pack's own closure, as the reads compose it, read only when the own-closure phase
      *     runs, and once
      * @param declaring the declaring pack's descriptor with the write in place, read as the closure is
@@ -453,7 +453,7 @@ public final class PackRulesets {
      */
     public static GraphCheck composedClosure(
             ComposedRelations relations,
-            Supplier<MergedRelations> merged,
+            Supplier<List<ClosureFault>> edgeIndexFaults,
             Supplier<? extends ClosureFacts> closure,
             Supplier<PackDescriptor> declaring,
             ProfileReader profiles,
@@ -464,7 +464,7 @@ public final class PackRulesets {
                 PackGraph.Walk.RELATIONS,
                 List.of(
                         relationsPhase(relations),
-                        edgeIndexPhase(merged),
+                        edgeIndexPhase(edgeIndexFaults),
                         ownClosurePhase(closure, node -> descriptor.get(), profiles, merge)));
     }
 

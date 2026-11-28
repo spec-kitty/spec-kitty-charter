@@ -600,8 +600,10 @@ does not join.
 composition and the relation rules (C1–C16, C25, C27, C28, C34–C36) over every closure the pack joins and refuses `422`
 naming the packs (DIV-604). Since #639 the check also runs the layer merge's edge-index rules after the relation rules
 (C20's re-pointed self-override, C21, the inherited lock and another pack's stray step link), with the codes a read
-answers, as `422`; a floor that stops holding is reported as a notice (G20), not refused. The scope replaces the plan's
-one global compose.
+answers, as `422`; a floor that stops holding is reported as a notice (G20), not refused. The edge-index phase is
+closure-scoped by design: it judges the merged closure whole, whatever scope or nodes the walk hands over, and a write
+reads the faults the merge was already judged with, so the rules run once. The scope replaces the plan's one global
+compose.
 *Amended 2026-11-12 (slice C):* the check also judges the compose checks of a step enhancement.
 
 - C37 and the inherited lock (C22, C25) are closure-level: they are judged over every closure the pack joins, and refuse
