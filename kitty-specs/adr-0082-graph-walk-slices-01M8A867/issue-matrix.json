@@ -49,7 +49,7 @@
       "wp": "WP03"
     },
     "#639": {
-      "evidence_ref": "WP04+WP05 (relations phase, edge-index rules)",
+      "evidence_ref": "Landed on main via PR #683 (slice 4: relation and edge-index refusals as relations-phase rules; REFERENCES on a graph walk)",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -57,7 +57,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "fixed",
       "wp": "WP05"
     },
     "#648": {
