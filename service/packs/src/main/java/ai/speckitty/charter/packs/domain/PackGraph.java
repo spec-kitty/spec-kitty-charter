@@ -119,6 +119,29 @@ public final class PackGraph {
     }
 
     /**
+     * The pack graph of a composed closure whose walks read each pack's facts: the closure's packs in its merge order,
+     * each pack's facts the ones the closure was composed with.
+     *
+     * @param closure the composed closure, in merge order, each configured pack once
+     * @param factsOf each pack's composition facts
+     * @return the graph
+     * @throws IllegalArgumentException when two packs are configured under the same identifier
+     */
+    public static PackGraph ofPacks(
+            List<PackCompositionResolver.PackUnderResolution> closure,
+            Function<PackCompositionResolver.PackUnderResolution, PackCompositionFacts> factsOf) {
+        Objects.requireNonNull(closure, "closure");
+        Objects.requireNonNull(factsOf, "factsOf");
+        Map<PackIdentifier, PackCompositionResolver.PackUnderResolution> members = new LinkedHashMap<>();
+        closure.forEach(member -> members.put(member.configured().id(), member));
+        return of(
+                closure.stream()
+                        .map(member -> new PackNode(member.configured(), member.descriptor()))
+                        .toList(),
+                pack -> factsOf.apply(Objects.requireNonNull(members.get(pack), "a pack of the closure")));
+    }
+
+    /**
      * Walks the composition closure of the scope's roots (ADR-0082 decision 2): every pack whose {@code pack_id} the
      * closure holds, once each, in the graph's order. When packs share a {@code pack_id}, each is visited and the
      * closure follows what each of them builds on. After each pack come the elements the mode emits for it, in declared
