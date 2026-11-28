@@ -263,6 +263,10 @@ where they differ. [ADR-0082](/adr/0082-the-domain-owns-every-graph-walk-and-por
   A1): the floor is read only for the registration notices, and an activation's floor stays with the activations
   slice (`artifact_required`). `GraphWalk` and `Reachability` are not needed: the relation rules and the cycles (one
   fault per strongly connected group) are judged in `ImpactRelations`.
+
+  **Amendment 2026-11-28 (built, slice 4, #639):** `ImpactRelations` is deleted. The relation rules and the cycles are
+  judged by `RelationRules` in `PackRulesets`, one phase of the `RELATIONS` mode of `PackGraph#walk`, and the edge-index
+  refusals by `EdgeIndexRules`.
 - **Out of scope.** The activations gate (`requireComposable`, `prompt_slot_missing`) still answers its first fault
   (squad R10): it is the activations slice's own refusal, and it runs last, only when no closure check failed.
 - **Parity (D6).** No parity test is added here. open-packs' `scripts/ci/charter_service_check.py` already checks
