@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * {@code REFERENCES} on a pack-graph walk (#639, ADR-0082 slice 4, operator ruling 01M8DT4CGSQZBPJCC6K9CN3ZX4): the
- * packs walk hands the check every member the scope selects, in the graph's order, and the phase gate is the stop rule.
+ * packs walk hands the check every member the scope selects, in the closure's order, and the phase gate is the stop rule.
  * The closure holds a delegation fault ({@code alpha}, {@code delta}), a reference fault ({@code beta}) and an
  * enhancement target fault ({@code gamma}), each in a member of its own.
  */

@@ -17,7 +17,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -316,12 +315,22 @@ class RefusalHandlerTest {
         assertThat(refused.getBody().getCode()).isEqualTo(CharterRefusal.CodeEnum.PROMPT_SLOT_MISSING);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"getOffering", "listEffectiveArtifacts", "getEffectiveGraph"})
-    @DisplayName("the twin: prompt_slot_missing keeps its own status, 500, on a composing read")
-    void promptSlotMissingIsA500OnAComposingRead(String operation) throws NoSuchMethodException {
-        assertThat(refusedIn(operation, RefusalCode.PROMPT_SLOT_MISSING).getStatusCode())
-                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    @ParameterizedTest(name = "{1} on {0}")
+    @MethodSource("composingReadCodes")
+    @DisplayName("the twin: prompt_slot_missing and the two edge-index codes keep their own status, 500, on a"
+            + " composing read")
+    void aComposingReadKeepsTheImpactCodesAs500(String operation, RefusalCode code) throws NoSuchMethodException {
+        assertThat(refusedIn(operation, code).getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    /** Each composing read with each code an impact-checked write answers 422. */
+    private static Stream<Arguments> composingReadCodes() {
+        return Stream.of("getOffering", "listEffectiveArtifacts", "getEffectiveGraph")
+                .flatMap(operation -> Stream.of(
+                                RefusalCode.PROMPT_SLOT_MISSING,
+                                RefusalCode.SELF_OVERRIDE,
+                                RefusalCode.OVERRIDE_NOT_PERMITTED)
+                        .map(code -> Arguments.of(operation, code)));
     }
 
     @ParameterizedTest(name = "{1} on {0}")
