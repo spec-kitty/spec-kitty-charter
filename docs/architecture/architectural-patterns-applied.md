@@ -189,8 +189,9 @@ time; the judging differs. A Visitor lets one walk serve every check.
   element) or `STOP` (end the walk). The artifact walk's driver,
   `{@link ai.speckitty.charter.packs.application.GraphWalk#walk}`, still lives in the application layer (epic #636's
   checklist).
-- *Proposed (still open):* `PackGraph` absorbs the reverse index of `ClosureRoots` and keeps `EdgeIndex` as its index
-  (slice 4 and later). The kernel keeps only the visitor contract (`GraphWalker`, `Descent`); rules plug in as
+- *Built (slice 4):* `EdgeIndex` stays the index the edge-index phase reads, and the relation and edge-index rules plug
+  in as visitors (the slice 4 entry below). *Still open:* `PackGraph` absorbs the reverse index of `ClosureRoots`.
+  The kernel keeps only the visitor contract (`GraphWalker`, `Descent`); rules plug in as
   visitors and never drive. Rules use a pattern switch over `PackGraphNode`; there is no double dispatch.
 - *Built (slice 3, #638):* the node types are in `packs.domain.graph` (`PackGraphNode`, `PackNode`, `ArtifactNode`,
   `EdgeNode` with the edge as written, `EdgeKind`). `PackGraph.of(packs in merge order, factsOf)` builds the graph
