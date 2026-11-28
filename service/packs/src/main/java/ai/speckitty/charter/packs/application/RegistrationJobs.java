@@ -56,6 +56,8 @@ public final class RegistrationJobs implements AutoCloseable {
     /**
      * Uploads open at once, counted apart from the queue: as many as the queue has slots, so that the bodies arriving
      * are never more than the jobs that can be waiting for them (#418, F1). The next is refused with {@code Retry-After}.
+     * The limit counts open uploads; it reserves no slot. An upload admitted while the queue had room can find it full when
+     * its body is spooled, and is refused then (ADR-0065 D8, note of 2026-11-08; #677).
      */
     public static final int UPLOAD_LIMIT = RUNNING_LIMIT + WAITING_LIMIT;
 
@@ -695,7 +697,11 @@ public final class RegistrationJobs implements AutoCloseable {
         }
     }
 
-    /** Seconds a refused client waits: a registration takes a few seconds, and a slot frees as soon as one ends. */
+    /**
+     * Seconds a refused client waits: a registration takes a few seconds, and a slot frees just after a job's status
+     * ends, given back by its worker or, for a job not yet running, by whoever ended it. A client that reads an ended
+     * status and sends again at once may still be answered {@code 503} with {@code Retry-After} (#677).
+     */
     private static final int RETRY_AFTER_SECONDS = 5;
 
     private Optional<PackRevision> storedRevision(String packId) {
@@ -1012,9 +1018,13 @@ public final class RegistrationJobs implements AutoCloseable {
         }
 
         /**
-         * Gives the admission slot back, once. A job ended while its worker is still on an executor thread keeps the
-         * slot until the worker leaves {@code run()}, so the executor never holds more than two running and eight
-         * waiting however late a stager answers.
+         * Gives the admission slot back, once. A job ended while it is marked running keeps the slot until its worker
+         * leaves {@code run()}, so the counted jobs are never more than two running and eight waiting however late a
+         * stager answers. The slot is given back after the end is published.
+         *
+         * <p>The slot is freed before the worker's thread is, so the executor's own queue may briefly hold up to
+         * {@link RegistrationJobs#RUNNING_LIMIT} more jobs than are counted, one for each thread. That holds too for a worker that took a
+         * job ended or overdue before it was marked running (#681). The overshoot is brief and accepted (#677).
          */
         private void releaseSlot() {
             if (slotHeld.compareAndSet(true, false)) {

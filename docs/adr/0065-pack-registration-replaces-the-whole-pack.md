@@ -243,6 +243,8 @@ source kind's own flag, the `packId` grammar, body size, media type and magic by
 `PackRegistrationStatus` body.
 
 - A bounded executor runs the job: two running, eight waiting, and the next request is `503` with `Retry-After`.
+  The bound counts admitted jobs. The executor's own queue may briefly hold up to two more while their workers
+  leave the thread after giving the slot back (note of 2026-11-28, #677).
 - `GET /pack-registrations/{registrationId}` answers `pending`, `running`, `succeeded` (with the `PackRegistration`,
   the notices and a link to the pack) or `refused` (with the `Problem` a synchronous API would have answered). The
   `409` and `422` answers of D2 to D6 are the `problem` of a `refused` status, never a synchronous answer. The job
