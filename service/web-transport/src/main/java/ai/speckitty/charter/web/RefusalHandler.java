@@ -34,8 +34,8 @@ import org.springframework.web.servlet.HandlerMapping;
 
 /**
  * Maps domain refusals to the contract's {@code CharterRefusal} problem bodies, and a registration's unmet
- * {@code If-Match} precondition to a plain {@code Problem}. It runs before {@link ProblemHandler}, whose catch-all
- * would otherwise answer either as an unexpected failure.
+ * {@code If-Match} precondition to a plain {@code Problem}. It runs before {@link ProblemHandler}, whose catch-all would
+ * otherwise answer either as an unexpected failure.
  */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -215,9 +215,9 @@ public class RefusalHandler {
     }
 
     /**
-     * Answers an unmet registration precondition: a stale {@code If-Match} is {@code 412 Precondition Failed}, a
-     * missing one on a write that requires it {@code 428 Precondition Required}. Both are plain {@code Problem} bodies,
-     * not refusal codes (ADR-0020).
+     * Answers an unmet registration precondition: a stale {@code If-Match} is {@code 412 Precondition Failed}, a missing
+     * one on a write that requires it {@code 428 Precondition Required}. Both are plain {@code Problem} bodies, not
+     * refusal codes (ADR-0020).
      *
      * @param failure the precondition failure
      * @return the {@code application/problem+json} response
@@ -347,11 +347,11 @@ public class RefusalHandler {
      * The HTTP status a refusal code is answered with. A not-found is 404; a validation failure is 422; a conflict or
      * policy refusal is 409; the pack registration codes keep the status of their {@code x-refusal} entry (a refused
      * source or relation rule is 422, an unavailable source or a full disk 503, a timed-out registration 504); every
-     * other code is 500, {@code stale_input} and {@code internal_error} and the codes of the pack composition included:
-     * the request is fine and the configured packs are not. An operation that declares another status for a code in the
-     * per-operation statuses of the contract's x-refusal ({@link #STATUS_BY_OPERATION}) answers that one. The
-     * {@code 412}/{@code 428} preconditions are not refusal codes: {@link #precondition} answers those as plain problem
-     * bodies.
+     * other code is 500, {@code stale_input} and {@code internal_error} and the codes of the pack composition
+     * included: the request is fine and the configured packs are not. An operation that declares
+     * another status for a code in the per-operation statuses of the contract's x-refusal ({@link #STATUS_BY_OPERATION})
+     * answers that one. The {@code 412}/{@code 428} preconditions are not refusal codes: {@link #precondition} answers
+     * those as plain problem bodies.
      *
      * @param code the refusal code
      * @param operation the id of the operation that raised it, when known
