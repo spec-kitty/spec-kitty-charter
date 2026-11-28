@@ -44,13 +44,13 @@ get:
 
     The order of the refusals: an unknown activation is a 404 activation_not_found; then an id that no pack of the
     activation's closure holds as an agent_profile is a 404 artifact_not_found, judged before any If-None-Match, so a
-    name no pack holds is a 404 whatever the header says. A pack of the closure that is no longer configured, a
-    closure that cannot compose or merge, and a winner whose pack cannot read it are 500, with their code
-    (pack_unreadable also for a layer override that the mutability level forbids); so is an in-force enhancement of a
-    profile of the chain that would drop part of the profile it enhances, content stored before the rule that refuses
-    it at registration (profile_enhancement_drops_field, its packs member naming the enhancing pack first); stale_input
-    and internal_error may be retried. The answer is never partial. The body, the lineage and the governance are one
-    verified read against the source fingerprint, which the answer carries.
+    name no pack holds is a 404 whatever the header says. A pack of the closure that is no longer configured, a closure
+    that cannot compose or merge, and a winner whose pack cannot read it are 500, with their code
+    (override_not_permitted for a layer override that the mutability level forbids, #639); so is an in-force enhancement
+    of a profile of the chain that would drop part of the profile it enhances, content stored before the rule that
+    refuses it at registration (profile_enhancement_drops_field, its packs member naming the enhancing pack first);
+    stale_input and internal_error may be retried. The answer is never partial. The body, the lineage and the governance
+    are one verified read against the source fingerprint, which the answer carries.
 
     ETag identifies the representation the request names: it changes with the activation's revision, with any pack of
     the activation's closure, the packs of the profile's enhancers and ancestors among them, and with the profile and

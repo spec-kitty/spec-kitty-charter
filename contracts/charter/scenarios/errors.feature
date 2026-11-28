@@ -285,8 +285,11 @@ Feature: Failures outside the charter's refusals
     artifact_referenced, the code of the removal of an artifact another pack refers to). action_not_found is raised by
     the effective action context (ADR-0020 D7, PR C), which answers it with 404 when the merged closure holds no such
     action of the mission type. The selection read (selectAgentProfile) adds no_profile_matched and
-    fallback_profile_conflict, and raises role_pin_conflict too, for the asked role. unresolved_edge_endpoint and pack_level_mismatch are raised by no
-    operation. drg_schema_error, prompt_fragment_invalid, prompt_slot_malformed and prompt_slot_not_empty are
+    fallback_profile_conflict, and raises role_pin_conflict too, for the asked role. The composing reads raise
+    override_not_permitted and self_override too, with 500, for a layer override or a step enhancement the level
+    forbids and for an overrides edge the merge re-points onto its own source (#639).
+    unresolved_edge_endpoint and pack_level_mismatch are raised by no operation.
+    drg_schema_error, prompt_fragment_invalid, prompt_slot_malformed and prompt_slot_not_empty are
     violation codes of a refused registration (422 validation_failed, each at the pack-relative file of the fault),
     which the amended definition of raised counts: the whole-pack load that the registration runs refuses a graph that
     breaks its schema as drg_schema_error, a step enhancement or fragment that breaks a rule as

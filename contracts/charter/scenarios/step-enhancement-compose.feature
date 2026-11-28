@@ -9,9 +9,9 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
     type and declare the step) is pack_reference_artifact_missing.
   - The inherited lock (C22 and C25 as amended, OD-2 (A)): a step takes its mission type's mutability level, judged
     along the closure without the enhancing pack's own policy. An enhancement of a step whose mission type is locked
-    is refused: 422 override_not_permitted at registration and on the impact-checked writes, 500 pack_unreadable on
-    the reads, whatever the activation selects, as a forbidden layer override is (C21). An extendable mission type
-    takes the enhancement.
+    is refused override_not_permitted on every surface, every such enhancement named (operator ruling D2): 422 at
+    registration and on the impact-checked writes, 500 on the reads and the activation writes, whatever the
+    activation selects, as a forbidden layer override is (C21). An extendable mission type takes the enhancement.
 
   Every rule is shown on each surface with one failing fixture and one passing twin that differ only in the faulty
   part: the step the edge names, the pack its qualifier names, or the level of the mission type. The reads are the
@@ -751,7 +751,7 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
   # The inherited lock on the reads (OD-2 (A)): a closure-level refusal from the merge, as C21 is, so the activation
   # selects nothing and its reads still refuse, and so does a selection write, which resolves what is in force
   # before it stores. The twin differs only in the mission type's level.
-  Scenario: An enhancement of a step whose mission type is locked makes the activation reads unreadable, whatever is selected
+  Scenario: An enhancement of a step whose mission type is locked refuses the activation reads override_not_permitted, whatever is selected
     Given the built-in pack "base" with the file "pack.yaml":
       """
       pack_id: 01M6ZRYK0000000000000000BS
@@ -837,7 +837,7 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
       """
     When I GET "/activations/a-1/artifacts"
     Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the problem code is "override_not_permitted"
     And the field at "/detail" contains "step_enhancement:spdd-plan"
     And the field at "/detail" contains "mission_type:software-dev"
     And the field at "/detail" contains "locked"
@@ -845,13 +845,13 @@ Feature: A step enhancement composes only onto a held step whose mission type ta
     And the field at "/packs/1/packId" is "base"
     When I GET "/activations/a-1/skipped"
     Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the problem code is "override_not_permitted"
     When I PUT "/activations/a-1/selections/step_enhancement/spdd-plan" with the stored ETag and the body:
       """
       {}
       """
     Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the problem code is "override_not_permitted"
 
   # The inherited lock on the reads (OD-2 (A)): a closure-level refusal from the merge, as C21 is, so the activation
   # selects nothing and its reads still refuse, and so does a selection write, which resolves what is in force

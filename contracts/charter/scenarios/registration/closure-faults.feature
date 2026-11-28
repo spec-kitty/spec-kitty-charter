@@ -274,3 +274,299 @@ Feature: A registration names every fault of its closure in one refusal
     When I PUT "/packs/derived" with the archive "derived"
     And I poll the registration until it ends
     Then the field at "/state" is "succeeded"
+
+  # The edge-index faults (#639, ADR-0082 slice 4, operator rulings D2, Q-A, Q-B and Q-C): a registration refuses each
+  # fault of the closure's layer merge with the code a composing read of the closure answers, here as 422 (ADR-0056).
+  # The pack proj, at project level, holds acme's open directive C: a layer override.
+
+  Scenario: An overrides edge that the layer merge re-points to its own source is refused self_override, as the reads refuse it
+    Given the archive "proj" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: proj
+      pack_level: project
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0,<2'
+      """
+    And the archive "proj" holds the file "directives/C.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: C
+      title: C, replaced
+      intent: The project's version of acme's open directive
+      enforcement: required
+      """
+    And the archive "self" is a copy of the archive "proj"
+    And the archive "self" holds the file "relations.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'directive:C', target: 'acme::directive:C', relation: overrides}
+      """
+    When I PUT "/packs/proj" with the archive "self"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "self_override"
+    And the field at "/problem/detail" contains "In the closure rooted at proj"
+    And the field at "/problem/detail" contains "which resolves to its own source in the merged closure"
+    And the field at "/problem/packs/0/packId" is "proj"
+    When I GET "/packs/proj"
+    Then the response status is 404
+    When I PUT "/packs/proj" with the archive "proj"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+  # #667: the fallback rule reads its profile's winner, which runs the layer merge. The edge-index rules judge the merge
+  # first, so the registration answers the fault's 422, never the merge's 500 pack_unreadable.
+  Scenario: A pack whose closure declares a fallback profile and a re-pointed self-override is refused 422 self_override
+    Given the archive "falling-back" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: proj
+      pack_level: project
+      mutability_policy: policy.yaml
+      fallback_profile: generic-agent
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0,<2'
+      """
+    And the archive "falling-back" holds the file "policy.yaml":
+      """
+      schema_version: 1
+      artifacts:
+        agent_profile:generic-agent: locked
+      """
+    And the archive "falling-back" holds the file "agent_profiles/generic-agent.agent.yaml":
+      """
+      profile-id: generic-agent
+      name: Generic agent
+      role: generic
+      purpose: Serve when no profile fits the asked role.
+      specialization:
+        primary-focus: Any work
+      """
+    And the archive "falling-back" holds the file "directives/C.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: C
+      title: C, replaced
+      intent: The project's version of acme's open directive
+      enforcement: required
+      """
+    And the archive "sound" is a copy of the archive "falling-back"
+    And the archive "falling-back" holds the file "relations.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'directive:C', target: 'acme::directive:C', relation: overrides}
+      """
+    When I PUT "/packs/proj" with the archive "falling-back"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "self_override"
+    When I PUT "/packs/proj" with the archive "sound"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+  # Ruling Q-B (C21): only an open artifact may be replaced by a later level. A new version of acme that locks C, which
+  # proj replaces, is refused for proj's closure, as a read of that closure is.
+  Scenario: A pack that locks an artifact a later level replaces is refused override_not_permitted for the replacing pack's closure
+    Given the archive "proj" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: proj
+      pack_level: project
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0,<2'
+      """
+    And the archive "proj" holds the file "directives/C.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: C
+      title: C, replaced
+      intent: The project's version of acme's open directive
+      enforcement: required
+      """
+    And the archive "acme-locking" is a copy of the archive "acme"
+    And the archive "acme-locking" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+      pack_version: 1.1.0
+      parent_pack: null
+      name: acme
+      pack_level: org
+      mutability_policy: policy.yaml
+      """
+    And the archive "acme-open" is a copy of the archive "acme-locking"
+    And the archive "acme-locking" holds the file "policy.yaml":
+      """
+      schema_version: 1
+      artifacts:
+        directive:A: locked
+        directive:B: locked
+        directive:C: locked
+      """
+    When I PUT "/packs/proj" with the archive "proj"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/packs/acme" with the archive "acme-locking"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "override_not_permitted"
+    And the field at "/problem/detail" contains "In the closure rooted at proj"
+    And the field at "/problem/detail" contains "only an open artifact may be replaced by a later level"
+    And the field at "/problem/packs/0/packId" is "proj"
+    And the field at "/problem/packs/1/packId" is "acme"
+    When I PUT "/packs/acme" with the archive "acme-open"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+  # Ruling Q-C: another pack's requires edge at a mission type that names no step of it is the reference's fault, with
+  # the violation mission_step_unlinked, as a read of the closure refuses it.
+  Scenario: Another pack's requires edge at a mission type to an action that is no step of it is refused pack_reference_artifact_missing
+    Given the archive "rxbase" holds the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000RXB01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rxbase
+      pack_level: org
+      """
+    And the archive "rxbase" holds the file "missions/rx/rx.mission-type.yaml":
+      """
+      schema_version: '1.0'
+      id: rx
+      title: Rx
+      description: A mission type.
+      steps:
+      - id: a
+        title: A
+      """
+    And the archive "rxbase" holds the file "mission_type.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes:
+      - urn: action:rx/a
+        kind: action
+        label: a
+      - urn: action:rx/c
+        kind: action
+        label: c
+      edges:
+      - source: mission_type:rx
+        target: action:rx/a
+        relation: requires
+      """
+    And the archive "rxext" holds the file "pack.yaml":
+      """
+      pack_id: 01M7B19K0000000000000RXE01
+      pack_version: 1.0.0
+      parent_pack: null
+      name: rxext
+      pack_level: org
+      depends_on:
+      - pack_id: 01M7B19K0000000000000RXB01
+        range: '>=1.0'
+      """
+    And the archive "linked" is a copy of the archive "rxext"
+    And the archive "rxext" holds the file "extra.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'rxbase::mission_type:rx', target: 'rxbase::action:rx/c', relation: requires}
+      """
+    And the archive "linked" holds the file "extra.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'rxbase::mission_type:rx', target: 'rxbase::action:rx/a', relation: requires}
+      """
+    When I PUT "/packs/rxbase" with the archive "rxbase"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+    When I PUT "/packs/rxext" with the archive "rxext"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "pack_reference_artifact_missing"
+    And the field at "/problem/detail" contains "names no step of the type"
+    And the field at "/problem/violations/0/code" is "mission_step_unlinked"
+    And the field at "/problem/packs/0/packId" is "rxbase"
+    When I PUT "/packs/rxext" with the archive "linked"
+    And I poll the registration until it ends
+    Then the field at "/state" is "succeeded"
+
+  # FR-009: the relation rules gate the edge-index rules, so a closure that breaks both is refused for the relation
+  # fault alone, the root cause, and not for its knock-on fault.
+  Scenario: A pack that breaks a relation rule and an edge-index rule is refused for the relation fault alone
+    Given the archive "proj" holds the file "pack.yaml":
+      """
+      pack_id: 01M4P01D5TWB5FKZGNNQG3943T
+      pack_version: 1.0.0
+      parent_pack: null
+      name: proj
+      pack_level: project
+      depends_on:
+        - pack_id: 01M4P01D5TWB5FKZGNNQG3943R
+          range: '>=1.0,<2'
+      """
+    And the archive "proj" holds the file "directives/C.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: C
+      title: C, replaced
+      intent: The project's version of acme's open directive
+      enforcement: required
+      """
+    And the archive "proj" holds the file "directives/F.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: F
+      title: F
+      intent: A directive proj holds
+      enforcement: required
+      """
+    And the archive "proj" holds the file "directives/G.directive.yaml":
+      """
+      schema_version: '1.0'
+      id: G
+      title: G
+      intent: Another directive proj holds
+      enforcement: required
+      """
+    And the archive "proj" holds the file "relations.graph.yaml":
+      """
+      schema_version: '1.0'
+      generated_at: STATIC
+      nodes: []
+      edges:
+      - {source: 'directive:C', target: 'acme::directive:C', relation: overrides}
+      - {source: 'directive:F', target: 'directive:G', relation: enhances}
+      - {source: 'directive:G', target: 'directive:F', relation: enhances}
+      """
+    When I PUT "/packs/proj" with the archive "proj"
+    And I poll the registration until it ends
+    Then the field at "/state" is "refused"
+    And the field at "/problem/status" is 422
+    And the field at "/problem/code" is "enhances_cycle"
+    And the field at "/problem/violations" is absent

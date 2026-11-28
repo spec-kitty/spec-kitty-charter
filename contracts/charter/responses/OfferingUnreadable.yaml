@@ -2,25 +2,27 @@ description: >-
   A configured Charter Pack could not be read, the packs do not compose, the packs changed while the read was
   answered, or the service failed unexpectedly, refused with 500. The answer is never partial. The code names the
   reason: one of the eleven composition codes (pack_dependency_cycle, pack_dependency_unknown,
-  pack_dependency_out_of_range, pack_parent_unresolved, pack_level_violation, pack_name_conflict,
-  pack_duplicate_id, pack_sibling_conflict, pack_reference_unqualified, pack_reference_pack_missing,
-  pack_reference_artifact_missing, which also names a preset item or policy lock that gives a held artifact only by
-  case; putPackRelationship answers the last three with 422 instead, for the to it was given, and also for a preset
-  or lock mismatch),
-  when the configured packs cannot be served together, with the packs member naming the packs involved, the
-  violating pack first; or one of four others: pack_unreadable, when a configured pack's directory is missing, it
-  has no readable pack.yaml, its graph documents cannot all be read or an edge of one joins an
-  artifact to itself (violations lists each such fault, #617), a preset item names an id outside the id grammar, or a file the fingerprint covers
-  cannot be read or a directory cannot be listed; or the layer merge of the closure refuses: an override the
-  mutability level of the overridden artifact forbids (C21), an overrides cycle, an answer that does not settle (an
-  unstable answer), an overrides edge that ends at its own source (self_override), an enhancement of a step whose
-  mission type is locked (C37), or an overrides edge whose source is not of an activatable kind (#447), each naming
-  the artifact, the graph document or the packs involved; prompt_slot_missing, when a step enhancement in force fills
-  a slot the prompt in force of its step does not declare (C38, ADR-0066 decision 8), naming the enhancement, its pack,
-  the slot, the step and the pack that holds the prompt in force; stale_input, when the
-  packs or the project configuration changed while the read was answered, which may be retried; and
-  internal_error, an unexpected failure, which may be retried. A refusal carries no source
-  fingerprint header.
+  pack_dependency_out_of_range, pack_parent_unresolved, pack_level_violation, pack_name_conflict, pack_duplicate_id,
+  pack_sibling_conflict, pack_reference_unqualified, pack_reference_pack_missing, pack_reference_artifact_missing, which
+  also names a preset item or policy lock that gives a held artifact only by case; putPackRelationship answers the last
+  three with 422 instead, for the to it was given, and also for a preset or lock mismatch), when the configured packs
+  cannot be served together, with the packs member naming the packs involved, the violating pack first; or the layer
+  merge of the closure has a fault, which a read answers with the code a registration of the same closure answers
+  (operator ruling D2), every fault in one refusal: override_not_permitted, for a layer override the mutability level of
+  the overridden artifact forbids (C21), naming the winning pack, then the pack it replaces, or for an enhancement of a
+  step whose mission type is locked (C22, C25), naming the enhancing pack, then the pack that locks the mission type;
+  self_override, for an overrides edge the merge re-points to its own source (C36, A12); pack_reference_artifact_missing
+  with the violation mission_step_unlinked, for another pack's requires edge at a mission type in force that names no
+  step of the type; or one of four others: pack_unreadable, when a configured pack's directory is missing, it has no
+  readable pack.yaml, its graph documents cannot all be read or an edge of one joins an artifact to itself (violations
+  lists each such fault, #617), a preset item names an id outside the id grammar, or a file the fingerprint covers
+  cannot be read or a directory cannot be listed, or the merge cannot answer (an overrides cycle, an answer that does
+  not settle, an overrides edge whose source is not of an activatable kind, #447), each naming the artifact, the graph
+  document or the packs involved; prompt_slot_missing, when a step enhancement in force fills a slot the prompt in force
+  of its step does not declare (C38, ADR-0066 decision 8), naming the enhancement, its pack, the slot, the step and the
+  pack that holds the prompt in force; stale_input, when the packs or the project configuration changed while the read
+  was answered, which may be retried; and internal_error, an unexpected failure, which may be retried. A refusal carries
+  no source fingerprint header.
 headers:
   Charter-Contract-Version:
     $ref: ../headers/CharterContractVersion.yaml
@@ -51,6 +53,18 @@ content:
             - pointer: directive.graph.yaml#/edges/0/relation
               code: drg_schema_error
               detail: "directive.graph.yaml: unknown relation 'in_tension_with'"
+      self-override:
+        summary: An overrides edge that the layer merge re-points to its own source.
+        value:
+          title: Self override
+          status: 500
+          code: self_override
+          detail: >-
+            pack `team-pack` writes the overrides edge `directive:D` -> `team-pack::directive:D`, which resolves to
+            its own source in the merged closure
+          packs:
+            - packId: 01M4P01D5TWB5FKZGNNQG3943W
+              name: team-pack
       prompt-slot-missing:
         summary: A step enhancement in force fills a slot the prompt in force of its step does not declare.
         value:

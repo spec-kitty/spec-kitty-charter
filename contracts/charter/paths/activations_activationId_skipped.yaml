@@ -16,10 +16,11 @@ get:
     ETag follows the same rule as the effective list: it changes with the activation's revision and with any pack of the
     activation's closure, not with a pack outside it, and a matching If-None-Match is a 304 without a body.
 
-    An activationId outside the declared pattern is a 400 Problem without a code. An unknown activation is 404 activation_not_found. A closure that cannot compose or merge is 500, with its code:
-    pack_unreadable also for a layer override or an overrides edge that the mutability level of the overridden artifact
-    forbids (ADR-0063 D3) and for an overrides cycle among active artifacts; stale_input and internal_error may be
-    retried. The answer is never partial.
+    An activationId outside the declared pattern is a 400 Problem without a code. An unknown activation is 404
+    activation_not_found. A closure that cannot compose or merge is 500, with its code: override_not_permitted for a
+    layer override that the mutability level of the overridden artifact forbids (ADR-0063 D3, C21), self_override for an
+    overrides edge the layer merge re-points to its own source, and pack_unreadable for an overrides cycle among active
+    artifacts (#639); stale_input and internal_error may be retried. The answer is never partial.
   tags:
   - Activation
   parameters:

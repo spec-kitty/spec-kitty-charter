@@ -833,8 +833,10 @@ Feature: A pack's mission types are read with their steps and skeletons
 
   # FR-011 at compose: each pack's own links are judged at its load; a requires edge another pack writes at the mission
   # type in force is judged once the merge has placed it. Naming an action that is no step of the type, it makes every
-  # read of a closure that holds it refuse; the twin, naming a step of the type, is read.
-  Scenario: Another pack's requires edge at a mission type to an action that is no step of it makes the closure unreadable, beside the edge to its step
+  # read of a closure that holds it refuse pack_reference_artifact_missing, with the violation mission_step_unlinked
+  # (operator rulings D2 and Q-C), as a registration of the closure is refused; the twin, naming a step of the type,
+  # is read.
+  Scenario: Another pack's requires edge at a mission type to an action that is no step of it refuses the closure's reads, beside the edge to its step
     Given the org pack "rxbase" with the file "pack.yaml":
       """
       pack_id: 01M7B19K0000000000000RXB01
@@ -896,9 +898,11 @@ Feature: A pack's mission types are read with their steps and skeletons
       """
     When I GET "/activations/rx-1/graph"
     Then the response status is 500
-    And the problem code is "pack_unreadable"
+    And the problem code is "pack_reference_artifact_missing"
     And the field at "/detail" contains "mission_type:rx"
-    And the field at "/detail" contains "mission_step_unlinked"
+    And the field at "/detail" contains "action:rx/c"
+    And the field at "/violations/0/code" is "mission_step_unlinked"
+    And the field at "/packs/0/packId" is "rxbase"
     Given the org pack "rxext" with the file "extra.graph.yaml":
       """
       schema_version: '1.0'

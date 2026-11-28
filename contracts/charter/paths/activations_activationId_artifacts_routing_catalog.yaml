@@ -10,18 +10,17 @@ get:
     item carries no state, and its read under the activation (getEffectiveRoutingCatalog) answers the catalog with its
     state and reason. The effective list answers the same catalogs with their states (listEffectiveArtifacts with kind
     routing_catalog). The items are in id order and the list is unpaged, deliberately: a closure holds few catalogs. A
-    closure that holds no catalog answers 200 with an empty list.
-    Each item links effective-artifact, its read under this activation (getEffectiveRoutingCatalog), and artifact, the
-    pack-scoped read of the winning copy (getPackRoutingCatalog). _links holds self and up (the activation).
-    The order of the refusals: an unknown activation is a 404 activation_not_found, the only reason this read answers
-    404. A pack of the closure that is no longer configured, a closure that cannot compose or merge, and a winner's
-    pack that cannot be read are 500, with their code (pack_unreadable also for a layer override that the mutability
-    level forbids); stale_input and internal_error may be retried. The answer is never partial: the winners and the
-    catalogs are read against one source fingerprint, which the answer carries, and inputs that change between the two
-    are stale_input.
-    ETag identifies the representation: it changes with the activation's revision and with any pack of the
-    activation's closure, and it does not change when a pack outside the closure changes. A matching If-None-Match is a
-    304 without a body, and a tag of another representation never matches (RFC 9110 section 13.1.2).
+    closure that holds no catalog answers 200 with an empty list. Each item links effective-artifact, its read under
+    this activation (getEffectiveRoutingCatalog), and artifact, the pack-scoped read of the winning copy
+    (getPackRoutingCatalog). _links holds self and up (the activation). The order of the refusals: an unknown activation
+    is a 404 activation_not_found, the only reason this read answers 404. A pack of the closure that is no longer
+    configured, a closure that cannot compose or merge, and a winner's pack that cannot be read are 500, with their code
+    (override_not_permitted for a layer override that the mutability level forbids, #639); stale_input and
+    internal_error may be retried. The answer is never partial: the winners and the catalogs are read against one source
+    fingerprint, which the answer carries, and inputs that change between the two are stale_input. ETag identifies the
+    representation: it changes with the activation's revision and with any pack of the activation's closure, and it does
+    not change when a pack outside the closure changes. A matching If-None-Match is a 304 without a body, and a tag of
+    another representation never matches (RFC 9110 section 13.1.2).
   tags:
   - EffectiveRoutingCatalogs
   parameters:
