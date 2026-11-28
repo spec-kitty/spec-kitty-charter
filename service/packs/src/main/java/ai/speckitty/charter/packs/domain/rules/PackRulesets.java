@@ -418,7 +418,10 @@ public final class PackRulesets {
      * The checks of one composed closure that registration and every write judge (#639, ADR-0082 slice 4, FR-009,
      * FR-010): the relation rules ({@link #relations}), then, only when they pass, the edge-index rules
      * ({@link #edgeIndex}), one walker over the closure's relations walk; the phase gate is the relations gate. Run it
-     * over {@code Scope.of} the closure's roots.
+     * over {@code Scope.of} the closure's roots. The edge-index rules also judge a step enhancement of a locked mission
+     * type ({@code locked_step_enhanced}), which the relation rules judge too: the edge-index copy serves the reads
+     * ({@link #edgeIndexFaults}) and is not reached on a write, where the relation rules answer it first and gate this
+     * phase, so it is not a duplicate to delete.
      *
      * @param relations the closure's typed edges, placed
      * @param edgeIndexFaults the faults the closure's merge was judged with ({@link #edgeIndexFaults}), read only when
