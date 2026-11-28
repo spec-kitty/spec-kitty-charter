@@ -12,7 +12,10 @@ get:
     and the facts of its own winner (pack, level, state, reason). The effective profile resolves enhances and
     specializes_from (rulings D5, D6 and D7 of ADR-0078): each profile of the chain, the in-force specializes_from
     ancestors and the profile itself, is merged with its own in-force enhancers, then the chain is folded root to leaf by
-    per-field replacement, identity fields never merged and never inherited (EffectiveAgentProfileRead). lineage lists
+    per-field replacement, identity fields never merged and never inherited (EffectiveAgentProfileRead). A reference
+    the profile's directive, tactic, toolguide and styleguide references and operating procedures write is answered as
+    the answered profile's pack writes it (#673): one a field merged or inherited from another pack writes bare is
+    qualified with that pack, and one qualified with the answered profile's pack is bare. lineage lists
     the in-force ancestors, nearest first, each with its pack and depth, and is empty for a root. A profile that
     enhances another agent profile answers its own stored body, and _links.enhances is the read of the profile it
     enhances under this activation. _links.self is this request, with depth when the request sent one;

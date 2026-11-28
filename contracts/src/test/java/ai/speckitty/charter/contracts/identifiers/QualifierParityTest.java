@@ -48,6 +48,7 @@ class QualifierParityTest {
             Map.entry("charter/schemas/PackQualifiedReference.yaml", 1),
             Map.entry("charter/schemas/PackQualifiedReferenceWrite.yaml", 1),
             Map.entry("charter/schemas/VocabularyTerm.yaml", 1),
+            Map.entry("packs/schemas/agent-profile.schema.json", 5),
             Map.entry("packs/schemas/glossary.schema.json", 1),
             Map.entry("packs/schemas/graph-shard.schema.json", 3),
             Map.entry("packs/schemas/guard.schema.json", 1),

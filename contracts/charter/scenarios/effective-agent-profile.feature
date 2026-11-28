@@ -60,7 +60,7 @@ Feature: An agent profile is read under an activation, with its governance and t
       specialization:
         primary-focus: Java implementation
       directive-references:
-        - code: "034"
+        - code: DIRECTIVE_034
           name: Test-First Development
           rationale: Tests define the contract.
       """
@@ -201,7 +201,7 @@ Feature: An agent profile is read under an activation, with its governance and t
     And the field at "/agentProfile/profileId" is "java-jenny"
     And the field at "/agentProfile/name" is "Java Jenny"
     And the field at "/agentProfile/routingPriority" is 80
-    And the field at "/agentProfile/directiveReferences/0/code" is "034"
+    And the field at "/agentProfile/directiveReferences/0/code" is "DIRECTIVE_034"
     And the field at "/lineage" holds exactly 1 item
     And the field at "/lineage/0/id" is "implementer-ivan"
     And the field at "/lineage/0/pack" is "built-in"

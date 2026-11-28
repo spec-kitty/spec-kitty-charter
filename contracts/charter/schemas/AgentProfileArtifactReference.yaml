@@ -10,7 +10,9 @@ required:
 properties:
   id:
     type: string
-    description: The cited artifact's id.
+    description: >-
+      The cited artifact's id, as the profile writes it: bare when the artifact is in the profile's own pack,
+      `<pack>::<id>` when it is in another pack, or with the kind written out (`<pack>::tactic:<id>`).
     x-source:
       path: service/profiles/src/main/java/ai/speckitty/charter/profiles/domain/ArtifactReference.java
       symbol: ArtifactReference.id

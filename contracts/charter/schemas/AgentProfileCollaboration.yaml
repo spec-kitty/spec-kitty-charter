@@ -46,7 +46,9 @@ properties:
       symbol: Collaboration.outputArtifacts
   operatingProcedures:
     type: array
-    description: The procedures the profile follows, by name.
+    description: >-
+      The procedures the profile follows, each by its id: bare when the procedure is in the profile's own pack,
+      `<pack>::<id>` when it is in another pack, or with the kind written out (`<pack>::procedure:<id>`).
     items:
       type: string
     x-source:
