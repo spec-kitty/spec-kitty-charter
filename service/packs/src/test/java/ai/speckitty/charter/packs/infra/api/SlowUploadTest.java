@@ -154,10 +154,7 @@ class SlowUploadTest {
 
         for (int i = 0; i < uploads; i++) {
             release.get(i).countDown();
-            assertThat(responses
-                            .get(i)
-                            .get(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)
-                            .getStatus())
+            assertThat(statusOf(responses.get(i)))
                     .as("upload %d, accepted when its body was spooled", i)
                     .isEqualTo(202);
         }
@@ -183,12 +180,7 @@ class SlowUploadTest {
         int directoriesBefore = staged();
         byte[] body = gzip();
 
-        MockHttpServletResponse refused = mvc.perform(put("/api/v1/packs/acme")
-                        .contentType("application/gzip")
-                        .content(body)
-                        .with(request -> counting(request, body)))
-                .andReturn()
-                .getResponse();
+        MockHttpServletResponse refused = uploadCounting(body);
 
         assertThat(refused.getStatus())
                 .as("ten uploads are open: the eleventh is refused")
@@ -201,17 +193,8 @@ class SlowUploadTest {
         // releaseAll: the worst case of #677, on every run.
         room.hold();
         release.get(0).countDown();
-        assertThat(responses
-                        .get(0)
-                        .get(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)
-                        .getStatus())
-                .isEqualTo(202);
-        MockHttpServletResponse next = mvc.perform(put("/api/v1/packs/acme")
-                        .contentType("application/gzip")
-                        .content(body)
-                        .with(request -> counting(request, body)))
-                .andReturn()
-                .getResponse();
+        assertThat(statusOf(responses.get(0))).isEqualTo(202);
+        MockHttpServletResponse next = uploadCounting(body);
         assertThat(next.getStatus())
                 .as("the finished upload's place is free again")
                 .isEqualTo(202);
@@ -220,10 +203,7 @@ class SlowUploadTest {
 
         for (int i = 1; i < SLOTS - 1; i++) {
             release.get(i).countDown();
-            assertThat(responses
-                            .get(i)
-                            .get(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)
-                            .getStatus())
+            assertThat(statusOf(responses.get(i)))
                     .as("upload %d, accepted when its body was spooled", i)
                     .isEqualTo(202);
         }
@@ -234,10 +214,7 @@ class SlowUploadTest {
         room.releaseAll();
         Await.until("a slot of the queue to be free", this::queueHasRoom);
         release.get(SLOTS - 1).countDown();
-        assertThat(responses
-                        .get(SLOTS - 1)
-                        .get(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)
-                        .getStatus())
+        assertThat(statusOf(responses.get(SLOTS - 1)))
                 .as("the last upload, accepted once a job gave its slot back")
                 .isEqualTo(202);
     }
@@ -263,12 +240,7 @@ class SlowUploadTest {
         room.hold();
         byte[] body = gzip();
         for (int i = 0; i < SLOTS; i++) {
-            MockHttpServletResponse accepted = mvc.perform(put("/api/v1/packs/acme")
-                            .contentType("application/gzip")
-                            .content(body)
-                            .with(request -> counting(request, body)))
-                    .andReturn()
-                    .getResponse();
+            MockHttpServletResponse accepted = uploadCounting(body);
             assertThat(accepted.getStatus()).as("upload %d fills the queue", i).isEqualTo(202);
         }
         room.awaitHeld(RegistrationJobs.RUNNING_LIMIT);
@@ -307,17 +279,27 @@ class SlowUploadTest {
         int directoriesBefore = staged();
         byte[] body = gzip();
 
-        MockHttpServletResponse response = mvc.perform(put("/api/v1/packs/acme")
-                        .contentType("application/gzip")
-                        .content(body)
-                        .with(request -> counting(request, body)))
-                .andReturn()
-                .getResponse();
+        MockHttpServletResponse response = uploadCounting(body);
 
         assertThat(response.getStatus()).isEqualTo(503);
         assertThat(response.getHeader("Retry-After")).isNotNull();
         assertThat(requestBytesRead.get()).as("not a byte of the body was read").isZero();
         assertThat(staged()).isEqualTo(directoriesBefore);
+    }
+
+    /** The status a stalled upload was answered, once its body went on. */
+    private static int statusOf(Future<MockHttpServletResponse> response) throws Exception {
+        return response.get(Await.LIMIT.toSeconds(), TimeUnit.SECONDS).getStatus();
+    }
+
+    /** An upload whose whole body arrives at once, its bytes counted. */
+    private MockHttpServletResponse uploadCounting(byte[] body) throws Exception {
+        return mvc.perform(put("/api/v1/packs/acme")
+                        .contentType("application/gzip")
+                        .content(body)
+                        .with(request -> counting(request, body)))
+                .andReturn()
+                .getResponse();
     }
 
     /** Whether admission would take a new upload now: the queue has a free slot and the service is open. Takes none. */
