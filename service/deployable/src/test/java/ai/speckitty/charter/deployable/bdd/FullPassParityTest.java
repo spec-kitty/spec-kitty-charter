@@ -66,9 +66,12 @@ import tools.jackson.databind.json.JsonMapper;
  * {@code beta} is, so the cross-pack shapes of ruling R-z (a dependency's mention that a dependent holds by case alone)
  * are judged on both sides. The passing rows ({@link #passingRows()}) are shapes both accept.
  *
- * <p>The {@code specializes_from} cycle row is the remainder ruling R-s leaves (#636 slices 2-4 and 7, recorded in
- * ADR-0083): the registration refuses it {@code specialization_cycle}, and {@code --full} does not report it yet. When
- * #636 lands it in the domain factory, that row flips to a parity row.
+ * <p>The relation rows (#632 item 3, FR-012, SC-004) plant a {@code specializes_from} cycle, in one pack and across a
+ * dependency and its dependent, an override cycle, a self-override and a conflicting relation: {@code --full}'s
+ * {@code RELATIONS} judges each over the closure each root composes, with the factory's relation rules, as the
+ * registration's relations phase does. The remainder row is the edge-index rule that needs the layer merge, which
+ * pack-doctor does not compose: a self-override the merge re-points (#636 slice 7). The registration refuses it
+ * {@code self_override}, and {@code --full} does not report it.
  *
  * <p>Every planted pack carries an empty {@code drg/fragment.yaml}, which validate mode asks of an org pack and the
  * registration holds, so the only fault of a row is the one it plants.
@@ -90,6 +93,12 @@ class FullPassParityTest {
     private static final String EPSILON_ID = "01M4P01D5TWB5FKZGNNQG3943W";
 
     private static final String ZETA_ID = "01M4P01D5TWB5FKZGNNQG3943Y";
+
+    private static final String ETA_ID = "01M4P01D5TWB5FKZGNNQG3943Z";
+
+    private static final String THETA_ID = "01M4P01D5TWB5FKZGNNQG3943Q";
+
+    private static final String IOTA_ID = "01M4P01D5TWB5FKZGNNQG3943P";
 
     private static final String FRAGMENT = "nodes: []\nedges: []\n";
 
@@ -139,7 +148,7 @@ class FullPassParityTest {
      * @param base the pack the planted pack depends on; empty when it stands alone
      * @param code the code both answer; for the remainder row, the code the registration alone answers
      * @param violations the violation codes of a {@code validation_failed}, in order; empty for a closure code
-     * @param fullReports whether {@code --full} reports it: false only for the remainder ruling R-s leaves to #636
+     * @param fullReports whether {@code --full} reports it: false only for the remainder #636 slice 7 holds
      * @param doctorCodes the codes of pack-doctor's problems, in order: the registration's code alone, unless
      *     pack-doctor also reports a fault the registration halts before
      */
@@ -345,7 +354,14 @@ class FullPassParityTest {
 
     static Stream<Row> rows() {
         return Stream.of(
-                        referenceRows(), closureRows(), crossPackRows(), fileRows(), antiPatternRows(), remainderRows())
+                        referenceRows(),
+                        closureRows(),
+                        crossPackRows(),
+                        relationRows(),
+                        policyRows(),
+                        fileRows(),
+                        antiPatternRows(),
+                        remainderRows())
                 .flatMap(Stream::of);
     }
 
@@ -620,17 +636,146 @@ class FullPassParityTest {
         };
     }
 
-    private static Row[] remainderRows() {
+    /**
+     * eta, a base holding two agent profiles, java-jenny specializing from implementer-ivan: a lineage that ends. Its
+     * dependent alpha closes the cycle with the edge back, so only alpha's closure holds the cycle.
+     */
+    private static Base eta() {
+        Map<String, String> added = new LinkedHashMap<>(profiles());
+        added.put(
+                "lineage.graph.yaml",
+                lineage("{source: 'agent_profile:java-jenny', target:"
+                        + " 'agent_profile:implementer-ivan', relation: specializes_from}"));
+        return new Base("eta", base(ETA_ID, "eta", added));
+    }
+
+    private static Row relation(String fault, String code, String... edges) {
+        Map<String, String> added = new LinkedHashMap<>();
+        added.put("directives/B.directive.yaml", directive("B"));
+        added.put("relations.graph.yaml", lineage(edges));
+        return new Row(fault, acme(added), Optional.empty(), code, List.of(), true);
+    }
+
+    private static Row[] relationRows() {
         return new Row[] {
-            // The remainder ruling R-s leaves: the specializes_from cycle lands in the domain factory with #636
-            // (slices 2-4 and 7, ADR-0083). The registration refuses it; --full does not report it yet. When #636
-            // lands it, this row becomes a parity row (fullReports true).
+            // RELATIONS (#632 item 3, FR-012): the factory's relation rules over each root's composed closure.
             new Row(
-                    "KNOWN GAP #636, a pin and no coverage: a specializes_from cycle, refused by registration, not"
-                            + " reported by --full",
+                    "a specializes_from cycle",
                     acme(specializationCycle()),
                     Optional.empty(),
                     "specialization_cycle",
+                    List.of(),
+                    true),
+            new Row(
+                    "a specializes_from cycle a dependent closes across its dependency",
+                    alpha(
+                            ETA_ID,
+                            Map.of(
+                                    "lineage.graph.yaml",
+                                    lineage("{source: 'eta::agent_profile:implementer-ivan',"
+                                            + " target: 'eta::agent_profile:java-jenny',"
+                                            + " relation: specializes_from}"))),
+                    Optional.of(eta()),
+                    "specialization_cycle",
+                    List.of(),
+                    true),
+            relation(
+                    "an override cycle",
+                    "override_cycle",
+                    "{source: 'directive:A', target: 'directive:B', relation: overrides}",
+                    "{source: 'directive:B', target: 'directive:A', relation: overrides}"),
+            closure(
+                    "a self-override of a dependency's artifact",
+                    Map.of(
+                            "relations.graph.yaml",
+                            lineage("{source: 'beta::directive:SHARE', target: 'beta::directive:SHARE',"
+                                    + " relation: overrides}")),
+                    "self_override"),
+            relation(
+                    "an artifact that both enhances and overrides one target",
+                    "conflicting_relations",
+                    "{source: 'directive:A', target: 'directive:B', relation: enhances}",
+                    "{source: 'directive:A', target: 'directive:B', relation: overrides}"),
+            relation(
+                    "an enhances cycle",
+                    "enhances_cycle",
+                    "{source: 'directive:A', target: 'directive:B', relation: enhances}",
+                    "{source: 'directive:B', target: 'directive:A', relation: enhances}"),
+            relation(
+                    "an enhancer whose chain reaches no artifact that enhances nothing",
+                    "enhances_cycle",
+                    "{source: 'directive:A', target: 'directive:MISSING_ONE', relation: enhances}")
+        };
+    }
+
+    private static Row[] policyRows() {
+        return new Row[] {
+            // RELATIONS, the rules that read the mutability policy and the mission type's lock: pack-doctor reads them
+            // from the files, registration from the stored packs.
+            closureOf(
+                    "an override of a dependency's artifact that is not open",
+                    THETA_ID,
+                    theta(),
+                    lineage("{source: 'directive:MINE', target: 'theta::directive:D', relation: overrides}"),
+                    "override_not_permitted"),
+            new Row(
+                    "an enhancement of a step whose mission type its dependency locks",
+                    alpha(IOTA_ID, stepEnhancementOf("iota::action:software-dev/plan")),
+                    Optional.of(iota()),
+                    "override_not_permitted",
+                    List.of(),
+                    true)
+        };
+    }
+
+    /** alpha depending on a base, with the relations file given. */
+    private static Row closureOf(String fault, String baseId, Base base, String relations, String code) {
+        return new Row(
+                fault,
+                alpha(baseId, Map.of("relations.graph.yaml", relations)),
+                Optional.of(base),
+                code,
+                List.of(),
+                true);
+    }
+
+    /** theta, a base whose policy locks its directive D. */
+    private static Base theta() {
+        return new Base("theta", locking(base(THETA_ID, "theta", Map.of()), "directive:D"));
+    }
+
+    /** iota, beta's files under its own id and name, whose policy locks the mission type software-dev. */
+    private static Base iota() {
+        Map<String, String> files = new LinkedHashMap<>(beta());
+        files.put("pack.yaml", files.get("pack.yaml").replace(BETA_ID, IOTA_ID).replace("name: beta", "name: iota"));
+        return new Base("iota", locking(files, "mission_type:software-dev"));
+    }
+
+    /**
+     * alpha at the project level, holding beta's SHARE as its own, with an overrides edge onto beta's SHARE: the layer
+     * merge re-points the edge to its own source, which only the merge shows.
+     */
+    private static Map<String, String> repointedSelfOverride() {
+        Map<String, String> files = alpha(Map.of(
+                "directives/SHARE.directive.yaml",
+                directive("SHARE"),
+                "relations.graph.yaml",
+                lineage("{source: 'directive:SHARE', target: 'beta::directive:SHARE', relation: overrides}")));
+        files.put("pack.yaml", files.get("pack.yaml").replace("pack_level: org", "pack_level: project"));
+        return files;
+    }
+
+    private static Row[] remainderRows() {
+        return new Row[] {
+            // The remainder: the edge-index rules judge the layer merge, which pack-doctor does not compose (#636 slice
+            // 7). The registration refuses this self-override; --full does not report it. When pack-doctor composes
+            // the merge, this row becomes a parity row (fullReports true).
+            new Row(
+                    "KNOWN GAP #636 slice 7, a pin and no coverage: a self-override the layer merge re-points, refused"
+                            + " by registration, not reported by --full",
+                    repointedSelfOverride(),
+                    Optional.of(BETA),
+                    "self_override",
                     List.of(),
                     false)
         };
@@ -721,35 +866,44 @@ class FullPassParityTest {
         return locking(acme(Map.of()), urn);
     }
 
-    private static Map<String, String> specializationCycle() {
-        return Map.of(
-                "agent_profiles/implementer-ivan.agent.yaml",
-                """
+    /** Two agent profiles, implementer-ivan and java-jenny, by path. */
+    private static Map<String, String> profiles() {
+        return Map.of("agent_profiles/implementer-ivan.agent.yaml", """
                 profile-id: implementer-ivan
                 name: Implementer Ivan
                 role: implementer
                 purpose: Implement the work.
                 specialization:
                   primary-focus: Code
-                """,
-                "agent_profiles/java-jenny.agent.yaml",
-                """
+                """, "agent_profiles/java-jenny.agent.yaml", """
                 profile-id: java-jenny
                 name: Java Jenny
                 role: implementer
                 purpose: Implement the work in Java.
                 specialization:
                   primary-focus: Java
-                """,
-                "lineage.graph.yaml",
-                """
-                schema_version: '1.0'
-                generated_at: STATIC
-                nodes: []
-                edges:
-                - {source: 'agent_profile:java-jenny', target: 'agent_profile:implementer-ivan', relation: specializes_from}
-                - {source: 'agent_profile:implementer-ivan', target: 'agent_profile:java-jenny', relation: specializes_from}
                 """);
+    }
+
+    /** A graph file of the edges given, each a flow mapping. */
+    private static String lineage(String... edges) {
+        StringBuilder graph = new StringBuilder("schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n");
+        for (String edge : edges) {
+            graph.append("- ").append(edge).append('\n');
+        }
+        return graph.toString();
+    }
+
+    private static Map<String, String> specializationCycle() {
+        Map<String, String> files = new LinkedHashMap<>(profiles());
+        files.put(
+                "lineage.graph.yaml",
+                lineage(
+                        "{source: 'agent_profile:java-jenny', target: 'agent_profile:implementer-ivan',"
+                                + " relation: specializes_from}",
+                        "{source: 'agent_profile:implementer-ivan', target: 'agent_profile:java-jenny',"
+                                + " relation: specializes_from}"));
+        return files;
     }
 
     // ---- the two sides ------------------------------------------------------------------------------------------
@@ -947,10 +1101,10 @@ class FullPassParityTest {
         List<JsonNode> problems = new ArrayList<>();
         run.report().get("problems").forEach(problems::add);
         if (!row.fullReports()) {
-            // The known gap (#636), pinned: --full reports nothing for this row yet. This is no parity coverage; the
-            // row becomes a parity row when #636 lands it, and this branch goes.
+            // The known gap (#636 slice 7), pinned: --full reports nothing for this row yet. This is no parity
+            // coverage; the row becomes a parity row when pack-doctor composes the layer merge, and this branch goes.
             assertThat(problems)
-                    .as("--full does not judge %s yet (#636); registration refuses it %s", row, row.code())
+                    .as("--full does not judge %s yet (#636 slice 7); registration refuses it %s", row, row.code())
                     .isEmpty();
             assertThat(run.exit()).isEqualTo(0);
             return;

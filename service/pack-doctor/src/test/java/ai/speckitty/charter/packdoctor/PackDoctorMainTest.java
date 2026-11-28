@@ -94,7 +94,7 @@ class PackDoctorMainTest {
         Run run = run("--config-root", root.toString(), "--full");
 
         assertThat(run.exit()).as(run.out()).isEqualTo(PackDoctorMain.VALID);
-        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE", "REFERENCES");
+        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE", "REFERENCES", "RELATIONS");
         assertThat(run.report().get("problems")).isEmpty();
     }
 
@@ -162,7 +162,7 @@ class PackDoctorMainTest {
         Run run = run("--pack", beta.toString(), "--pack", alpha.toString(), "--full");
 
         assertThat(run.exit()).as(run.out() + run.err()).isEqualTo(PackDoctorMain.PROBLEMS);
-        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE", "REFERENCES");
+        assertThat(texts(run.report().get("checks"))).containsExactly("PACK", "CLOSURE", "REFERENCES", "RELATIONS");
         assertThat(run.codes())
                 .containsExactly(
                         "pack_reference_unqualified", "pack_reference_pack_missing", "pack_reference_artifact_missing");

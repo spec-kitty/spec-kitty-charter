@@ -48,6 +48,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -963,12 +964,12 @@ class PackSetCheckTest {
         }
 
         @Test
-        @DisplayName("charter's example packs: PACK, CLOSURE, then REFERENCES, and no fault")
+        @DisplayName("charter's example packs: PACK, CLOSURE, then REFERENCES and RELATIONS, and no fault")
         void theExamplePacksPassReferences() {
             PackSetVerdict verdict =
                     CHECK.checkFull(examples(ExamplePacks.names().toArray(String[]::new)));
 
-            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.RELATIONS);
             assertThat(verdict.faults()).isEmpty();
             assertThat(verdict.skipped()).isEmpty();
             assertThat(verdict.failing()).isFalse();
@@ -981,7 +982,7 @@ class PackSetCheckTest {
             PackSetVerdict verdict = CHECK.checkFull(alphaAndBeta(dir, "beta-pack::directive:NOPE"));
 
             assertThat(verdict.packs()).noneMatch(PackResult::failing);
-            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.RELATIONS);
             assertThat(verdict.faults()).singleElement().satisfies(fault -> {
                 assertThat(fault.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING);
                 assertThat(fault.packs()).extracting(RefusalPack::name).containsExactly("alpha-pack", "beta-pack");
@@ -1035,7 +1036,7 @@ class PackSetCheckTest {
 
             PackSetVerdict verdict = CHECK.checkFull(set);
 
-            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.RELATIONS);
             assertThat(codes(verdict.faults()))
                     .containsExactly(
                             RefusalCode.PRESET_ITEM_NOT_HELD.token(),
@@ -1051,7 +1052,7 @@ class PackSetCheckTest {
 
             PackSetVerdict verdict = CHECK.checkFull(set);
 
-            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.RELATIONS);
             assertThat(codes(verdict.faults()))
                     .containsExactly(
                             RefusalCode.PACK_SIBLING_CONFLICT.token(),
@@ -1076,7 +1077,7 @@ class PackSetCheckTest {
 
             PackSetVerdict verdict = CHECK.checkFull(set);
 
-            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.RELATIONS);
             assertThat(verdict.faults())
                     .satisfiesExactly(
                             caseOnly -> {
@@ -1090,7 +1091,7 @@ class PackSetCheckTest {
         }
 
         @Test
-        @DisplayName("a skipped CLOSURE skips REFERENCES too, naming the same packs")
+        @DisplayName("a skipped CLOSURE skips REFERENCES and RELATIONS too, naming the same packs")
         void aSkippedClosureSkipsReferences(@TempDir Path dir) {
             Path bare = PlantedPacks.copyOf("control-no-pack-level-on-a-bare-path", dir);
 
@@ -1100,14 +1101,17 @@ class PackSetCheckTest {
             assertThat(verdict.checks()).containsExactly(Check.PACK);
             assertThat(verdict.skipped())
                     .extracting(PackSetVerdict.Skip::check)
-                    .containsExactly(Check.CLOSURE, Check.REFERENCES);
+                    .containsExactly(Check.CLOSURE, Check.REFERENCES, Check.RELATIONS);
             assertThat(verdict.skipped().get(1).packs())
                     .isEqualTo(verdict.skipped().getFirst().packs());
             assertThat(verdict.skipped().get(1).reason()).startsWith("REFERENCES needs the composition facts");
+            assertThat(verdict.skipped().get(2).packs())
+                    .isEqualTo(verdict.skipped().getFirst().packs());
+            assertThat(verdict.skipped().get(2).reason()).startsWith("RELATIONS needs the composition facts");
         }
 
         @Test
-        @DisplayName("with the round trip: PACK, CLOSURE, REFERENCES, then ROUND_TRIP")
+        @DisplayName("with the round trip: PACK, CLOSURE, REFERENCES, RELATIONS, then ROUND_TRIP")
         void withTheRoundTripReferencesComesBeforeIt() {
             List<String> asked = new ArrayList<>();
             RoundTripping recorded = root -> {
@@ -1118,7 +1122,176 @@ class PackSetCheckTest {
             PackSetVerdict verdict = CHECK.checkFullWithRoundTrip(examples(ExamplePacks.BUILT_IN), recorded);
 
             assertThat(asked).containsExactly(ExamplePacks.BUILT_IN);
-            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.ROUND_TRIP);
+            assertThat(verdict.checks())
+                    .containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.RELATIONS, Check.ROUND_TRIP);
+        }
+    }
+
+    @Nested
+    @DisplayName("RELATIONS with --full (#632 item 3, FR-012)")
+    class Relations {
+
+        /** alpha's relations file, with the edges given. */
+        private static void relates(Path dir, String... edges) {
+            References.write(
+                    dir.resolve("alpha/relations.graph.yaml"),
+                    "schema_version: '1.0'\ngenerated_at: STATIC\nnodes: []\nedges:\n"
+                            + String.join(
+                                    "",
+                                    Arrays.stream(edges)
+                                            .map(edge -> "- " + edge + "\n")
+                                            .toList()));
+        }
+
+        /** An agent profile of the id, which alpha holds. */
+        private static void profile(Path dir, String id) {
+            References.write(dir.resolve("alpha/agent_profiles/" + id + ".agent.yaml"), """
+                    profile-id: %s
+                    name: %s
+                    role: implementer
+                    purpose: Implement the work.
+                    specialization:
+                      primary-focus: Code
+                    """.formatted(id, id));
+        }
+
+        @Test
+        @DisplayName("a specializes_from cycle: specialization_cycle, as registration refuses it, under RELATIONS")
+        void aSpecializationCycleIsFound(@TempDir Path dir) {
+            List<PackSetEntry> set = References.alphaAndBeta(dir, "beta-pack::directive:SHARE");
+            profile(dir, "implementer-ivan");
+            profile(dir, "java-jenny");
+            relates(
+                    dir,
+                    "{source: 'directive:MINE', target: 'beta-pack::directive:SHARE', relation: requires}",
+                    "{source: 'agent_profile:java-jenny', target: 'agent_profile:implementer-ivan',"
+                            + " relation: specializes_from}",
+                    "{source: 'agent_profile:implementer-ivan', target: 'agent_profile:java-jenny',"
+                            + " relation: specializes_from}");
+
+            PackSetVerdict verdict = CHECK.checkFull(set);
+
+            assertThat(verdict.packs()).noneMatch(PackResult::failing);
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.RELATIONS);
+            assertThat(verdict.faults()).singleElement().satisfies(fault -> {
+                assertThat(fault.code()).isEqualTo(RefusalCode.SPECIALIZATION_CYCLE);
+                assertThat(fault.detail()).contains("java-jenny -> implementer-ivan -> java-jenny");
+                assertThat(fault.packs()).extracting(RefusalPack::name).containsExactly("alpha-pack");
+            });
+            assertThat(verdict.failing()).isTrue();
+        }
+
+        @Test
+        @DisplayName(
+                "a reference fault stops RELATIONS for its root, as registration stops before its relations; another"
+                        + " root's relation fault follows REFERENCES' faults")
+        void aReferenceFaultStopsTheRootsRelations(@TempDir Path dir) {
+            List<PackSetEntry> set = References.alphaAndBeta(dir, "beta-pack::directive:NOPE");
+            References.write(dir.resolve("beta/directives/B.directive.yaml"), References.directive("B"));
+            References.write(dir.resolve("beta/relations.graph.yaml"), """
+                    schema_version: '1.0'
+                    generated_at: STATIC
+                    nodes: []
+                    edges:
+                    - {source: 'directive:SHARE', target: 'directive:B', relation: overrides}
+                    - {source: 'directive:B', target: 'directive:SHARE', relation: overrides}
+                    """);
+
+            PackSetVerdict verdict = CHECK.checkFull(set);
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.RELATIONS);
+            assertThat(verdict.faults())
+                    .as("alpha's root: its reference fault, and its relations are not judged; beta's root: the cycle")
+                    .satisfiesExactly(
+                            reference ->
+                                    assertThat(reference.code()).isEqualTo(RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING),
+                            cycle -> {
+                                assertThat(cycle.code()).isEqualTo(RefusalCode.OVERRIDE_CYCLE);
+                                assertThat(cycle.packs())
+                                        .extracting(RefusalPack::name)
+                                        .containsExactly("beta-pack");
+                            });
+        }
+
+        @Test
+        @DisplayName("every root's closure has a REFERENCES fault: RELATIONS judges no closure, so it is not listed")
+        void noRootPassingReferencesLeavesRelationsOut(@TempDir Path dir) {
+            List<PackSetEntry> set = References.alphaAndBeta(dir, "beta-pack::directive:NOPE");
+            References.write(dir.resolve("beta/relations.graph.yaml"), """
+                    schema_version: '1.0'
+                    generated_at: STATIC
+                    nodes: []
+                    edges:
+                    - {source: 'directive:SHARE', target: 'beta-pack::directive:GONE', relation: requires}
+                    """);
+
+            PackSetVerdict verdict = CHECK.checkFull(set);
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES);
+            assertThat(codes(verdict.faults()))
+                    .containsExactly(
+                            RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING.token(),
+                            RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING.token());
+            assertThat(verdict.skipped()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("a composition fault: RELATIONS does not run either (R-aa)")
+        void aCompositionFaultStopsRelations(@TempDir Path dir) {
+            PackSetEntry alpha =
+                    References.alphaAndBeta(dir, "beta-pack::directive:SHARE").get(1);
+            relates(
+                    dir,
+                    "{source: 'beta-pack::directive:SHARE', target: 'beta-pack::directive:SHARE',"
+                            + " relation: overrides}");
+
+            PackSetVerdict verdict = CHECK.checkFull(List.of(alpha));
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE);
+            assertThat(codes(verdict.faults())).containsExactly(RefusalCode.PACK_DEPENDENCY_UNKNOWN.token());
+            assertThat(verdict.skipped()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("a preset-item fault does not stop RELATIONS: it stands beside the specialization cycle, as beside"
+                + " REFERENCES' faults (R-aa)")
+        void aPresetFaultStandsBesideRelations(@TempDir Path dir) {
+            Path base = ExamplePacks.copyOf(ExamplePacks.ORG, dir);
+            rewrite(
+                    base.resolve("presets/spdd.yaml"),
+                    text -> text.replace("  - id: issue-triage\n", "  - id: issue-triage-gone\n"));
+            References.write(base.resolve("relations.graph.yaml"), """
+                    schema_version: '1.0'
+                    generated_at: STATIC
+                    nodes: []
+                    edges:
+                    - {source: 'agent_profile:reviewer-rita', target: 'agent_profile:human-operator', relation: specializes_from}
+                    - {source: 'agent_profile:human-operator', target: 'agent_profile:reviewer-rita', relation: specializes_from}
+                    """);
+            ManifestStamps.stamp(base, ExamplePacks.ORG);
+
+            PackSetVerdict verdict = CHECK.checkFull(
+                    List.of(example(ExamplePacks.BUILT_IN), at(ExamplePacks.ORG, base, Optional.of(PackLevel.ORG))));
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE, Check.REFERENCES, Check.RELATIONS);
+            assertThat(codes(verdict.faults()))
+                    .containsExactly(
+                            RefusalCode.PRESET_ITEM_NOT_HELD.token(), RefusalCode.SPECIALIZATION_CYCLE.token());
+        }
+
+        @Test
+        @DisplayName("without --full, no relation rule runs: the same set has no fault")
+        void theDefaultCheckRunsNoRelations(@TempDir Path dir) {
+            List<PackSetEntry> set = References.alphaAndBeta(dir, "beta-pack::directive:SHARE");
+            relates(
+                    dir,
+                    "{source: 'beta-pack::directive:SHARE', target: 'beta-pack::directive:SHARE',"
+                            + " relation: overrides}");
+
+            PackSetVerdict verdict = CHECK.check(set);
+
+            assertThat(verdict.checks()).containsExactly(Check.PACK, Check.CLOSURE);
+            assertThat(verdict.faults()).isEmpty();
         }
     }
 
