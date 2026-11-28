@@ -6,12 +6,12 @@
   "criteria": [
     {
       "criterion_id": "FR-001",
-      "description": "Verify FR-001 is satisfied",
+      "description": "Every application-layer walk over the pack graph lives in PackGraph",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "PackGraphTest, PackGraphWalkBoundaryTest (PR #665); main 06cdfbe94, targeted run 2026-11-28 (exit 0) plus CI on each PR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-28T09:02:05.131871+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
