@@ -36,12 +36,12 @@
     },
     {
       "criterion_id": "FR-004",
-      "description": "Verify FR-004 is satisfied",
+      "description": "PackGraph drives one visitor over typed pack-graph nodes, constrained by a scope that only selects",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "PackGraphWalkTest (PR #674); main 06cdfbe94, targeted run 2026-11-28 (exit 0) plus CI on each PR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-28T09:02:20.116984+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
