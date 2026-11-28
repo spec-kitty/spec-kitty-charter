@@ -116,12 +116,12 @@
     },
     {
       "criterion_id": "FR-012",
-      "description": "Verify FR-012 is satisfied",
+      "description": "pack-doctor validate --full reports the specialization cycle and the relation faults with registration's codes",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "RelationsPhaseTest, FullPassParityTest relation and policy rows (PR #684); main 06cdfbe94, targeted run 2026-11-28 (exit 0) plus CI on each PR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-28T09:02:54.309166+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
