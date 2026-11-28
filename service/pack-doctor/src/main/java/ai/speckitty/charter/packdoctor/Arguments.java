@@ -65,7 +65,8 @@ final class Arguments {
               --round-trip             also round-trip every pack through the charter's model
               --full                   also check, per pack, its substep delegations, its references and its
                                        step enhancements' targets, each against the packs it reaches over
-                                       depends_on, as registration does
+                                       depends_on, then the relation rules and the specializes_from cycle over
+                                       the packs it reaches, as registration does
               --report <file>          also write the report to <file>, replacing it: the same report as on
                                        standard output, in YAML unless --format says otherwise
               --format yaml|xml        the report file's format, yaml by default; only with --report
@@ -99,7 +100,7 @@ final class Arguments {
      * @param packs the packs, in the order given, or in name order under a config root; no two with one directory or
      *     one id
      * @param roundTrip whether the round trip is asked for
-     * @param full whether {@code REFERENCES} is asked for ({@code --full}; #632 item 3)
+     * @param full whether {@code REFERENCES} and {@code RELATIONS} are asked for ({@code --full}; #632 item 3)
      * @param inputs the config root or the {@code --pack} values, as written, which the report names
      * @param report where {@code --report} writes the report, and in which format; empty without {@code --report}
      */
@@ -110,7 +111,7 @@ final class Arguments {
          *
          * @param packs the packs
          * @param roundTrip whether to round-trip
-         * @param full whether to run {@code REFERENCES}
+         * @param full whether to run {@code REFERENCES} and {@code RELATIONS}
          * @param inputs what was given
          * @param report the report file, if any
          */

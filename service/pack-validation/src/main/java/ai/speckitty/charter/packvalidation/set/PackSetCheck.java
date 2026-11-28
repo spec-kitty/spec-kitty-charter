@@ -55,6 +55,16 @@ import java.util.stream.Collectors;
  *       no order to judge, while a preset contest, a preset item or a case-only mention leaves every rooted closure
  *       composed, so its faults stand beside {@code REFERENCES}'. When {@code CLOSURE} is skipped, {@code REFERENCES}
  *       is skipped too, naming the same packs.
+ *   <li>With {@code --full}, then {@code RELATIONS} ({@link RelationsPhase}; #632 item 3, FR-012): per root whose
+ *       closure passed {@code REFERENCES}, in the same order, over the closure the root composes, the factory's
+ *       relation rules, the {@code specializes_from} cycle among them ({@code PackRulesets.relationFaults}, the
+ *       relations phase registration runs), a fault several roots find reported once. It runs after
+ *       {@code REFERENCES} and is skipped when it is. A root with a {@code REFERENCES} fault is not judged, as
+ *       registration's phases 2 to 4 gate its relations phase, and {@code RELATIONS} is listed only when at least one
+ *       root was judged. A preset contest, a preset-item fault or a case-only mention, which registration's phases 5
+ *       and 6 would also stop at, does not stop it: those stand beside {@code RELATIONS}' faults, as beside
+ *       {@code REFERENCES}' (ruling R-aa). The edge-index rules, which judge the layer merge, are not run: pack-doctor
+ *       composes no merge.
  *   <li>Per pack, when asked, the production round trip ({@link RoundTripping}), judged by {@link
  *       WholePackRoundTripRule} with no expected-red baseline ({@link WholePackExpectation#none()}). It runs whatever
  *       validate mode found: the two are independent checks, but a round-trip reason at a file where validate mode
@@ -69,7 +79,7 @@ import java.util.stream.Collectors;
  * is skipped and names it (D3).
  *
  * <p>No rule is defined here: {@code CLOSURE} has one derivation, in {@link PackRulesets}, and each check of
- * {@code REFERENCES} is the packs domain's one body of it.
+ * {@code REFERENCES} and {@code RELATIONS} are the packs domain's one body of each.
  */
 public final class PackSetCheck {
 
@@ -98,7 +108,8 @@ public final class PackSetCheck {
     }
 
     /**
-     * Checks a set of packs: {@code PACK}, {@code CLOSURE} and {@code REFERENCES} ({@code --full}).
+     * Checks a set of packs: {@code PACK}, {@code CLOSURE}, then {@code REFERENCES} and {@code RELATIONS}
+     * ({@code --full}).
      *
      * @param entries the packs, in the order the results are reported; no two with one name
      * @return the verdict
@@ -123,7 +134,8 @@ public final class PackSetCheck {
     }
 
     /**
-     * Checks a set of packs: {@code PACK}, {@code CLOSURE}, {@code REFERENCES} ({@code --full}) and {@code ROUND_TRIP}.
+     * Checks a set of packs: {@code PACK}, {@code CLOSURE}, {@code REFERENCES} and {@code RELATIONS} ({@code --full}),
+     * and {@code ROUND_TRIP}.
      *
      * @param entries the packs, in the order the results are reported; no two with one name
      * @param roundTripping the production round trip, which the composition root supplies
@@ -163,13 +175,13 @@ public final class PackSetCheck {
             faults.addAll(PackRulesets.closureFaults(composed.set(), composed::factsOf));
             checks.add(Check.CLOSURE);
             if (full && faults.stream().noneMatch(PackSetCheck::isCompositionFault)) {
-                faults.addAll(ReferencesPhase.faults(composed.set(), composed::factsOf));
-                checks.add(Check.REFERENCES);
+                full(composed, faults, checks);
             }
         } else {
             skipped.add(new Skip(Check.CLOSURE, unjudged));
             if (full) {
                 skipped.add(new Skip(Check.REFERENCES, unjudged));
+                skipped.add(new Skip(Check.RELATIONS, unjudged));
             }
         }
         if (roundTripping.isPresent()) {
@@ -179,9 +191,24 @@ public final class PackSetCheck {
     }
 
     /**
+     * {@code --full}'s checks over a set that composes: {@code REFERENCES}, then {@code RELATIONS} over the closures
+     * {@code REFERENCES} passed, listed only when there is at least one.
+     */
+    private static void full(Composed composed, List<ClosureFault> faults, List<Check> checks) {
+        ReferencesPhase.Judged references = ReferencesPhase.judged(composed.set(), composed::factsOf);
+        faults.addAll(references.faults());
+        checks.add(Check.REFERENCES);
+        if (references.passed().isEmpty()) {
+            return;
+        }
+        faults.addAll(RelationsPhase.faults(references.passed(), composed::factsOf));
+        checks.add(Check.RELATIONS);
+    }
+
+    /**
      * Whether a fault of {@code CLOSURE} is a composition fault ({@link CompositionRules#faults}): an own closure that
-     * fails to compose, the one fault that gates {@code REFERENCES} (ruling R-aa). A preset contest, a preset item or a
-     * case-only mention does not.
+     * fails to compose, the one fault that gates {@code REFERENCES} and {@code RELATIONS} (ruling R-aa). A preset
+     * contest, a preset item or a case-only mention does not.
      */
     private static boolean isCompositionFault(ClosureFault fault) {
         return CompositionRules.RULE.equals(fault.reason().rule());
@@ -296,8 +323,8 @@ public final class PackSetCheck {
     }
 
     /**
-     * The set {@code CLOSURE} with its phases (contests, preset items, case-only answer) and {@code REFERENCES} judge: packs
-     * that all have built facts and a level.
+     * The set {@code CLOSURE} with its phases (contests, preset items, case-only answer), {@code REFERENCES} and
+     * {@code RELATIONS} judge: packs that all have built facts and a level.
      */
     private static Composed composed(List<PackResult> results) {
         List<PackUnderResolution> set = new ArrayList<>();

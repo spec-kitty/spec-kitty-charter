@@ -81,7 +81,7 @@ properties:
         properties:
           full:
             type: boolean
-            description: Whether --full asked for the REFERENCES check.
+            description: Whether --full asked for the REFERENCES and RELATIONS checks.
           round_trip:
             type: boolean
             description: Whether --round-trip asked for the ROUND_TRIP check.
@@ -92,18 +92,21 @@ properties:
   checks:
     type: array
     minItems: 1
-    maxItems: 4
+    maxItems: 5
     description: The checks that ran over the whole set, in this order; PACK always runs.
     items:
       type: string
-      enum: [PACK, CLOSURE, REFERENCES, ROUND_TRIP]
+      enum: [PACK, CLOSURE, REFERENCES, RELATIONS, ROUND_TRIP]
     x-derived:
       rule: >-
         PACK; CLOSURE when every pack's composition facts could be read (the composition faults, the preset contests,
         the preset items, then the case-only answer); REFERENCES with --full when CLOSURE ran and found no composition
         fault, a rooted closure that does not compose (ruling R-aa): per root of the set, over the closure the root
         composes, every pack of it (ruling R-ae), the substep delegations, the references and the step enhancements'
-        targets, in the registration's order, a fault several roots find reported once; ROUND_TRIP with --round-trip.
+        targets, in the registration's order, a fault several roots find reported once; RELATIONS with --full, after
+        REFERENCES, when at least one root's closure passed REFERENCES: per such root, over the same closure, the
+        relation rules and the specializes_from cycle (#632 item 3), a fault several roots find reported once;
+        ROUND_TRIP with --round-trip.
       inputs:
         - the command line
         - the packs checked
@@ -136,7 +139,7 @@ properties:
     type: array
     description: >-
       Only when a check did not run although asked: CLOSURE, when a pack has no composition facts (it cannot be read,
-      or its pack.yaml is malformed) or no level, and with it REFERENCES when --full asked for it.
+      or its pack.yaml is malformed) or no level, and with it REFERENCES and RELATIONS when --full asked for them.
     items:
       type: object
       additionalProperties: false
@@ -144,7 +147,7 @@ properties:
       properties:
         check:
           type: string
-          enum: [CLOSURE, REFERENCES]
+          enum: [CLOSURE, REFERENCES, RELATIONS]
         reason:
           type: string
           minLength: 1
@@ -163,13 +166,13 @@ properties:
       words a violation. The other problems are what the registration answers for the same fault. Each of a pack's
       problems has as its instance the absolute file URI of the pack's directory (file:///work/packs/org-base/), so
       two packs' problems are told apart. Then one problem per closure fault, with its code and packs (each pack named
-      once) and no instance: CLOSURE's, then, with --full and when CLOSURE found no composition fault, REFERENCES'. A
-      pack never gets two problems for one cause. Empty when the set is valid.
+      once) and no instance: CLOSURE's, then, with --full and when CLOSURE found no composition fault, REFERENCES', then
+      RELATIONS'. A pack never gets two problems for one cause. Empty when the set is valid.
     items:
       $ref: ../../_shared/schemas/Problem.yaml
     x-derived:
-      rule: The verdicts of PACK, ROUND_TRIP, CLOSURE and REFERENCES, as the registration words each fault; the round
-        trip's lead sentence is its own.
+      rule: The verdicts of PACK, ROUND_TRIP, CLOSURE, REFERENCES and RELATIONS, as the registration words each fault;
+        the round trip's lead sentence is its own.
       inputs:
         - the packs checked
   repairs:
