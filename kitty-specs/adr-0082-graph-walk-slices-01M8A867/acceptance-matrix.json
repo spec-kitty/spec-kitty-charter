@@ -26,12 +26,12 @@
     },
     {
       "criterion_id": "FR-003",
-      "description": "Verify FR-003 is satisfied",
+      "description": "The build fails when an application class walks the pack graph",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "PackGraphWalkBoundaryTest with its known-bad fixture (PR #665); main 06cdfbe94, targeted run 2026-11-28 (exit 0) plus CI on each PR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-28T09:02:15.911034+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
