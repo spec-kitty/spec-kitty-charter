@@ -172,8 +172,8 @@ class ProfileDtosTest {
 
     @Test
     void everyAccessorOfTheDomainProfileHasAMemberOnTheWire() {
-        // humanPerformed is derived from performer, not a field of its own; writtenReferences from the references
-        // (#673)
+        // humanPerformed is derived from performer, not a field of its own; writtenReferences and selectionEntries
+        // from the reference lists (#673)
         Set<String> notFields = Set.of(
                 "hashCode",
                 "toString",
@@ -183,7 +183,8 @@ class ProfileDtosTest {
                 "id",
                 "label",
                 "humanPerformed",
-                "writtenReferences");
+                "writtenReferences",
+                "selectionEntries");
         Map<String, String> renamed = Map.of("localId", "profileId", "selfReviewSteps", "selfReviewProtocol");
         Set<String> accessors = Arrays.stream(AgentProfile.class.getDeclaredMethods())
                 .filter(method -> java.lang.reflect.Modifier.isPublic(method.getModifiers()))
