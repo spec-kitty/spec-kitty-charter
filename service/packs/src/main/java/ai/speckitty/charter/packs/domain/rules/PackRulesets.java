@@ -186,20 +186,7 @@ public final class PackRulesets {
         if (closure.isEmpty()) {
             return List.of();
         }
-        PackGraph graph = PackGraph.of(
-                closure.stream()
-                        .map(member -> new PackNode(member.configured(), member.descriptor()))
-                        .toList(),
-                pack -> {
-                    throw new IllegalStateException("the packs walk reads no pack's facts: " + pack.value());
-                });
-        return referencesCheck(closure, factsOf)
-                .run(
-                        graph,
-                        Scope.of(closure.stream()
-                                .map(member -> member.configured().id())
-                                .toList()))
-                .faults();
+        return referencesCheck(closure, factsOf).run(PackGraph.ofPacks(closure), Scope.allOf(closure)).faults();
     }
 
     /**
@@ -426,20 +413,8 @@ public final class PackRulesets {
         if (merged.packs().isEmpty()) {
             return List.of();
         }
-        PackGraph graph = PackGraph.of(
-                merged.packs().stream()
-                        .map(member -> new PackNode(member.configured(), member.descriptor()))
-                        .toList(),
-                pack -> {
-                    throw new IllegalStateException("the packs walk reads no pack's facts: " + pack.value());
-                });
         return edgeIndex(() -> merged)
-                .run(
-                        graph,
-                        Scope.of(merged.packs().stream()
-                                .map(member -> member.configured().id())
-                                .distinct()
-                                .toList()))
+                .run(PackGraph.ofPacks(merged.packs()), Scope.allOf(merged.packs()))
                 .faults();
     }
 

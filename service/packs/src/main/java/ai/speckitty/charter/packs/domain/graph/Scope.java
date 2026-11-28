@@ -1,6 +1,7 @@
 package ai.speckitty.charter.packs.domain.graph;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
+import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -38,5 +39,15 @@ public record Scope(List<PackIdentifier> roots, Predicate<? super PackGraphNode>
      */
     public static Scope of(List<PackIdentifier> roots) {
         return new Scope(roots, element -> true);
+    }
+
+    /**
+     * A scope that selects every element of a composed closure, every pack of it a root, in the closure's order.
+     *
+     * @param closure the composed closure; at least one pack
+     * @return the scope
+     */
+    public static Scope allOf(List<PackUnderResolution> closure) {
+        return of(closure.stream().map(member -> member.configured().id()).toList());
     }
 }
