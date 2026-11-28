@@ -66,12 +66,12 @@
     },
     {
       "criterion_id": "FR-007",
-      "description": "Verify FR-007 is satisfied",
+      "description": "REFERENCES runs on the walker through PackGraph#walk, with no hand-fed phase loop",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "ReferencesWalkTest, PackGraphWalkBoundaryTest ONLY_A_GRAPH_WALK_FEEDS_THE_WALKER, FullPassParityTest (PRs #674, #683); main 06cdfbe94, targeted run 2026-11-28 (exit 0) plus CI on each PR",
+      "pass_fail": "pass",
+      "verified_by": "claude::java-jenny",
+      "verified_at": "2026-11-28T09:02:33.198614+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
