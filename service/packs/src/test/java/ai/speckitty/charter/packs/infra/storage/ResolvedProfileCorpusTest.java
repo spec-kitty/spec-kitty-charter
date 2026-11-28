@@ -75,7 +75,16 @@ class ResolvedProfileCorpusTest {
         assertThat(merged.name())
                 .as("the enhancer's name is its own, never merged")
                 .isEqualTo("Reviewer Renata");
-        assertThat(directiveCodes(merged)).containsExactly("001", "024", "030", "032", "041", "051", "038");
+        assertThat(directiveCodes(merged))
+                .as("answered as built-in's: her own bare, org-base's own qualified with org-base (#673)")
+                .containsExactly(
+                        "DIRECTIVE_001",
+                        "DIRECTIVE_024",
+                        "DIRECTIVE_030",
+                        "DIRECTIVE_032",
+                        "DIRECTIVE_041",
+                        "DIRECTIVE_051",
+                        "org-base::DIRECTIVE_038");
         assertThat(merged.capabilities())
                 .as("a field the enhancer leaves absent stays the base's")
                 .isNotEmpty();
@@ -91,7 +100,7 @@ class ResolvedProfileCorpusTest {
         ClosureView.ResolvedProfile renata = view.resolvedProfile("reviewer-renata", selecting(view, "reviewer-renata"))
                 .orElseThrow();
 
-        assertThat(directiveCodes(renata.profile())).doesNotContain("038");
+        assertThat(directiveCodes(renata.profile())).doesNotContain("org-base::DIRECTIVE_038", "DIRECTIVE_038");
     }
 
     @Test

@@ -1,5 +1,7 @@
 package ai.speckitty.charter.profiles.domain.resolution;
 
+import ai.speckitty.charter.kernel.domain.NodeKind;
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
 import ai.speckitty.charter.profiles.domain.ArtifactReference;
 import ai.speckitty.charter.profiles.domain.Collaboration;
@@ -9,6 +11,7 @@ import ai.speckitty.charter.profiles.domain.ModeDefault;
 import ai.speckitty.charter.profiles.domain.SelfReviewStep;
 import ai.speckitty.charter.profiles.domain.Specialization;
 import ai.speckitty.charter.profiles.domain.SpecializationContext;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,7 +136,7 @@ record ProfileField(
             "collaboration",
             "collaboration",
             false,
-            profile -> collaboration(profile.collaboration()),
+            profile -> collaboration(profile, profile.collaboration()),
             (to, from) -> to.collaboration(from.collaboration()));
 
     /** {@code mode-defaults}. */
@@ -184,7 +187,7 @@ record ProfileField(
             "directiveReferences",
             false,
             profile -> list(profile.directiveReferences().stream()
-                    .map(ProfileField::directiveReference)
+                    .map(reference -> directiveReference(profile, reference))
                     .toList()),
             (to, from) -> from.directiveReferences().forEach(to::directiveReference));
 
@@ -193,7 +196,7 @@ record ProfileField(
             "tactic-references",
             "tacticReferences",
             false,
-            profile -> references(profile.tacticReferences()),
+            profile -> references(profile, NodeKind.TACTIC, profile.tacticReferences()),
             (to, from) -> from.tacticReferences().forEach(to::tacticReference));
 
     /** {@code toolguide-references}. */
@@ -201,7 +204,7 @@ record ProfileField(
             "toolguide-references",
             "toolguideReferences",
             false,
-            profile -> references(profile.toolguideReferences()),
+            profile -> references(profile, NodeKind.TOOLGUIDE, profile.toolguideReferences()),
             (to, from) -> from.toolguideReferences().forEach(to::toolguideReference));
 
     /** {@code styleguide-references}. */
@@ -209,7 +212,7 @@ record ProfileField(
             "styleguide-references",
             "styleguideReferences",
             false,
-            profile -> references(profile.styleguideReferences()),
+            profile -> references(profile, NodeKind.STYLEGUIDE, profile.styleguideReferences()),
             (to, from) -> from.styleguideReferences().forEach(to::styleguideReference));
 
     /** {@code self-review-protocol}: its steps. */
@@ -227,7 +230,8 @@ record ProfileField(
             "excluding",
             "excluding",
             false,
-            profile -> profile.excluding().map(ProfileField::exclusion).orElse(null),
+            profile ->
+                    profile.excluding().map(value -> exclusion(profile, value)).orElse(null),
             (to, from) -> to.excluding(from.excluding()));
 
     /** Every row, in schema order. */
@@ -285,14 +289,93 @@ record ProfileField(
 
     /**
      * Builds a profile whose identity, pack and identity fields are {@code identity}'s and whose every other field is
-     * taken from the profile {@code sources} names for it ({@code identity} when it names none).
+     * taken from the profile {@code sources} names for it ({@code identity} when it names none). A field taken from a
+     * profile of another pack keeps what its references name ({@link #rebased}).
      */
     static AgentProfile assemble(AgentProfile identity, Map<ProfileField, AgentProfile> sources) {
         AgentProfile.Builder builder = AgentProfile.builder().packId(identity.packId());
+        IdentityHashMap<AgentProfile, AgentProfile> rebased = new IdentityHashMap<>();
         for (ProfileField field : values()) {
-            field.copy(builder, field.identity ? identity : sources.getOrDefault(field, identity));
+            AgentProfile source = field.identity ? identity : sources.getOrDefault(field, identity);
+            field.copy(builder, rebased.computeIfAbsent(source, from -> rebased(from, identity.packId())));
         }
         return builder.build();
+    }
+
+    /** The fields whose entries are selection references (#673), which {@link #rebased} rewrites. */
+    private static final List<ProfileField> REFERENCE_FIELDS = List.of(
+            DIRECTIVE_REFERENCES,
+            TACTIC_REFERENCES,
+            TOOLGUIDE_REFERENCES,
+            STYLEGUIDE_REFERENCES,
+            COLLABORATION,
+            EXCLUDING);
+
+    /**
+     * {@code source} as a profile of {@code reader}'s pack writes it (#673): each bare selection reference, which names an
+     * artifact of {@code source}'s own pack, qualified with that pack, so it names the same artifact once the merged or
+     * folded profile is answered as {@code reader}'s; each one qualified with {@code reader}'s pack written bare; any other
+     * kept as written ({@link AgentProfile#writtenFor}). A profile of {@code reader}'s pack is kept as it is.
+     */
+    static AgentProfile rebased(AgentProfile source, PackIdentifier reader) {
+        if (source.packId().equals(reader)) {
+            return source;
+        }
+        AgentProfile.Builder builder = AgentProfile.builder().packId(reader);
+        for (ProfileField field : values()) {
+            if (!REFERENCE_FIELDS.contains(field)) {
+                field.copy(builder, source);
+            }
+        }
+        source.directiveReferences()
+                .forEach(reference -> builder.directiveReference(new DirectiveReference(
+                        source.writtenFor(reader, NodeKind.DIRECTIVE, reference.code()),
+                        reference.name(),
+                        reference.rationale())));
+        source.tacticReferences()
+                .forEach(reference -> builder.tacticReference(rebased(source, reader, NodeKind.TACTIC, reference)));
+        source.toolguideReferences()
+                .forEach(reference ->
+                        builder.toolguideReference(rebased(source, reader, NodeKind.TOOLGUIDE, reference)));
+        source.styleguideReferences()
+                .forEach(reference ->
+                        builder.styleguideReference(rebased(source, reader, NodeKind.STYLEGUIDE, reference)));
+        Collaboration collaboration = source.collaboration();
+        builder.collaboration(new Collaboration(
+                collaboration.handoffTo(),
+                collaboration.handoffFrom(),
+                collaboration.worksWith(),
+                collaboration.outputArtifacts(),
+                collaboration.operatingProcedures().stream()
+                        .map(procedure -> source.writtenFor(reader, NodeKind.PROCEDURE, procedure))
+                        .toList(),
+                collaboration.canonicalVerbs()));
+        builder.excluding(source.excluding().map(exclusion -> rebased(source, reader, exclusion)));
+        return builder.build();
+    }
+
+    /** An exclusion whose values of a reference list are written as {@code reader}'s pack writes them. */
+    private static Exclusion rebased(AgentProfile source, PackIdentifier reader, Exclusion exclusion) {
+        if (!(exclusion instanceof Exclusion.FieldValues values)) {
+            return exclusion;
+        }
+        Map<String, List<String>> rebased = new LinkedHashMap<>();
+        values.values().forEach((field, removed) -> {
+            NodeKind kind = AgentProfile.REFERENCE_LISTS.get(field);
+            rebased.put(
+                    field,
+                    kind == null
+                            ? removed
+                            : removed.stream()
+                                    .map(value -> source.writtenFor(reader, kind, value))
+                                    .toList());
+        });
+        return new Exclusion.FieldValues(rebased);
+    }
+
+    private static ArtifactReference rebased(
+            AgentProfile source, PackIdentifier reader, NodeKind kind, ArtifactReference reference) {
+        return new ArtifactReference(source.writtenFor(reader, kind, reference.id()), reference.rationale());
     }
 
     /**
@@ -358,13 +441,17 @@ record ProfileField(
                 "success-definition", scalar(value.successDefinition())));
     }
 
-    private static @Nullable Object collaboration(Collaboration value) {
+    /** The collaboration's shape, each operating procedure as what it names ({@link AgentProfile#named}, #673). */
+    private static @Nullable Object collaboration(AgentProfile profile, Collaboration value) {
         return object(fields(
                 "handoff-to", list(value.handoffTo()),
                 "handoff-from", list(value.handoffFrom()),
                 "works-with", list(value.worksWith()),
                 "output-artifacts", list(value.outputArtifacts()),
-                "operating-procedures", list(value.operatingProcedures()),
+                "operating-procedures",
+                        list(value.operatingProcedures().stream()
+                                .map(procedure -> profile.named(NodeKind.PROCEDURE, procedure))
+                                .toList()),
                 "canonical-verbs", list(value.canonicalVerbs())));
     }
 
@@ -382,13 +469,26 @@ record ProfileField(
         return object(fields("mode", value.mode(), "description", value.description(), "use-case", value.useCase()));
     }
 
-    private static @Nullable Object directiveReference(DirectiveReference value) {
-        return object(fields("code", value.code(), "name", value.name(), "rationale", value.rationale()));
+    /**
+     * A directive reference's shape, its code as what it names ({@link AgentProfile#named}): a reference an enhancer
+     * of another pack qualifies is the one its base writes bare (#673).
+     */
+    private static @Nullable Object directiveReference(AgentProfile profile, DirectiveReference value) {
+        return object(fields(
+                "code",
+                profile.named(NodeKind.DIRECTIVE, value.code()),
+                "name",
+                value.name(),
+                "rationale",
+                value.rationale()));
     }
 
-    private static @Nullable List<?> references(List<ArtifactReference> references) {
+    /** A tactic, toolguide or styleguide reference's shape, its id as what it names ({@link AgentProfile#named}). */
+    private static @Nullable List<?> references(
+            AgentProfile profile, NodeKind kind, List<ArtifactReference> references) {
         return list(references.stream()
-                .map(reference -> object(fields("id", reference.id(), "rationale", reference.rationale())))
+                .map(reference ->
+                        object(fields("id", profile.named(kind, reference.id()), "rationale", reference.rationale())))
                 .toList());
     }
 
@@ -396,12 +496,26 @@ record ProfileField(
         return object(fields("name", value.name(), "command", scalar(value.command()), "gate", value.gate()));
     }
 
-    private static @Nullable Object exclusion(Exclusion value) {
+    /**
+     * An exclusion's shape, each value under a reference list's key as what it names ({@link AgentProfile#named}), so a
+     * bare and a qualified exclusion of one artifact are one shape (#673).
+     */
+    private static @Nullable Object exclusion(AgentProfile profile, Exclusion value) {
         return switch (value) {
             case Exclusion.WholeFields whole -> list(whole.fields());
             case Exclusion.FieldValues values -> {
                 Map<String, @Nullable Object> byField = new LinkedHashMap<>();
-                values.values().forEach((field, removed) -> byField.put(field, list(removed)));
+                values.values().forEach((field, removed) -> {
+                    NodeKind kind = AgentProfile.REFERENCE_LISTS.get(field);
+                    byField.put(
+                            field,
+                            list(
+                                    kind == null
+                                            ? removed
+                                            : removed.stream()
+                                                    .map(entry -> profile.named(kind, entry))
+                                                    .toList()));
+                });
                 yield object(byField);
             }
         };

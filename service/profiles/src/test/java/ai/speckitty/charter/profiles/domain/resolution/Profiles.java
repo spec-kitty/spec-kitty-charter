@@ -31,12 +31,26 @@ final class Profiles {
             List.of(),
             List.of("review", "approve"));
 
+    /** The directives a built-in profile writes, bare, since built-in holds them. */
     static final DirectiveReference D001 =
-            new DirectiveReference("001", "Architectural Integrity Standard", "Enforce boundaries");
+            new DirectiveReference("DIRECTIVE_001", "Architectural Integrity Standard", "Enforce boundaries");
+
     static final DirectiveReference D030 =
-            new DirectiveReference("030", "Test and Typecheck Quality Gate", "Gates are green");
+            new DirectiveReference("DIRECTIVE_030", "Test and Typecheck Quality Gate", "Gates are green");
+
+    /** The same directives as an enhancer of another pack writes them: qualified with built-in (#673). */
+    static final DirectiveReference BUILT_IN_D001 = qualified("built-in", D001);
+
+    static final DirectiveReference BUILT_IN_D030 = qualified("built-in", D030);
+
+    /** The directive org-base holds, as org-base writes it, bare. */
     static final DirectiveReference D038 =
-            new DirectiveReference("038", "Structured Prompt Change-Boundary", "Stay inside the canvas");
+            new DirectiveReference("DIRECTIVE_038", "Structured Prompt Change-Boundary", "Stay inside the canvas");
+
+    /** A directive reference as a profile of another pack writes it: {@code <pack>::<code>}. */
+    static DirectiveReference qualified(String pack, DirectiveReference reference) {
+        return new DirectiveReference(pack + "::" + reference.code(), reference.name(), reference.rationale());
+    }
 
     private Profiles() {}
 

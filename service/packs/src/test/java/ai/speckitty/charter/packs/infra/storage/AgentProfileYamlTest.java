@@ -65,7 +65,7 @@ class AgentProfileYamlTest {
                 max-concurrent-tasks: 3
                 performer: agent
                 directive-references:
-                  - code: "003"
+                  - code: DIRECTIVE_003
                     name: Decision Documentation
                     rationale: Record decisions.
                 """;
@@ -77,7 +77,7 @@ class AgentProfileYamlTest {
         assertThat(document.get("routing-priority")).isInstanceOf(Number.class);
         assertThat(document.get("performer")).isEqualTo("agent");
         assertThat(((Map<?, ?>) ((List<?>) document.get("directive-references")).get(0)).get("code"))
-                .isEqualTo("003");
+                .isEqualTo("DIRECTIVE_003");
     }
 
     @Test
@@ -141,7 +141,7 @@ class AgentProfileYamlTest {
               complexity-preference: [low]
             applies_to_languages: [java]
             directive-references:
-              - code: "003"
+              - code: DIRECTIVE_003
                 name: Decision Documentation
                 rationale: r
             tactic-references:

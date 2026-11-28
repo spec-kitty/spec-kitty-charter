@@ -95,9 +95,11 @@ class AgentProfileEntityTest {
                 .appliesToLanguage("java")
                 .appliesToLanguage("kotlin")
                 .directiveReference(new DirectiveReference(
-                        "010", "Specification Fidelity Requirement", "Implementations reflect the specification"))
+                        "DIRECTIVE_010",
+                        "Specification Fidelity Requirement",
+                        "Implementations reflect the specification"))
                 .directiveReference(new DirectiveReference(
-                        "034", "Test-First Development", "Tests define the contract before production code"))
+                        "DIRECTIVE_034", "Test-First Development", "Tests define the contract before production code"))
                 .tacticReference(new ArtifactReference("acceptance-test-first", "ATDD outside-in"))
                 .tacticReference(new ArtifactReference("tdd-red-green-refactor", "Unit-level red-green-refactor"))
                 .toolguideReference(new ArtifactReference("java-supply-chain", "Exact commands for dependency checks"))
@@ -141,7 +143,8 @@ class AgentProfileEntityTest {
         assertThat(p.directiveReferences())
                 .extracting(DirectiveReference::code, DirectiveReference::name)
                 .containsExactly(
-                        tuple("010", "Specification Fidelity Requirement"), tuple("034", "Test-First Development"));
+                        tuple("DIRECTIVE_010", "Specification Fidelity Requirement"),
+                        tuple("DIRECTIVE_034", "Test-First Development"));
         assertThat(p.directiveReferences().get(1).rationale())
                 .isEqualTo("Tests define the contract before production code");
         assertThat(p.tacticReferences())
@@ -222,7 +225,7 @@ class AgentProfileEntityTest {
                 .selfReviewStep(new SelfReviewStep("lint", Optional.empty(), "no warnings"))
                 .modeDefault(new ModeDefault("planning", "Plans", "Before a mission"))
                 .appliesToLanguage("scala")
-                .directiveReference(new DirectiveReference("999", "Later directive", "why"))
+                .directiveReference(new DirectiveReference("DIRECTIVE_999", "Later directive", "why"))
                 .tacticReference(new ArtifactReference("later-tactic", "why"))
                 .toolguideReference(new ArtifactReference("later-toolguide", "why"))
                 .styleguideReference(new ArtifactReference("later-styleguide", "why"));
@@ -309,8 +312,8 @@ class AgentProfileEntityTest {
                 .performer(Optional.of(Performer.HUMAN))
                 .role("reviewer")
                 .altRole("implementer")
-                .directiveReference(new DirectiveReference("003", "Decision documentation", "why"))
-                .directiveReference(new DirectiveReference("003", "Decision documentation", "why"))
+                .directiveReference(new DirectiveReference("DIRECTIVE_003", "Decision documentation", "why"))
+                .directiveReference(new DirectiveReference("DIRECTIVE_003", "Decision documentation", "why"))
                 .build();
 
         assertThat(profile.schemaVersion()).contains("1.0");
@@ -327,11 +330,104 @@ class AgentProfileEntityTest {
     @DisplayName("lineage is not minted from the profile: it has no relationships of its own")
     void mintsNoRelationships() {
         AgentProfile profile = valid("java-jenny")
-                .directiveReference(new DirectiveReference("003", "Decision documentation", "why"))
+                .directiveReference(new DirectiveReference("DIRECTIVE_003", "Decision documentation", "why"))
                 .tacticReference(new ArtifactReference("tdd-red-green", "why"))
                 .build();
 
         assertThat(profile.derivedRelationships()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("its selection references are written references of their list's kind, and mint no edge (#673)")
+    void writesItsSelectionReferences() {
+        AgentProfile profile = valid("java-jenny")
+                .directiveReference(new DirectiveReference("DIRECTIVE_003", "Decision documentation", "why"))
+                .directiveReference(new DirectiveReference("base::QA_001", "QA", "why"))
+                .directiveReference(new DirectiveReference("base::directive:QA_002", "QA", "why"))
+                .tacticReference(new ArtifactReference("tdd-red-green", "why"))
+                .tacticReference(new ArtifactReference("base::tactic:bdd", "why"))
+                .toolguideReference(new ArtifactReference("other::gradle", "why"))
+                .styleguideReference(new ArtifactReference("boring-code", "why"))
+                .collaboration(new Collaboration(
+                        List.of(), List.of(), List.of(), List.of(), List.of("implement", "base::review"), List.of()))
+                .build();
+
+        assertThat(profile.writtenReferences())
+                .extracting(Object::toString)
+                .containsExactly(
+                        "directive:DIRECTIVE_003",
+                        "base::directive:QA_001",
+                        "base::directive:QA_002",
+                        "tactic:tdd-red-green",
+                        "base::tactic:bdd",
+                        "other::toolguide:gradle",
+                        "styleguide:boring-code",
+                        "procedure:implement",
+                        "base::procedure:review");
+        assertThat(profile.derivedRelationships())
+                .as("selection data mints no edge")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("an excluding value of a reference list is a written reference of the list's kind (#673)")
+    void writesItsExclusionsOfReferenceLists() {
+        AgentProfile profile = valid("p")
+                .excluding(Optional.of(new Exclusion.FieldValues(Map.of(
+                        "directive-references", List.of("ghost::DIRECTIVE_009"), "alt-roles", List.of("reviewer")))))
+                .build();
+
+        assertThat(profile.writtenReferences())
+                .extracting(Object::toString)
+                .containsExactly("ghost::directive:DIRECTIVE_009");
+    }
+
+    @Test
+    @DisplayName("an entry that is no reference is refused, a pack name past the pack-id cap included (#673)")
+    void refusesAnEntryThatIsNoReference() {
+        String longPack = "a".repeat(PackIdentifier.MAX_LENGTH + 1);
+        for (AgentProfile.Builder builder : List.of(
+                valid("p").directiveReference(new DirectiveReference("a::b::C", "Bad", "why")),
+                valid("p").directiveReference(new DirectiveReference(longPack + "::DIRECTIVE_001", "Long", "why")),
+                valid("p").tacticReference(new ArtifactReference("directive:not-a-tactic", "why")),
+                valid("p").toolguideReference(new ArtifactReference("::x", "why")),
+                valid("p").styleguideReference(new ArtifactReference(longPack + "::boring", "why")),
+                valid("p")
+                        .collaboration(new Collaboration(
+                                List.of(),
+                                List.of(),
+                                List.of(),
+                                List.of(),
+                                List.of("tactic:not-a-procedure"),
+                                List.of())))) {
+            assertThatThrownBy(builder::build)
+                    .isInstanceOfSatisfying(
+                            ConstraintBreachException.class,
+                            breach -> assertThat(breach.reason().detail())
+                                    .isEqualTo(AgentProfile.REFERENCES_WELL_FORMED));
+        }
+        assertThat(valid("p")
+                        .directiveReference(new DirectiveReference(
+                                "a".repeat(PackIdentifier.MAX_LENGTH) + "::DIRECTIVE_001", "At the cap", "why"))
+                        .build()
+                        .writtenReferences())
+                .as("a pack name at the cap is a reference")
+                .hasSize(1);
+    }
+
+    @Test
+    @DisplayName("one artifact written twice the same way, kind written out or not, is one reference (#673)")
+    void writesEachReferenceOnce() {
+        AgentProfile profile = valid("p")
+                .directiveReference(new DirectiveReference("base::QA_001", "QA", "why"))
+                .directiveReference(new DirectiveReference("base::directive:QA_001", "QA", "again"))
+                .tacticReference(new ArtifactReference("kept", "why"))
+                .tacticReference(new ArtifactReference("tactic:kept", "again"))
+                .build();
+
+        assertThat(profile.writtenReferences())
+                .extracting(Object::toString)
+                .containsExactly("base::directive:QA_001", "tactic:kept");
     }
 
     @Test

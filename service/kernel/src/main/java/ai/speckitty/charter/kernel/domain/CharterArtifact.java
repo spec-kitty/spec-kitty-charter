@@ -66,9 +66,11 @@ public interface CharterArtifact {
     }
 
     /**
-     * Every reference this artefact writes outside its pack's graph documents: the target of each
-     * {@linkplain #derivedRelationships() derived relationship}, so the compose's reference check covers it as it covers
-     * every graph-document edge.
+     * Every reference this artefact writes outside its pack's graph documents, so the compose's reference check covers
+     * it as it covers every graph-document edge: by default the target of each
+     * {@linkplain #derivedRelationships() derived relationship}. A kind whose fields name other artifacts without
+     * relating to them overrides it: an agent profile's selection data (ADR-0064 decision 11, #673), which is judged as
+     * a reference and mints no edge.
      *
      * @return the references, in the artefact's order; empty when it writes none
      */

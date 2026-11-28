@@ -2,10 +2,17 @@ package ai.speckitty.charter.profiles.domain.resolution;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
+import ai.speckitty.charter.profiles.domain.AgentProfileIdentifier;
+import ai.speckitty.charter.profiles.domain.Exclusion;
+import ai.speckitty.charter.profiles.domain.Specialization;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
@@ -38,5 +45,31 @@ class ProfileFieldTableTest {
     @Test
     void theSchemaNamesAreDistinct() {
         assertThat(ProfileField.values().stream().map(ProfileField::yamlName)).doesNotHaveDuplicates();
+    }
+
+    /** An exclusion of a reference list's value is shaped as what it names, as the list's own entries are (#673). */
+    @Test
+    void aBareAndAQualifiedExclusionOfOneArtifactAreOneShape() {
+        assertThat(ProfileField.EXCLUDING.shapeOf(excluding("DIRECTIVE_001", "tdd")))
+                .isEqualTo(
+                        ProfileField.EXCLUDING.shapeOf(excluding("built-in::directive:DIRECTIVE_001", "built-in::tdd")))
+                .isEqualTo(Map.of(
+                        "directive-references",
+                        List.of("built-in::directive:DIRECTIVE_001"),
+                        "tactic-references",
+                        List.of("built-in::tactic:tdd")));
+    }
+
+    private static AgentProfile excluding(String directive, String tactic) {
+        return AgentProfile.builder()
+                .packId(new PackIdentifier("built-in"))
+                .id(new AgentProfileIdentifier("p"))
+                .name("P")
+                .role("implementer")
+                .purpose("Purpose")
+                .specialization(new Specialization("Focus", Optional.empty(), Optional.empty(), Optional.empty()))
+                .excluding(Optional.of(new Exclusion.FieldValues(
+                        Map.of("directive-references", List.of(directive), "tactic-references", List.of(tactic)))))
+                .build();
     }
 }

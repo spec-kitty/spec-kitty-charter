@@ -42,11 +42,11 @@ class AgentProfileEnhancementsTest {
     void eachLayerIsMergedThenTheChainIsFolded() {
         AgentProfile root = profile("root", "Review")
                 .capability("code-review")
-                .directiveReference(directive("001"))
+                .directiveReference(directive("DIRECTIVE_001"))
                 .build();
         AgentProfile rootEnhancer = profile("root-org", "Review")
-                .directiveReference(directive("001"))
-                .directiveReference(directive("038"))
+                .directiveReference(directive("DIRECTIVE_001"))
+                .directiveReference(directive("DIRECTIVE_038"))
                 .build();
         AgentProfile leaf = profile("leaf", "Security review")
                 .maxConcurrentTasks(Optional.of(2))
@@ -67,7 +67,7 @@ class AgentProfileEnhancementsTest {
         assertThat(effective.directiveReferences())
                 .as("the root's enhancement, inherited")
                 .extracting(DirectiveReference::code)
-                .containsExactly("001", "038");
+                .containsExactly("DIRECTIVE_001", "DIRECTIVE_038");
     }
 
     @Test

@@ -106,13 +106,13 @@ specialization-context:
     - high
 
 directive-references:
-  - code: "010"
+  - code: DIRECTIVE_010
     name: Specification Fidelity Requirement
     rationale: Implementations must faithfully reflect the design specifications without unauthorized deviations
-  - code: "043"
+  - code: DIRECTIVE_043
     name: Close Defect Classes by Construction
     rationale: Repeating defect patterns must be resolved structurally — AST gates, type invariants, or shrink-only ratchets — rather than by adding process rules; Ivan applies this during implementation to ensure the fix closes the class permanently
-  - code: "044"
+  - code: DIRECTIVE_044
     name: Canonical Sources and Unification
     rationale: >-
       Always use canonical templates and CLI surfaces; never copy from prior
@@ -122,10 +122,10 @@ directive-references:
       assumption — measure or attempt to load it first, and if it is genuinely
       oversized, file an upstream gap rather than improvising a substitute
       (mirrors Rule 3's missing-command remedy)
-  - code: "045"
+  - code: DIRECTIVE_045
     name: PRs-Only and Read-Intent Before High-Risk Operations
     rationale: All changes to origin/main go through pull requests; every high-risk git operation (merge, rebase, deletion) requires reading the mission spec before execution; never push directly without explicit operator instruction
-  - code: "051"
+  - code: DIRECTIVE_051
     name: Supply-Chain Install Safety
     rationale: >-
       Every dependency addition or upgrade is evaluated against the

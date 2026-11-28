@@ -108,6 +108,33 @@ public record PackQualifiedReference(Optional<String> packName, String urn) {
     }
 
     /**
+     * Reads an entry of a list whose entries all name one kind (#673), as {@code [<pack>::][<kind>:]<id>}, into the
+     * reference it writes, with the kind written out.
+     *
+     * @param kind the kind the entry's list names
+     * @param written the entry as written, for example {@code built-in::DIRECTIVE_001}
+     * @return the reference, for example {@code built-in::directive:DIRECTIVE_001}; empty when the entry is no such
+     *     reference (a malformed qualifier, or another kind written out)
+     */
+    public static Optional<PackQualifiedReference> ofKind(NodeKind kind, String written) {
+        Objects.requireNonNull(kind, "kind");
+        Objects.requireNonNull(written, "written");
+        PackQualifiedReference parsed;
+        try {
+            parsed = parse(written);
+        } catch (IllegalArgumentException malformed) {
+            return Optional.empty();
+        }
+        String prefix = kind.token() + ":";
+        if (parsed.urn().startsWith(prefix)) {
+            return Optional.of(parsed);
+        }
+        return parsed.urn().contains(":")
+                ? Optional.empty()
+                : Optional.of(new PackQualifiedReference(parsed.packName(), prefix + parsed.urn()));
+    }
+
+    /**
      * The URN part as a bare {@link Urn}.
      *
      * @return the URN; empty when the URN part is not a URN of a known node kind

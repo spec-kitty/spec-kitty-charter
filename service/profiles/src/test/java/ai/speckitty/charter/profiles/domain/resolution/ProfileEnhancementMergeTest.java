@@ -1,5 +1,7 @@
 package ai.speckitty.charter.profiles.domain.resolution;
 
+import static ai.speckitty.charter.profiles.domain.resolution.Profiles.BUILT_IN_D001;
+import static ai.speckitty.charter.profiles.domain.resolution.Profiles.BUILT_IN_D030;
 import static ai.speckitty.charter.profiles.domain.resolution.Profiles.D001;
 import static ai.speckitty.charter.profiles.domain.resolution.Profiles.D030;
 import static ai.speckitty.charter.profiles.domain.resolution.Profiles.D038;
@@ -8,13 +10,16 @@ import static ai.speckitty.charter.profiles.domain.resolution.Profiles.REVIEW_CO
 import static ai.speckitty.charter.profiles.domain.resolution.Profiles.content;
 import static ai.speckitty.charter.profiles.domain.resolution.Profiles.minimal;
 import static ai.speckitty.charter.profiles.domain.resolution.Profiles.nonIdentity;
+import static ai.speckitty.charter.profiles.domain.resolution.Profiles.qualified;
 import static ai.speckitty.charter.profiles.domain.resolution.Profiles.reviewer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.speckitty.charter.kernel.domain.PackIdentifier;
 import ai.speckitty.charter.profiles.domain.AgentProfile;
+import ai.speckitty.charter.profiles.domain.ArtifactReference;
 import ai.speckitty.charter.profiles.domain.Collaboration;
+import ai.speckitty.charter.profiles.domain.DirectiveReference;
 import ai.speckitty.charter.profiles.domain.Exclusion;
 import ai.speckitty.charter.profiles.domain.Performer;
 import ai.speckitty.charter.profiles.domain.Specialization;
@@ -66,8 +71,8 @@ class ProfileEnhancementMergeTest {
     @Test
     void anEnhancerThatRestatesAndAddsReplacesTheFieldsItDeclaresAndLeavesTheOthers() {
         AgentProfile enhancing = enhancer()
-                .directiveReference(D030)
-                .directiveReference(D001)
+                .directiveReference(BUILT_IN_D030)
+                .directiveReference(BUILT_IN_D001)
                 .directiveReference(D038)
                 .capability("security-audit")
                 .capability("code-review")
@@ -76,7 +81,7 @@ class ProfileEnhancementMergeTest {
 
         AgentProfile merged = merge(enhancing);
 
-        assertThat(merged.directiveReferences()).containsExactly(D030, D001, D038);
+        assertThat(merged.directiveReferences()).containsExactly(D030, D001, qualified("org-base", D038));
         assertThat(merged.capabilities()).containsExactly("security-audit", "code-review", "threat-modelling");
         Map<String, Object> expected = nonIdentity(BASE);
         expected.put("directive-references", ProfileField.DIRECTIVE_REFERENCES.shapeOf(enhancing));
@@ -181,9 +186,9 @@ class ProfileEnhancementMergeTest {
     void aListOfObjectsWithAnItemChangedIsRefused() {
         assertRefused(
                 enhancer()
-                        .directiveReference(D001)
+                        .directiveReference(BUILT_IN_D001)
                         .directiveReference(new ai.speckitty.charter.profiles.domain.DirectiveReference(
-                                "030", "Test and Typecheck Quality Gate", "Another rationale"))
+                                "built-in::DIRECTIVE_030", "Test and Typecheck Quality Gate", "Another rationale"))
                         .build(),
                 "directive-references");
     }
@@ -236,13 +241,13 @@ class ProfileEnhancementMergeTest {
     @Test
     void enhancersMergeInClosureOrderAndALaterOneMustKeepWhatAnEarlierOneAdded() {
         AgentProfile org = enhancer()
-                .directiveReference(D001)
-                .directiveReference(D030)
+                .directiveReference(BUILT_IN_D001)
+                .directiveReference(BUILT_IN_D030)
                 .directiveReference(D038)
                 .build();
         AgentProfile project = minimal("reviewer-renata-project", "project", REVIEW)
-                .directiveReference(D001)
-                .directiveReference(D030)
+                .directiveReference(BUILT_IN_D001)
+                .directiveReference(BUILT_IN_D030)
                 .build();
 
         assertThatThrownBy(() -> merge(org, project))
@@ -250,7 +255,86 @@ class ProfileEnhancementMergeTest {
                     assertThat(refused.pack()).isEqualTo(new PackIdentifier("project"));
                     assertThat(refused.field()).isEqualTo("directive-references");
                 });
-        assertThat(merge(project, org).directiveReferences()).containsExactly(D001, D030, D038);
+        assertThat(merge(project, org).directiveReferences()).containsExactly(D001, D030, qualified("org-base", D038));
+    }
+
+    /**
+     * A reference is kept by what it names, not by how it is written (#673): an enhancer of another pack that restates
+     * the base's bare reference bare names an artifact of its own pack, and so drops the base's; written qualified, or
+     * with the kind written out, it keeps it. A later enhancer of a third pack keeps an earlier one's own reference only
+     * by qualifying it with that pack.
+     */
+    @Test
+    void aReferenceIsKeptByWhatItNamesNotByHowItIsWritten() {
+        assertRefused(
+                enhancer().directiveReference(D001).directiveReference(D030).build(), "directive-references");
+        AgentProfile spelledOut = enhancer()
+                .directiveReference(qualified(
+                        "built-in", new DirectiveReference("directive:DIRECTIVE_001", D001.name(), D001.rationale())))
+                .directiveReference(BUILT_IN_D030)
+                .build();
+        assertThat(merge(spelledOut).directiveReferences())
+                .as("answered as built-in's, a reference qualified with built-in is bare")
+                .containsExactly(
+                        new DirectiveReference("directive:DIRECTIVE_001", D001.name(), D001.rationale()), D030);
+
+        AgentProfile org = enhancer()
+                .directiveReference(BUILT_IN_D001)
+                .directiveReference(BUILT_IN_D030)
+                .directiveReference(D038)
+                .build();
+        AgentProfile projectBare = minimal("reviewer-renata-project", "project", REVIEW)
+                .directiveReference(BUILT_IN_D001)
+                .directiveReference(BUILT_IN_D030)
+                .directiveReference(D038)
+                .build();
+        assertThatThrownBy(() -> merge(org, projectBare))
+                .isInstanceOfSatisfying(ProfileEnhancementDropsField.class, refused -> {
+                    assertThat(refused.pack()).isEqualTo(new PackIdentifier("project"));
+                    assertThat(refused.field()).isEqualTo("directive-references");
+                });
+        AgentProfile projectQualified = minimal("reviewer-renata-project", "project", REVIEW)
+                .directiveReference(BUILT_IN_D001)
+                .directiveReference(BUILT_IN_D030)
+                .directiveReference(qualified("org-base", D038))
+                .build();
+        assertThat(merge(org, projectQualified).directiveReferences())
+                .containsExactly(D001, D030, qualified("org-base", D038));
+    }
+
+    /**
+     * Every reference list an enhancer of another pack declares is written as the base's pack reads it (#673): its bare
+     * entries qualified with the enhancer's pack, those qualified with the base's pack bare, any other kept.
+     */
+    @Test
+    void everyReferenceListOfAnEnhancerOfAnotherPackIsWrittenForTheBasesPack() {
+        AgentProfile enhancing = enhancer()
+                .tacticReference(new ArtifactReference("built-in::code-review-incremental", "Read intent first"))
+                .tacticReference(new ArtifactReference("org-tactic", "why"))
+                .tacticReference(new ArtifactReference("built-in::tactic:base-tactic", "why"))
+                .toolguideReference(new ArtifactReference("org-guide", "why"))
+                .styleguideReference(new ArtifactReference("other::style", "why"))
+                .collaboration(new Collaboration(
+                        REVIEW_COLLABORATION.handoffTo(),
+                        REVIEW_COLLABORATION.handoffFrom(),
+                        REVIEW_COLLABORATION.worksWith(),
+                        REVIEW_COLLABORATION.outputArtifacts(),
+                        List.of("org-procedure", "built-in::review"),
+                        REVIEW_COLLABORATION.canonicalVerbs()))
+                .build();
+
+        AgentProfile merged = merge(enhancing);
+
+        assertThat(merged.tacticReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("code-review-incremental", "org-base::org-tactic", "tactic:base-tactic");
+        assertThat(merged.toolguideReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("org-base::org-guide");
+        assertThat(merged.styleguideReferences())
+                .extracting(ArtifactReference::id)
+                .containsExactly("other::style");
+        assertThat(merged.collaboration().operatingProcedures()).containsExactly("org-base::org-procedure", "review");
     }
 
     @Test

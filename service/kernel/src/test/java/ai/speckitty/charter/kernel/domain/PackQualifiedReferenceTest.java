@@ -26,6 +26,24 @@ class PackQualifiedReferenceTest {
         assertThat(reference).isEqualTo(new PackQualifiedReference(Optional.of("writing"), "directive:DIRECTIVE_009"));
     }
 
+    /** An entry of a list of one kind reads with its kind written out, or not at all (#673). */
+    @ParameterizedTest
+    @CsvSource(
+            nullValues = "-",
+            value = {
+                "DIRECTIVE_001, directive:DIRECTIVE_001",
+                "directive:DIRECTIVE_001, directive:DIRECTIVE_001",
+                "base::DIRECTIVE_001, base::directive:DIRECTIVE_001",
+                "base::directive:DIRECTIVE_001, base::directive:DIRECTIVE_001",
+                "tactic:not-a-directive, -",
+                "a::b::DIRECTIVE_001, -",
+                "::DIRECTIVE_001, -"
+            })
+    void anEntryOfADirectiveListReadsAsADirectiveReference(String written, String read) {
+        assertThat(PackQualifiedReference.ofKind(NodeKind.DIRECTIVE, written).map(Object::toString))
+                .isEqualTo(Optional.ofNullable(read));
+    }
+
     /** A pack name is a pack id (#582): a reference to a pack no pack id can name is refused when it is parsed. */
     @Test
     void aReferenceWhosePackNameHoldsAnUnderscoreIsRefusedAtParse() {

@@ -54,7 +54,7 @@ initialization-declaration: >
   the project charter.
 
 directive-references:
-- code: "028"
+- code: DIRECTIVE_028
   name: Efficient Local Tooling
   rationale: All agents must use low-noise, efficient tooling for repository
     operations as a baseline governance requirement.

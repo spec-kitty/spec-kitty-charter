@@ -172,9 +172,18 @@ class ProfileDtosTest {
 
     @Test
     void everyAccessorOfTheDomainProfileHasAMemberOnTheWire() {
-        // humanPerformed is derived from performer, not a field of its own
-        Set<String> notFields =
-                Set.of("hashCode", "toString", "equals", "kind", "packId", "id", "label", "humanPerformed");
+        // humanPerformed is derived from performer, not a field of its own; writtenReferences from the references
+        // (#673)
+        Set<String> notFields = Set.of(
+                "hashCode",
+                "toString",
+                "equals",
+                "kind",
+                "packId",
+                "id",
+                "label",
+                "humanPerformed",
+                "writtenReferences");
         Map<String, String> renamed = Map.of("localId", "profileId", "selfReviewSteps", "selfReviewProtocol");
         Set<String> accessors = Arrays.stream(AgentProfile.class.getDeclaredMethods())
                 .filter(method -> java.lang.reflect.Modifier.isPublic(method.getModifiers()))
@@ -225,7 +234,7 @@ class ProfileDtosTest {
         assertThat(wire.get("modeDefaults").get(1).get("useCase").asString()).isEqualTo("used then");
         assertThat(wire.get("appliesToLanguages").get(1).asString()).isEqualTo("kotlin");
         assertThat(wire.get("directiveReferences").get(1).get("code").asString())
-                .isEqualTo("010");
+                .isEqualTo("DIRECTIVE_010");
         assertThat(wire.get("tacticReferences").get(0).get("id").asString()).isEqualTo("tactic-1");
         assertThat(wire.get("toolguideReferences").get(0).get("rationale").asString())
                 .isEqualTo("because g");
