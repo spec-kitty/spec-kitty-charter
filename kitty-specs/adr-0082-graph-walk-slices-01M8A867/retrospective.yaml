@@ -50,71 +50,68 @@ findings_status: has_findings
 helped:
 - id: h-001
   category: process
-  summary: In-session adversarial review per WP caught a behaviour change no ruling covered before it shipped
+  summary: 'In-session adversarial review per WP caught a behaviour change no ruling covered before it shipped'
   evidence_refs:
   - e-003
-  details: WP05 round 1 found that building the layer merge on writes let pack_sibling_conflict refuse a write (F1).
-    It was folded back to the old behaviour, and a second round confirmed the fold.
+  details: 'WP05 round 1 found that building the layer merge on writes let pack_sibling_conflict refuse a write (F1). It was folded back to the old behaviour, and a second round confirmed the fold.'
 - id: h-002
   category: process
-  summary: Red-first tests plus deliberate breaks showed the new tests bite where they could not go red on old code
+  summary: 'Red-first tests plus deliberate breaks showed the new tests bite where they could not go red on old code'
   evidence_refs:
   - e-003
   - e-004
 - id: h-003
   category: process
-  summary: Alternating five-run NFR-003 medians on a quiet machine replaced misleading single runs (+17%/+25% read as +5%/+8%)
+  summary: 'Alternating five-run NFR-003 medians on a quiet machine replaced misleading single runs (+17%/+25% read as +5%/+8%)'
   evidence_refs:
   - e-005
 - id: h-004
   category: process
-  summary: Operator rulings went through the dispatcher and were recorded as mission decisions and on #636, so scope changes stayed traceable
+  summary: 'Operator rulings went through the dispatcher and were recorded as mission decisions and on #636, so scope changes stayed traceable'
   evidence_refs:
   - e-006
 not_helpful:
 - id: n-001
   category: process
-  summary: The signed-commit rule conflicts with the CLI's unsigned commits; re-signing moved approval stamps off the lanes
+  summary: 'The signed-commit rule conflicts with the CLI''s unsigned commits; re-signing moved approval stamps off the lanes'
   evidence_refs:
   - e-007
-  details: Consolidate's dry run then refused APPROVAL_STAMP_NOT_ON_LANE for five WPs (core #5197). Lanes a and e
-    still carry unsigned CLI commits that were pushed before re-signing.
+  details: 'Consolidate''s dry run then refused APPROVAL_STAMP_NOT_ON_LANE for five WPs (core #5197). Lanes a and e still carry unsigned CLI commits that were pushed before re-signing.'
 - id: n-002
   category: process
-  summary: Landing rewrites on main forced 3-way merges with an explicit base on every following slice
+  summary: 'Landing rewrites on main forced 3-way merges with an explicit base on every following slice'
   evidence_refs:
   - e-008
-  details: Each slice landed with operator landing changes (new overloads, guards, a members.put fix). The next
-    slice's branch had to merge main against the previous PR head rather than the real merge base.
+  details: 'Each slice landed with operator landing changes (new overloads, guards, a members.put fix). The next slice''s branch had to merge main against the previous PR head rather than the real merge base.'
 - id: n-003
   category: process
-  summary: Concurrent Gradle runs by reviewer subagents during verifyAll caused a timeout that looked like a regression
+  summary: 'Concurrent Gradle runs by reviewer subagents during verifyAll caused a timeout that looked like a regression'
   evidence_refs:
   - e-009
 - id: n-004
   category: process
-  summary: The mission was planned with a stale local merge target; per-slice PRs to main have no consolidate path
+  summary: 'The mission was planned with a stale local merge target; per-slice PRs to main have no consolidate path'
   evidence_refs:
   - e-010
 gaps:
 - id: g-001
   category: process
-  summary: No canonical closeout for missions delivered by per-slice PRs (core #7903); WPs reached done by a forced move under an operator ruling
+  summary: 'No canonical closeout for missions delivered by per-slice PRs (core #7903); WPs reached done by a forced move under an operator ruling'
   evidence_refs:
   - e-010
 - id: g-002
   category: process
-  summary: A claim recorded by the generic actor 'user' leaves no implementer of record, so REVIEW_NOT_INDEPENDENT cannot be lifted (core #7902)
+  summary: 'A claim recorded by the generic actor ''user'' leaves no implementer of record, so REVIEW_NOT_INDEPENDENT cannot be lifted (core #7902)'
   evidence_refs:
   - e-011
 - id: g-003
   category: process
-  summary: retrospect create reads and writes the repository root checkout for an unlanded lanes_with_coord mission, so it finds no artifacts
+  summary: 'retrospect create reads and writes the repository root checkout for an unlanded lanes_with_coord mission, so it finds no artifacts'
   evidence_refs:
   - e-001
 - id: g-004
   category: implementation
-  summary: Review agents ran checks without :deployable:checkstyleTest; a 63-line test method reached verifyAll before it was caught
+  summary: 'Review agents ran checks without :deployable:checkstyleTest; a 63-line test method reached verifyAll before it was caught'
   evidence_refs:
   - e-009
 proposals: []
