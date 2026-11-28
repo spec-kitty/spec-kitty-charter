@@ -9,10 +9,14 @@ import ai.speckitty.charter.api.model.RefusalViolation;
 import ai.speckitty.charter.api.model.RequiringPack;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -302,27 +306,7 @@ class RefusalHandlerTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(
-            strings = {
-                "registerPackDirective",
-                "putPackDirective",
-                "registerPackParadigm",
-                "putPackParadigm",
-                "registerPackStyleguide",
-                "putPackStyleguide",
-                "registerPackToolguide",
-                "putPackToolguide",
-                "putPackRelationship",
-                "deletePackArtifact",
-                "deletePackRelationship",
-                "createActivation",
-                "replaceActivation",
-                "selectActivationArtifact",
-                "unselectActivationArtifact",
-                "deactivateActivationArtifact",
-                "reactivateActivationArtifact",
-                "applyActivationPreset"
-            })
+    @MethodSource("promptSlotWrites")
     @DisplayName("prompt_slot_missing is a 422 on every write that judges an enhancement in force before it stores")
     void promptSlotMissingIsA422OnTheImpactCheckedAndTheActivationWrites(String operation)
             throws NoSuchMethodException {
@@ -340,9 +324,20 @@ class RefusalHandlerTest {
                 .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(
-            strings = {
+    @ParameterizedTest(name = "{1} on {0}")
+    @MethodSource("edgeIndexCodesOnImpactCheckedWrites")
+    @DisplayName("ruling Q-A: self_override and override_not_permitted are 422 on every impact-checked write")
+    void theTwoEdgeIndexCodesAre422OnTheImpactCheckedWrites(String operation, RefusalCode code)
+            throws NoSuchMethodException {
+        ResponseEntity<CharterRefusal> refused = refusedIn(operation, code);
+
+        assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(refused.getBody().getStatus()).isEqualTo(422);
+    }
+
+    /** The writes that are judged over the closures their pack joins before they store. */
+    private static Stream<String> impactCheckedWrites() {
+        return Stream.of(
                 "registerPackDirective",
                 "putPackDirective",
                 "registerPackParadigm",
@@ -354,34 +349,35 @@ class RefusalHandlerTest {
                 "putPackRelationship",
                 "deletePack",
                 "deletePackArtifact",
-                "deletePackRelationship"
-            })
-    @DisplayName("ruling Q-A: self_override and override_not_permitted are 422 on every impact-checked write")
-    void theTwoEdgeIndexCodesAre422OnTheImpactCheckedWrites(String operation) throws NoSuchMethodException {
-        for (RefusalCode code : List.of(RefusalCode.SELF_OVERRIDE, RefusalCode.OVERRIDE_NOT_PERMITTED)) {
-            ResponseEntity<CharterRefusal> refused = refusedIn(operation, code);
-
-            assertThat(refused.getStatusCode()).as(code.token()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
-            assertThat(refused.getBody().getStatus()).as(code.token()).isEqualTo(422);
-        }
+                "deletePackRelationship");
     }
 
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"getOffering", "listEffectiveArtifacts", "getEffectiveGraph", "selectActivationArtifact"})
-    @DisplayName("ruling Q-A: the twin: a read or an activation write answers the two codes 500, their own status")
-    void theTwoEdgeIndexCodesAre500OnAReadAndAnActivationWrite(String operation) throws NoSuchMethodException {
-        for (RefusalCode code : List.of(RefusalCode.SELF_OVERRIDE, RefusalCode.OVERRIDE_NOT_PERMITTED)) {
-            assertThat(refusedIn(operation, code).getStatusCode())
-                    .as(code.token())
-                    .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    private static Stream<String> promptSlotWrites() {
+        return Stream.concat(
+                impactCheckedWrites(),
+                Stream.of(
+                        "createActivation",
+                        "replaceActivation",
+                        "selectActivationArtifact",
+                        "unselectActivationArtifact",
+                        "deactivateActivationArtifact",
+                        "reactivateActivationArtifact",
+                        "applyActivationPreset"));
     }
 
-    @Test
-    @DisplayName("the twin: an activation write keeps the composition codes' own status, 500")
-    void anActivationWriteKeepsTheCompositionCodesAs500() throws NoSuchMethodException {
-        assertThat(refusedIn("selectActivationArtifact", RefusalCode.PACK_REFERENCE_ARTIFACT_MISSING)
-                        .getStatusCode())
+    private static Stream<Arguments> edgeIndexCodesOnImpactCheckedWrites() {
+        return impactCheckedWrites()
+                .flatMap(operation -> Stream.of(RefusalCode.SELF_OVERRIDE, RefusalCode.OVERRIDE_NOT_PERMITTED)
+                        .map(code -> Arguments.of(operation, code)));
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = RefusalCode.class,
+            names = {"PACK_REFERENCE_ARTIFACT_MISSING", "SELF_OVERRIDE", "OVERRIDE_NOT_PERMITTED"})
+    @DisplayName("the twin: an activation write keeps the composition and layer-merge codes' own status, 500")
+    void anActivationWriteKeepsTheCompositionCodesAs500(RefusalCode code) throws NoSuchMethodException {
+        assertThat(refusedIn("selectActivationArtifact", code).getStatusCode())
                 .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
