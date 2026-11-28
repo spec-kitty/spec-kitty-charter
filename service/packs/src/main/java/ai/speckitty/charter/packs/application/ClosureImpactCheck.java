@@ -16,10 +16,8 @@ import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ImpactCheck;
 import ai.speckitty.charter.packs.domain.Ledger;
 import ai.speckitty.charter.packs.domain.Pack;
-import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
-import ai.speckitty.charter.packs.domain.graph.PackNode;
 import ai.speckitty.charter.packs.domain.graph.Scope;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packs.domain.rules.ProfileReader;
@@ -36,6 +34,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -466,21 +465,13 @@ public final class ClosureImpactCheck implements ImpactCheck {
             Memo<ClosureView> view,
             Supplier<List<ClosureFault>> merged,
             Optional<Own> own) {
-        List<PackNode> nodes = new ArrayList<>();
-        Map<PackIdentifier, PackUnderResolution> members = new LinkedHashMap<>();
-        for (PackUnderResolution member : composed.packs()) {
-            ConfiguredPack configured = member.configured();
-            members.put(configured.id(), member);
-            nodes.add(new PackNode(configured, member.descriptor()));
-        }
-        roots.ids().stream()
-                .filter(root -> !members.containsKey(root))
-                .findFirst()
-                .ifPresent(root -> {
-                    throw new IllegalStateException("the composed closure does not hold its root " + root.value());
-                });
-        PackGraph graph = PackGraph.of(
-                nodes, pack -> composed.factsOf(Objects.requireNonNull(members.get(pack), "a pack of the closure")));
+        Set<PackIdentifier> members = composed.packs().stream()
+                .map(member -> member.configured().id())
+                .collect(Collectors.toSet());
+        roots.ids().stream().filter(root -> !members.contains(root)).findFirst().ifPresent(root -> {
+            throw new IllegalStateException("the composed closure does not hold its root " + root.value());
+        });
+        PackGraph graph = PackGraph.ofPacks(composed.packs(), composed::factsOf);
         ComposedRelations relations = PackRulesets.relationsOf(composed.packs(), composed::factsOf);
         if (own.isEmpty()) {
             return PackRulesets.composedClosure(relations, merged).run(graph, Scope.of(roots.ids()));

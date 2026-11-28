@@ -176,7 +176,7 @@ public final class PackRulesets {
      * @param factsOf each member's composition facts
      * @return every fault of the first check that finds any, member by member; empty when every check passes
      * @throws IllegalArgumentException when two packs of the closure are configured under one identifier, as
-     *     {@link PackGraph#of} refuses them; neither caller composes such a closure (registration keys its reads by
+     *     {@link PackGraph#ofPacks(List, Function)} refuses them; neither caller composes such a closure (registration keys its reads by
      *     configured identifier, pack-doctor refuses a repeated name)
      */
     public static List<ClosureFault> references(
@@ -316,11 +316,12 @@ public final class PackRulesets {
      * run only when the closure writes an {@code enhances} or {@code overrides} edge; the specialization rule runs
      * regardless. Each rule reads the subject, since where an edge's ends are placed is a fact of the closure, so the
      * answer does not depend on the elements the walk hands over; the {@code RELATIONS} mode names what the check is
-     * about. {@link #composedClosure} runs it ahead of the edge-index rules.
+     * about. {@link #composedClosure} runs it ahead of the edge-index rules; pack-doctor's {@code --full} runs it
+     * alone, through {@link #relationFaults}.
      *
      * @param relations the closure's typed edges, placed
      * @return the check: the relations walk and the one phase; production runs it as the first phase of
-     *     {@link #composedClosure}, and this check alone is the phase's unit under test
+     *     {@link #composedClosure} and in {@link #relationFaults}, and this check alone is the phase's unit under test
      */
     static GraphCheck relations(ComposedRelations relations) {
         return new GraphCheck(PackGraph.Walk.RELATIONS, List.of(relationsPhase(relations)));
@@ -365,6 +366,30 @@ public final class PackRulesets {
                 packs,
                 member -> factsOf.apply(member).edges(),
                 member -> factsOf.apply(member).policy());
+    }
+
+    /**
+     * Runs the relation rules ({@link #relations}) on the walker over the closure's relations walk, with every pack as a
+     * root: what registration's relations phase refuses in the closure, without the edge-index rules behind it, which
+     * judge the layer merge (#632 item 3, FR-012). pack-doctor's {@code --full} runs it per root of
+     * its set, over the closure the root composes. A closure with no pack has no fault.
+     *
+     * @param closure the composed closure, in merge order, each configured pack once
+     * @param factsOf each pack's composition facts, as the closure was composed with them
+     * @return the faults, rule by rule; empty when the closure's relations are sound
+     * @throws IllegalArgumentException when two packs of the closure are configured under one identifier, as
+     *     {@link PackGraph#ofPacks(List, Function)} refuses them
+     */
+    public static List<ClosureFault> relationFaults(
+            List<PackUnderResolution> closure, Function<PackUnderResolution, PackCompositionFacts> factsOf) {
+        Objects.requireNonNull(closure, "closure");
+        Objects.requireNonNull(factsOf, "factsOf");
+        if (closure.isEmpty()) {
+            return List.of();
+        }
+        return relations(relationsOf(closure, factsOf))
+                .run(PackGraph.ofPacks(closure, factsOf), Scope.allOf(closure))
+                .faults();
     }
 
     /**
