@@ -204,6 +204,14 @@ public record ClosureView(
             return judged(policy, edges).relations();
         }
 
+        /**
+         * The edge-index faults the merge was judged with, kept with it: what a write's walker reads, so the rules run
+         * once for a closure, however many reads and writes ask.
+         */
+        synchronized List<ClosureFault> edgeIndexFaults(PerPackPolicy policy, EdgeIndex edges) {
+            return judged(policy, edges).faults();
+        }
+
         /** The merge and its edge-index faults, or the refusal the merge met. */
         private record Judged(
                 Optional<MergedView> view,
@@ -561,6 +569,16 @@ public record ClosureView(
      */
     public MergedRelations mergedRelations() {
         return mergeInputs.relations(policy, edges);
+    }
+
+    /**
+     * The edge-index faults of the closure's merge, as {@link #merged()} refuses with them, judged once with the merge
+     * and kept: what registration and every write read, so they never run the rules again over a merge a read judged.
+     *
+     * @return the faults, rule by rule; empty when the merge is sound
+     */
+    public List<ClosureFault> edgeIndexFaults() {
+        return mergeInputs.edgeIndexFaults(policy, edges);
     }
 
     /**
