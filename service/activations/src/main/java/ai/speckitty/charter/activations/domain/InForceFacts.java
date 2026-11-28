@@ -9,7 +9,8 @@ import ai.speckitty.charter.activations.domain.MergedSnapshot.InForceQuery;
  * deny entry on a required artifact reads it, and no copy of the resolution lives in the domain.
  *
  * <p>The question is asked only when a write adds a deny entry on a required artifact, and asking it may refuse (the
- * layer merge of the closure is refused, {@code pack_unreadable}); the refusal reaches the write.
+ * layer merge of the closure is refused, with the merge's code, {@code override_not_permitted} for a forbidden layer
+ * override among them); the refusal reaches the write.
  */
 @FunctionalInterface
 public interface InForceFacts {

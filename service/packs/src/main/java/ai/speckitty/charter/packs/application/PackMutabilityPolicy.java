@@ -14,11 +14,11 @@ import ai.speckitty.charter.packs.domain.MutabilityPolicyRepository;
 import ai.speckitty.charter.packs.domain.MutabilityPolicySource;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCatalogRepository;
-import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackDescriptorRepository;
 import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.PackOrigins;
 import ai.speckitty.charter.packs.domain.PerPackPolicy;
+import ai.speckitty.charter.packs.domain.ScopedPolicies;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -49,7 +48,7 @@ import org.springframework.stereotype.Component;
  * what the pack or a pack it builds on ({@code depends_on} and {@code parent_pack}, transitively) holds. A pack may lock
  * the artifacts of the packs it builds on, as an enterprise pack enforces a built-in practice, never those of an
  * unrelated pack that shares a closure, and an id no pack of its own closure holds is open for it.
- * {@link #scopedPolicies} is that rule, and {@link ClosureQueries} reads the closure's locks through it too.
+ * {@link ScopedPolicies} is that rule, and {@link ClosureQueries} reads the closure's locks through it too.
  *
  * <p>Cost: the check composes P's closure once per request, for all its writes, in one verified read: {@link
  * OfferingReadService#composedWithFacts(java.util.Collection)} inside a {@link ConsistentRead}, and each member's
@@ -121,9 +120,6 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
      * decision 01M6VEDYX8TQ4AKCP7C19WAP75), never a registration.
      */
     private record Judging(Map<PackUlid, MutabilityPolicySource> policies, Set<Urn> held) {}
-
-    /** One closure pack as the lock scope reads it. */
-    private record Scope(PackUlid packId, List<PackUlid> buildsOn, Set<Urn> held, MutabilityPolicySource policy) {}
 
     private static final String STALE = "The packs changed while the write's policy was read; send the write again.";
 
@@ -238,27 +234,9 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
                 List.of()));
     }
 
-    /**
-     * Each closure pack's policy scoped to what the pack or a pack it builds on holds (A15, rule C22): the policy's
-     * level for such an artifact, and {@link MutabilityLevel#OPEN} for every other target. The read side's locks and the
-     * mutability check both read a closure's policies through it.
-     *
-     * @param closure the closure's packs, in closure order
-     * @param policyOf each pack's declared policy
-     * @return each pack's scoped policy, by descriptor {@code pack_id}, in closure order
-     */
-    public static Map<PackUlid, MutabilityPolicySource> scopedPolicies(
-            List<PackUnderResolution> closure, Function<PackUnderResolution, MutabilityPolicySource> policyOf) {
-        Objects.requireNonNull(closure, "closure");
-        Objects.requireNonNull(policyOf, "policyOf");
-        return scoped(closure.stream()
-                .map(member -> new Scope(member.descriptorId(), buildsOn(member), held(member), policyOf.apply(member)))
-                .toList());
-    }
-
     /** The policies judging a write into {@code root}: the closure's scoped policies, the root's own left out (B8). */
     private static Judging judgingOf(OfferingReadService.ComposedClosure composed, PackIdentifier root) {
-        Map<PackUlid, MutabilityPolicySource> judging = scopedPolicies(
+        Map<PackUlid, MutabilityPolicySource> judging = ScopedPolicies.of(
                 composed.packs(), member -> composed.factsOf(member).policy());
         composed.packs().stream()
                 .filter(member -> member.configured().id().equals(root))
@@ -266,7 +244,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
         Set<Urn> held = new LinkedHashSet<>();
         composed.packs().stream()
                 .filter(member -> !member.configured().id().equals(root))
-                .forEach(member -> held.addAll(held(member)));
+                .forEach(member -> held.addAll(ScopedPolicies.held(member)));
         return new Judging(judging, held);
     }
 
@@ -293,7 +271,7 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
     /**
      * The policies judging a write of a staged pack: the closure of the packs it builds on, composed from the stored
      * packs its descriptor names by {@code pack_id} ({@code parent_pack} and {@code depends_on}), each scoped as
-     * {@link #scopedPolicies} scopes it. The staged pack is not in it, so its own policy cannot bind it. A pack it names
+     * {@link ScopedPolicies} scopes it. The staged pack is not in it, so its own policy cannot bind it. A pack it names
      * that is not stored has nothing to judge here: the impact check refuses the closure that cannot be composed.
      */
     private static Judging ancestorsJudging(
@@ -311,9 +289,9 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
         }
         OfferingReadService.ComposedClosure composed = offerings.composedWithFacts(roots);
         Set<Urn> held = new LinkedHashSet<>();
-        composed.packs().forEach(member -> held.addAll(held(member)));
+        composed.packs().forEach(member -> held.addAll(ScopedPolicies.held(member)));
         return new Judging(
-                scopedPolicies(
+                ScopedPolicies.of(
                         composed.packs(), member -> composed.factsOf(member).policy()),
                 held);
     }
@@ -322,8 +300,8 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
     private static JudgingPolicies policiesOver(MutabilityPolicyRepository policies, Closure closure) {
         return pack -> {
             List<Member> members = closure.of(pack);
-            Map<PackUlid, MutabilityPolicySource> judging = scoped(members.stream()
-                    .map(member -> new Scope(
+            Map<PackUlid, MutabilityPolicySource> judging = ScopedPolicies.scoped(members.stream()
+                    .map(member -> new ScopedPolicies.Scope(
                             member.descriptorPackId(),
                             member.buildsOn(),
                             member.held(),
@@ -338,55 +316,6 @@ public final class PackMutabilityPolicy implements MutabilityCheck {
                     .forEach(member -> held.addAll(member.held()));
             return new Judging(judging, held);
         };
-    }
-
-    /** Each pack's policy restricted to what it and the packs it builds on hold, in closure order, each id once. */
-    private static Map<PackUlid, MutabilityPolicySource> scoped(List<Scope> closure) {
-        Map<PackUlid, Scope> byId = new LinkedHashMap<>();
-        closure.forEach(scope -> byId.putIfAbsent(scope.packId(), scope));
-        Map<PackUlid, MutabilityPolicySource> scoped = new LinkedHashMap<>();
-        byId.values().forEach(scope -> scoped.put(scope.packId(), restricted(scope.policy(), heldAlong(scope, byId))));
-        return scoped;
-    }
-
-    /**
-     * What a pack and every pack it builds on, transitively, hold; a pack outside the closure holds nothing here. The
-     * descent is {@link PackGraph#ancestorsOf}'s.
-     */
-    private static Set<Urn> heldAlong(Scope from, Map<PackUlid, Scope> byId) {
-        Set<Urn> held = new LinkedHashSet<>();
-        PackGraph.ancestorsOf(List.of(from.packId()), byId, Scope::buildsOn)
-                .forEach(packId -> Optional.ofNullable(byId.get(packId)).ifPresent(scope -> held.addAll(scope.held())));
-        return held;
-    }
-
-    /** The policy's level for each held target that is above open, as per-target entries; every other target open. */
-    private static MutabilityPolicySource restricted(MutabilityPolicySource policy, Set<Urn> held) {
-        if (policy.equals(MutabilityPolicySource.empty())) {
-            return policy;
-        }
-        MutabilityPolicySource.Builder scoped = MutabilityPolicySource.builder();
-        held.forEach(urn -> {
-            MutabilityLevel level = policy.levelOf(urn);
-            if (level != MutabilityLevel.OPEN) {
-                scoped.entry(urn, level);
-            }
-        });
-        return scoped.build();
-    }
-
-    /** The descriptor {@code pack_id}s a pack builds on: {@link PackGraph#buildsOn}. */
-    private static List<PackUlid> buildsOn(PackUnderResolution member) {
-        return PackGraph.buildsOn(member.descriptor()).stream()
-                .map(PackUlid::new)
-                .toList();
-    }
-
-    /** The artifacts a pack holds, as URNs. */
-    private static Set<Urn> held(PackUnderResolution member) {
-        Set<Urn> held = new LinkedHashSet<>();
-        member.referableArtifacts().forEach(referable -> Urn.parse(referable).ifPresent(held::add));
-        return held;
     }
 
     /**

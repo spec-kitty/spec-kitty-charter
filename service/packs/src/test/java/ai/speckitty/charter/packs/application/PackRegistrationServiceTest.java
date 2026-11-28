@@ -839,27 +839,47 @@ class PackRegistrationServiceTest {
         assertThat(rig.filesOf(rig.packs.resolve("derived"))).isEqualTo(before);
 
         StagedPack kept = rig.stage(derived("2.0.0").directive("EXT_ONE", "First"));
-        assertThat(rig.register("derived", kept, Preconditions.none()).outcome())
-                .as("the control: EXT_ONE kept as it was")
+        assertThat(refusalOf(() -> rig.register("derived", kept, Preconditions.none())))
+                .as("EXT_ONE kept as it was passes the write gate, and its layer override of an extendable artifact is"
+                        + " C21's fault on the write as on the read (#639, ruling Q-B)")
+                .isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+
+        assertThat(rig.register("derived", rig.stage(derived("2.0.0")), Preconditions.none())
+                        .outcome())
+                .as("the control: dropping EXT_ONE is within extendable and leaves no layer override")
                 .isEqualTo(Outcome.REPLACED);
     }
 
     @Test
-    void aRemovalIsAllowedOnAnExtendableArtifactAndRefusedOnALockedOne(@TempDir Path host) {
+    void theRemovalOfAnExtendableArtifactPassesTheWriteGate(@TempDir Path host) {
+        Rig rig = rigWithBase(host);
+        rig.install("derived", derived("1.0.0").directive("EXT_ONE", "Mine"));
+
+        assertThat(rig.register("derived", rig.stage(derived("2.0.0")), Preconditions.none())
+                        .outcome())
+                .as("REMOVE is within extendable, and the replacement keeps no layer override")
+                .isEqualTo(Outcome.REPLACED);
+    }
+
+    @Test
+    void theRemovalOfALockedArtifactIsRefusedAndKeepingItIsC21sFault(@TempDir Path host) {
         Rig rig = rigWithBase(host);
         rig.install("derived", derived("1.0.0").directive("LOCKED_ONE", "Mine").directive("EXT_ONE", "Mine"));
-        StagedPack dropsExtendable = rig.stage(derived("2.0.0").directive("LOCKED_ONE", "Mine"));
-
-        assertThat(rig.register("derived", dropsExtendable, Preconditions.none())
-                        .outcome())
-                .as("REMOVE is within extendable")
-                .isEqualTo(Outcome.REPLACED);
         Map<String, String> before = rig.filesOf(rig.packs.resolve("derived"));
 
+        CharterRefusal kept = refusal(() -> rig.register(
+                "derived", rig.stage(derived("2.0.0").directive("LOCKED_ONE", "Mine")), Preconditions.none()));
+        assertThat(kept.code())
+                .as("dropping EXT_ONE passes the write gate; the layer override of LOCKED_ONE the pack keeps is C21's"
+                        + " fault (#639, ruling Q-B)")
+                .isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+        assertThat(kept.getMessage()).contains("directive:LOCKED_ONE").doesNotContain("EXT_ONE");
+
         assertThat(refusalOf(() -> rig.register("derived", rig.stage(derived("3.0.0")), Preconditions.none())))
+                .as("REMOVE of a locked artifact is refused by the write gate")
                 .isEqualTo(RefusalCode.GOVERNANCE_POLICY_VIOLATION);
         assertThat(rig.filesOf(rig.packs.resolve("derived")))
-                .as("nothing changed")
+                .as("nothing changed: a pack in this state is cleared only by its DELETE")
                 .isEqualTo(before);
     }
 
@@ -933,9 +953,10 @@ class PackRegistrationServiceTest {
                 .isEqualTo(before);
 
         StagedPack keeps = rig.stage(derived("2.0.0").directive("LOCKED_ONE", "Mine"));
-        assertThat(rig.register("derived", keeps, Preconditions.none()).outcome())
-                .as("the control: the fixed upload keeps the locked artifact and repairs the pack")
-                .isEqualTo(Outcome.REPLACED);
+        assertThat(refusalOf(() -> rig.register("derived", keeps, Preconditions.none())))
+                .as("the upload that keeps the locked artifact passes the write gate, and its layer override of a"
+                        + " locked artifact is C21's fault on the write as on the read (#639, ruling Q-B)")
+                .isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
     }
 
     @Test

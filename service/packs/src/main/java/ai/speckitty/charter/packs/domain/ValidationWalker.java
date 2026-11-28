@@ -6,6 +6,7 @@ import ai.speckitty.charter.kernel.validation.Severity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -177,7 +178,8 @@ public final class ValidationWalker<N> implements GraphWalker<N, N> {
      * Runs the phases, one traversal each, until one records a violation.
      *
      * @param traversal how the nodes reach the walker
-     * @return the ledger: each phase's findings in check order, up to and including the first phase with a violation
+     * @return the ledger: each phase's findings in check order, up to and including the first phase with a violation,
+     *     and that phase's name
      */
     public Ledger run(Traversal<N> traversal) {
         Objects.requireNonNull(traversal, "traversal");
@@ -191,7 +193,7 @@ public final class ValidationWalker<N> implements GraphWalker<N, N> {
                 Ledger found = runPhase(phase, traversal);
                 ledger.addAll(found.faults());
                 if (found.violated()) {
-                    break;
+                    return new Ledger(ledger, Optional.of(phase.name()));
                 }
             }
             return new Ledger(ledger);

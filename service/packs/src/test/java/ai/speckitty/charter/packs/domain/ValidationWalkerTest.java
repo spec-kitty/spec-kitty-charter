@@ -111,6 +111,7 @@ class ValidationWalkerTest {
 
         assertThat(details(found)).containsExactly("a:r1");
         assertThat(found.violated()).isTrue();
+        assertThat(found.gate()).as("the phase whose violation stopped the run").contains("first");
         assertThat(later).isEmpty();
         assertThat(nodes.runs).as("one traversal per phase that runs").isEqualTo(1);
     }
@@ -149,6 +150,7 @@ class ValidationWalkerTest {
 
         assertThat(found.faults()).isEmpty();
         assertThat(found.violated()).isFalse();
+        assertThat(found.gate()).as("no phase stopped the run").isEmpty();
     }
 
     @Test

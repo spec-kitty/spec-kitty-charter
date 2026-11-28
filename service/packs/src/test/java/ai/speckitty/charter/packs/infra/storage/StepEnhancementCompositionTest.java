@@ -146,7 +146,8 @@ class StepEnhancementCompositionTest {
                     held.referable()));
             facts.put(location.name(), held);
         }
-        return LayerMerge.merge(PackCompositionResolver.resolve(packs), facts, new PerPackPolicy(Map.of()));
+        return mergedOrRefused(
+                LayerMerge.attempt(PackCompositionResolver.resolve(packs), facts, new PerPackPolicy(Map.of())));
     }
 
     private static String fragmentOf(PackLocation winner) {
@@ -265,5 +266,10 @@ class StepEnhancementCompositionTest {
 
         assertThat(with).isNotEqualTo(plain);
         assertThat(edited).isNotEqualTo(with).isNotEqualTo(plain);
+    }
+
+    /** The merge, or the refusal it met, thrown, as a read meets it. */
+    private static MergedClosure mergedOrRefused(LayerMerge.Attempt attempt) {
+        return attempt.merged().orElseThrow(() -> attempt.refused().orElseThrow());
     }
 }

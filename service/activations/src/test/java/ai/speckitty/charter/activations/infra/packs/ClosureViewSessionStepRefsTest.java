@@ -660,7 +660,7 @@ class ClosureViewSessionStepRefsTest {
                     List.of(),
                     Map.of(),
                     "sha256:merged",
-                    EdgeIndex.of(packs, facts).orRefuse(),
+                    EdgeIndex.of(packs, facts),
                     new ClosureView.MergeInputs(packs, facts),
                     "sha256:merged");
             return new ClosureViewSession(view, PacksAvailability.snapshotOf(view));

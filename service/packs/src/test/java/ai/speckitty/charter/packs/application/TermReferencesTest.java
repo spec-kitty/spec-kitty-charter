@@ -106,7 +106,7 @@ class TermReferencesTest {
 
     private static List<EdgeIndex.Link> writtenLinks(OfferingReadService.ComposedClosure closure, String source) {
         Urn from = Urn.parse(source).orElseThrow();
-        return EdgeIndex.of(closure.packs(), closure.facts()).orRefuse().writtenLinks().stream()
+        return EdgeIndex.of(closure.packs(), closure.facts()).writtenLinks().stream()
                 .filter(link -> link.source().equals(from))
                 .toList();
     }

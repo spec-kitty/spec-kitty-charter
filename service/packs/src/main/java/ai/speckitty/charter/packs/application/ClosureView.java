@@ -15,13 +15,15 @@ import ai.speckitty.charter.kernel.domain.Relationship;
 import ai.speckitty.charter.kernel.domain.StepRoles;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ClosureFacts;
-import ai.speckitty.charter.packs.domain.EnhancementCompose;
+import ai.speckitty.charter.packs.domain.ClosureFault;
+import ai.speckitty.charter.packs.domain.ClosureVerdict;
 import ai.speckitty.charter.packs.domain.GlossaryTerm;
 import ai.speckitty.charter.packs.domain.InForceRequest;
 import ai.speckitty.charter.packs.domain.InForceResolution;
 import ai.speckitty.charter.packs.domain.InForceStates;
 import ai.speckitty.charter.packs.domain.LayerMerge;
 import ai.speckitty.charter.packs.domain.MergedClosure;
+import ai.speckitty.charter.packs.domain.MergedRelations;
 import ai.speckitty.charter.packs.domain.MutabilityLevel;
 import ai.speckitty.charter.packs.domain.PackCompanionFiles;
 import ai.speckitty.charter.packs.domain.PackCompositionFacts;
@@ -34,6 +36,7 @@ import ai.speckitty.charter.packs.domain.RequiredFloor;
 import ai.speckitty.charter.packs.domain.RolePins;
 import ai.speckitty.charter.packs.domain.SlotCompose;
 import ai.speckitty.charter.packs.domain.StepHolding;
+import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -109,6 +112,8 @@ public record ClosureView(
         private final Map<String, PackCompositionFacts> facts;
         private final WinnerSource winners;
         private @Nullable MergedView built;
+        private @Nullable MergedRelations relations;
+        private List<ClosureFault> faults = List.of();
 
         /**
          * The inputs of a closure's merge, with no way to read the entity of a winner.
@@ -157,38 +162,85 @@ public record ClosureView(
             return NONE;
         }
 
-        /** The union floor (A1): the merged closure's when it was built, else computed with no override judged. */
+        /**
+         * The union floor (A1): the merged closure's when it was built and is sound, else computed with no override
+         * judged.
+         */
         synchronized RequiredFloor floor() {
-            return built != null ? built.closure().floor() : LayerMerge.floorOf(packs, facts);
+            return built != null && faults.isEmpty() ? built.closure().floor() : LayerMerge.floorOf(packs, facts);
         }
 
         /**
-         * The layer merge, built once. Two closure-level refusals come out of it, both {@code 500 pack_unreadable}
-         * whatever the activation: a layer override the overridden artifact's level forbids (C21, from
-         * {@link LayerMerge}), and then an enhancement of a step whose mission type is locked along the closure without
-         * the enhancing pack's own policy (C22 and C25 as amended, OD-2 (A)), the read side of the
-         * {@code override_not_permitted} the registration impact check answers.
+         * The union floor computed with no override judged, whether or not the merge was built: what the impact
+         * check's notices compare, so building the merge never changes them.
          */
-        synchronized MergedView merged(PerPackPolicy policy, EdgeIndex edges) {
-            if (built == null) {
-                MergedClosure merged = LayerMerge.merge(packs, facts, policy);
-                refuseLockedStepEnhanced(policy);
-                built = new MergedView(merged, edges.merged(merged));
-            }
-            return built;
+        RequiredFloor floorJudgingNoOverride() {
+            return LayerMerge.floorOf(packs, facts);
         }
 
-        private void refuseLockedStepEnhanced(PerPackPolicy policy) {
-            EnhancementCompose.lockedTargets(
-                            packs,
-                            pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
-                                    .edges(),
-                            policy)
-                    .stream()
-                    .findFirst()
-                    .ifPresent(locked -> {
-                        throw new CharterRefusal(RefusalCode.PACK_UNREADABLE, locked.detail(), locked.packs());
-                    });
+        /**
+         * The layer merge, built once, and refused when the edge-index rules find a fault in it
+         * ({@link PackRulesets#edgeIndexFaults}, #639, operator ruling D2): every fault, each with the code the
+         * registration impact check answers for it, whatever the activation. They are a layer override the overridden
+         * artifact's level forbids (C21) and an enhancement of a step whose mission type is locked along the closure
+         * without the enhancing pack's own policy (C22 and C25 as amended, OD-2 (A)), both
+         * {@code override_not_permitted}; an {@code overrides} edge the merge re-points to its own source
+         * ({@code self_override}); and another pack's step link that names no step of the type in force
+         * ({@code pack_reference_artifact_missing}). A merge that refuses before it ends (a step contest no entry
+         * settles) answers its own refusal, unless a layer override it placed first breaks C21: the fault the merge
+         * met first is the answer, as when C21 refused at the first artifact that broke it. A refused merge is not
+         * kept, so it is judged again on the next call.
+         */
+        synchronized MergedView merged(PerPackPolicy policy, EdgeIndex edges) {
+            Judged judged = judged(policy, edges);
+            if (!judged.faults().isEmpty()) {
+                throw PackRefusals.of(new ClosureVerdict(judged.faults()));
+            }
+            return judged.view().orElseThrow(() -> judged.refused().orElseThrow());
+        }
+
+        /**
+         * The merged closure as the edge-index rules judge it, never refused: built with the merge, or, for a merge
+         * that refused, the layer overrides it placed first ({@link MergedRelations#stopped}).
+         */
+        synchronized MergedRelations relations(PerPackPolicy policy, EdgeIndex edges) {
+            return judged(policy, edges).relations();
+        }
+
+        /** The merge and its edge-index faults, or the refusal the merge met. */
+        private record Judged(
+                Optional<MergedView> view,
+                MergedRelations relations,
+                List<ClosureFault> faults,
+                Optional<CharterRefusal> refused) {}
+
+        private Judged judged(PerPackPolicy policy, EdgeIndex edges) {
+            if (built != null) {
+                return new Judged(
+                        Optional.of(built),
+                        Objects.requireNonNull(relations, "built with the merge"),
+                        faults,
+                        Optional.empty());
+            }
+            LayerMerge.Attempt attempt = LayerMerge.attempt(packs, facts, policy);
+            if (attempt.merged().isEmpty()) {
+                MergedRelations stopped = MergedRelations.stopped(packs, policy, attempt.overrides());
+                return new Judged(Optional.empty(), stopped, PackRulesets.edgeIndexFaults(stopped), attempt.refused());
+            }
+            MergedClosure merged = attempt.merged().get();
+            EdgeIndex placed = edges.merged(merged);
+            MergedRelations judged = MergedRelations.of(
+                    packs,
+                    pack -> facts.getOrDefault(pack.configured().id().value(), PackCompositionFacts.NONE)
+                            .edges(),
+                    policy,
+                    merged,
+                    edges.placedEdges(),
+                    placed.placedEdges());
+            faults = PackRulesets.edgeIndexFaults(judged);
+            relations = judged;
+            built = new MergedView(merged, placed);
+            return new Judged(Optional.of(built), judged, faults, Optional.empty());
         }
     }
 
@@ -479,6 +531,16 @@ public record ClosureView(
     }
 
     /**
+     * The union floor computed with no layer override judged, whether or not this view's merge was built: what the
+     * impact check's notices compare before and after a write, so judging the merge never changes them (#639).
+     *
+     * @return the union floor, with no override judged
+     */
+    RequiredFloor floorJudgingNoOverride() {
+        return mergeInputs.floorJudgingNoOverride();
+    }
+
+    /**
      * The closure under the layer merge (FR-009 to FR-012): the version of each artifact in force across levels, every
      * version a later level replaced, and the typed edges re-homed through the winners. It is built from the composed
      * packs and the facts this verified read holds, on the first call, and kept: nothing is read again (NFR-007).
@@ -486,11 +548,25 @@ public record ClosureView(
      * view answers the winner.
      *
      * @return the merge of the closure
-     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with {@code PACK_UNREADABLE} when a layer override
-     *     breaks the owner's level (FR-011) or an {@code overrides} edge resolves to its own source (A12)
+     * @throws ai.speckitty.charter.kernel.domain.CharterRefusal with every edge-index fault of the merge, each with its
+     *     own code ({@link PackRulesets#edgeIndex}, #639): a layer override that breaks the owner's level (C21) or an
+     *     enhancement of a step whose mission type is locked, {@code override_not_permitted}; an {@code overrides} edge
+     *     the merge re-points to its own source (A12), {@code self_override}; another pack's step link that names no
+     *     step of the type in force, {@code pack_reference_artifact_missing}
      */
     public MergedView merged() {
         return mergeInputs.merged(policy, edges);
+    }
+
+    /**
+     * The closure under the layer merge as the edge-index rules judge it (#639, ADR-0082 slice 4): what registration
+     * and every write run those rules on, after the relation rules ({@link PackRulesets#composedClosure}). It is built
+     * with {@link #merged()}, once, and never refused, so the write places each fault the read would refuse with.
+     *
+     * @return the merged relations; for a merge that refuses with its own code, the layer overrides it placed first
+     */
+    public MergedRelations mergedRelations() {
+        return mergeInputs.relations(policy, edges);
     }
 
     /**

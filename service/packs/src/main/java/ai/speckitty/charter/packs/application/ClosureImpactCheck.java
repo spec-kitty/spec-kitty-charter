@@ -11,13 +11,17 @@ import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.ClosureFault;
 import ai.speckitty.charter.packs.domain.ClosureVerdict;
+import ai.speckitty.charter.packs.domain.ComposedRelations;
 import ai.speckitty.charter.packs.domain.ConfiguredPack;
 import ai.speckitty.charter.packs.domain.ImpactCheck;
+import ai.speckitty.charter.packs.domain.Ledger;
+import ai.speckitty.charter.packs.domain.MergedRelations;
 import ai.speckitty.charter.packs.domain.Pack;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
 import ai.speckitty.charter.packs.domain.PackGraph;
 import ai.speckitty.charter.packs.domain.ProfileEnhancementGateway;
 import ai.speckitty.charter.packs.domain.graph.PackNode;
+import ai.speckitty.charter.packs.domain.graph.Scope;
 import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packs.domain.rules.ProfileReader;
 import java.util.ArrayList;
@@ -31,7 +35,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -40,18 +46,20 @@ import org.springframework.core.log.LogAccessor;
 import org.springframework.stereotype.Component;
 
 /**
- * The registration impact check (IC-15, IC-04 step 9, FR-025, FR-027): with the written pack in place, it composes every
- * closure that holds it, and no other. Those are the closure of every pack that builds on it, found from a reverse
- * {@code depends_on}/lineage index, and the root set of every stored activation whose closure holds it, which the
- * index alone misses (a sibling conflict between packs only one activation lists together). A closure that does not
- * compose, or breaks a relation rule ({@link ImpactRelations}), refuses the write with its code, naming the closure's
- * roots and the packs involved, and nothing is written. PR A stays strict (DM-01M6TQ67C9ZTNGZB9CY28JS54F): a pack
- * already broken is not repaired by a write that leaves a closure broken.
+ * The registration impact check (IC-15, IC-04 step 9, FR-025, FR-027): with the written pack in place, it composes
+ * every closure that holds it, and no other. Those are the closure of every pack that builds on it, found from a
+ * reverse {@code depends_on}/lineage index, and the root set of every stored activation whose closure holds it, which
+ * the index alone misses (a sibling conflict between packs only one activation lists together). A closure that does not
+ * compose, or breaks a relation rule ({@link PackRulesets#relations}) or an edge-index rule of its merge
+ * ({@link PackRulesets#edgeIndex}), refuses the write with its code, naming the closure's roots and the packs involved,
+ * and nothing is written. PR A stays strict (DM-01M6TQ67C9ZTNGZB9CY28JS54F): a pack already broken is not repaired by a
+ * write that leaves a closure broken.
  *
- * <p>It composes through {@code OfferingReadService} and {@code ClosureQueries}, built over {@link StagedPackViews}, so the
- * compose rules are the reads' own and none is copied. It runs under the registry lock and the pack's own, so the stored
- * packs cannot change under it and it needs no verification of its inputs; each pack's files are read once, however
- * many closures hold the pack. A closure's floor and locks are read before and after to give the notices of FR-027.
+ * <p>It composes through {@code OfferingReadService} and {@code ClosureQueries}, built over {@link StagedPackViews}, so
+ * the compose rules are the reads' own and none is copied. It runs under the registry lock and the pack's own, so the
+ * stored packs cannot change under it and it needs no verification of its inputs; each pack's files are read once,
+ * however many closures hold the pack. A closure's floor and locks are read before and after to give the notices of
+ * FR-027.
  *
  * <p>Every path then asks the activations slice's gate ({@link ActivationImpact#requireComposable}, C38, squad A2): a
  * stored activation whose closure the write joins may not be left with a step enhancement in force whose slot the
@@ -71,7 +79,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
 
         static Force of(ClosureView view) {
             Set<String> floor = new TreeSet<>();
-            view.mergedFloor().requiredBy().keySet().forEach(urn -> floor.add(urn.toString()));
+            view.floorJudgingNoOverride().requiredBy().keySet().forEach(urn -> floor.add(urn.toString()));
             Set<String> locks = new TreeSet<>();
             for (Urn urn : view.holderOf().keySet()) {
                 if (view.isLocked(urn)) {
@@ -209,12 +217,17 @@ public final class ClosureImpactCheck implements ImpactCheck {
                 .map(descriptor ->
                         ClosureRoots.of(session.stored(), descriptor.packId(), rootSets(activations.activationRoots())))
                 .orElseGet(ClosureRoots.Found::none);
-        Judged judged = judgeClosures(session.stored(), after, closures, roots -> {
-            List<PackIdentifier> left = roots.ids().stream()
-                    .filter(id -> !id.equals(removed.configured().id()))
-                    .toList();
-            return left.isEmpty() ? Optional.empty() : Optional.of(new ClosureRoots.Roots(left));
-        });
+        Judged judged = judgeClosures(
+                session.stored(),
+                after,
+                closures,
+                roots -> {
+                    List<PackIdentifier> left = roots.ids().stream()
+                            .filter(id -> !id.equals(removed.configured().id()))
+                            .toList();
+                    return left.isEmpty() ? Optional.empty() : Optional.of(new ClosureRoots.Roots(left));
+                },
+                roots -> Optional.empty());
         return concluded(closures, judged, true);
     }
 
@@ -224,17 +237,32 @@ public final class ClosureImpactCheck implements ImpactCheck {
     }
 
     /**
-     * Judges every closure the written pack joins, in today's phase order (#556, FR-009): each closure's compose and
-     * relation faults, then the walk of every single-root closure that passed, then, only when nothing failed, the
-     * activations slice's gate. Only a closure that passed gives its notices and its change.
+     * Judges every closure the written pack joins, in today's phase order (#556, FR-009): each closure's compose
+     * faults, then its relation and edge-index faults, then, after every closure, the own-closure breaches of every
+     * single-root closure that passed, then, only when nothing failed, the activations slice's gate. Only a closure
+     * that passed gives its notices and its change.
      */
     private Impact judgeWrite(StagedPackViews.Session session, Replacement replacement, boolean namingActivations) {
         StagedPackViews.View staged = session.with(replacement);
         ClosureRoots.Found found =
                 ClosureRoots.of(staged, replacement.descriptor().packId(), rootSets(activations.activationRoots()));
-        Judged judged = judgeClosures(session.stored(), staged, found, Optional::of);
+        PackIdentifier written = replacement.configured().id();
+        ProfileReader profiles =
+                (holder, id) -> holder.equals(written) && replacement.pack().isPresent()
+                        ? profileIn(replacement.pack().get(), id)
+                        : profileIn(storeOf(session).load(holder), id);
+        Judged judged = judgeClosures(session.stored(), staged, found, Optional::of, roots -> {
+            if (roots.ids().size() != 1) {
+                return Optional.empty();
+            }
+            PackIdentifier declaring = roots.ids().getFirst();
+            Supplier<PackDescriptor> descriptor = () -> declaring.equals(written)
+                    ? replacement.descriptor()
+                    : staged.descriptors().get(declaring);
+            return Optional.of(new Own(declaring, descriptor, profiles, session.enhancements()));
+        });
         if (!judged.faults().halted()) {
-            walkFaults(found, replacement, judged, staged, session);
+            placeOwnClosureFaults(found, judged, staged);
         }
         return concluded(found, judged, namingActivations);
     }
@@ -247,18 +275,40 @@ public final class ClosureImpactCheck implements ImpactCheck {
             Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes,
             ForceDiff diff,
             Faults faults,
-            Map<ClosureRoots.Roots, OfferingReadService.ComposedClosure> composed) {}
+            Map<ClosureRoots.Roots, OfferingReadService.ComposedClosure> composed,
+            Map<ClosureRoots.Roots, OwnVerdict> own) {}
+
+    /**
+     * What the own-closure phase of a single-root closure needs: the declaring pack, its descriptor with the write in
+     * place (read only when the closure composes), where a winning profile's entity is read, and the profiles slice's
+     * merge.
+     */
+    private record Own(
+            PackIdentifier declaring,
+            Supplier<PackDescriptor> descriptor,
+            ProfileReader profiles,
+            Optional<ProfileEnhancementGateway> merge) {}
+
+    /**
+     * The own-closure phase's answer for one closure that passed, placed after every closure's faults (today's order):
+     * its breaches, or the read failure that stopped its walk.
+     */
+    private record OwnVerdict(List<ClosureFault> breaches, Optional<CharterRefusal> unreadable) {}
+
+    /** What one closure's judge answers when the closure passed: its view and its own-closure verdict. */
+    private record Passed(ClosureView view, Optional<OwnVerdict> own) {}
 
     /**
      * Judges each closure the change joins, in order, against the stored state it changes. A closure is judged under
-     * the roots {@code judgedAs} gives it (a removal drops the removed pack, and skips a closure left with no root), and
-     * keeps the roots it was found under for its change. A halt ends the loop with the faults found standing.
+     * the roots {@code judgedAs} gives it (a removal drops the removed pack, and skips a closure left with no root),
+     * and keeps the roots it was found under for its change. A halt ends the loop with the faults found standing.
      */
     private Judged judgeClosures(
             StagedPackViews.View stored,
             StagedPackViews.View after,
             ClosureRoots.Found found,
-            Function<ClosureRoots.Roots, Optional<ClosureRoots.Roots>> judgedAs) {
+            Function<ClosureRoots.Roots, Optional<ClosureRoots.Roots>> judgedAs,
+            Function<ClosureRoots.Roots, Optional<Own>> owns) {
         Views afterViews = Views.over(after);
         Views beforeViews = Views.over(stored);
         Set<PackIdentifier> configuredBefore = new LinkedHashSet<>();
@@ -266,6 +316,7 @@ public final class ClosureImpactCheck implements ImpactCheck {
         ForceDiff diff = new ForceDiff();
         Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> changes = new LinkedHashMap<>();
         Map<ClosureRoots.Roots, OfferingReadService.ComposedClosure> composed = new LinkedHashMap<>();
+        Map<ClosureRoots.Roots, OwnVerdict> own = new LinkedHashMap<>();
         Faults faults = new Faults();
         for (ClosureRoots.Roots roots : found.closures()) {
             Optional<ClosureRoots.Roots> judgedRoots = judgedAs.apply(roots);
@@ -273,19 +324,26 @@ public final class ClosureImpactCheck implements ImpactCheck {
                 continue;
             }
             // Keyed by the roots the closure was found under, as its change is, whatever roots it is judged under.
-            Optional<ClosureView> now =
-                    judge(judgedRoots.get(), afterViews, after, faults, closure -> composed.put(roots, closure));
+            Optional<Passed> now = judge(
+                    judgedRoots.get(),
+                    afterViews,
+                    after,
+                    faults,
+                    owns.apply(roots),
+                    closure -> composed.put(roots, closure));
             if (faults.halted()) {
                 break;
             }
             if (now.isEmpty()) {
                 continue;
             }
+            ClosureView view = now.get().view();
+            now.get().own().ifPresent(verdict -> own.put(roots, verdict));
             Optional<ClosureView> was = viewBefore(roots, beforeViews, configuredBefore);
-            diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(now.get()));
-            changes.put(roots, new ActivationImpact.ClosureChange(was, now.get()));
+            diff.add(was.map(Force::of).orElse(Force.NONE), Force.of(view));
+            changes.put(roots, new ActivationImpact.ClosureChange(was, view));
         }
-        return new Judged(changes, diff, faults, composed);
+        return new Judged(changes, diff, faults, composed, own);
     }
 
     /** The answer once the closures are judged: the faults, or else the activations' gate and the notices. */
@@ -340,9 +398,9 @@ public final class ClosureImpactCheck implements ImpactCheck {
 
     /**
      * The census (IC-15, read side): the closure of every stored pack, composed and judged as a registration judges a
-     * closure it joins. Packs registered before a rule are not re-judged on a read, which answers {@code pack_unreadable}
-     * only as it always has; this says which of them a write into their closure would now refuse. It reads and writes
-     * nothing but the packs, once each, and takes no lock.
+     * closure it joins. Packs registered before a rule are not re-judged on a read, which answers
+     * {@code pack_unreadable} only as it always has; this says which of them a write into their closure would now
+     * refuse. It reads and writes nothing but the packs, once each, and takes no lock.
      *
      * @return one finding per stored pack whose closure would be refused, with every fault, in catalog order
      */
@@ -367,20 +425,22 @@ public final class ClosureImpactCheck implements ImpactCheck {
         String name = pack.id().value();
         try {
             OfferingReadService.ComposedClosure composed = composing.offering().composedWithFacts(List.of(pack.id()));
-            List<ClosureFault> faults = relationFaults(composed).stream()
-                    .map(broken -> ClosureFault.of(
-                            broken.origin(),
-                            broken.code(),
-                            broken.detail() + " (packs " + packsOf(broken) + ")",
-                            broken.packs()))
-                    .toList();
-            if (faults.isEmpty()) {
-                ProfileReader profiles =
-                        (holder, id) -> profileIn(requireStore(packsOfCensus).load(holder), id);
-                ClosureView own = composing.queries().snapshot(Optional.of(List.of(pack.id())));
-                faults = ownClosureFaults(
-                        pack.id(), stored.descriptors().get(pack.id()), composed, own, profiles, enhancementsOfCensus);
-            }
+            ProfileReader profiles =
+                    (holder, id) -> profileIn(requireStore(packsOfCensus).load(holder), id);
+            Memo<ClosureView> own = new Memo<>(() -> composing.queries().snapshot(Optional.of(List.of(pack.id()))));
+            Ledger ledger = closureLedger(
+                    new ClosureRoots.Roots(List.of(pack.id())),
+                    composed,
+                    own,
+                    () -> own.get().mergedRelations(),
+                    Optional.of(new Own(
+                            pack.id(), () -> stored.descriptors().get(pack.id()), profiles, enhancementsOfCensus)));
+            List<ClosureFault> faults = isOwnClosure(ledger)
+                    ? ledger.faults()
+                    : ledger.faults().stream()
+                            .map(broken ->
+                                    broken.with(broken.detail() + " (packs " + packsOf(broken) + ")", broken.packs()))
+                            .toList();
             return faults.isEmpty()
                     ? Optional.empty()
                     : Optional.of(new Finding(name, PackRefusals.of(new ClosureVerdict(faults))));
@@ -390,36 +450,51 @@ public final class ClosureImpactCheck implements ImpactCheck {
     }
 
     /**
-     * Every breach of one declaring pack's own closure (#638): the factory's own-closure check, run by the one walker
-     * over the graph of the declaring pack's composed closure, the declaring pack's node carrying its descriptor with
-     * the write in place. A pack's facts are those the closure was composed with.
+     * The one walker over a composed closure's phases (#638, #639, ADR-0082 slice 4, FR-009, FR-010): its relation
+     * rules, then, only when they pass, the edge-index rules of its merge, then, for a single-root closure only when
+     * both pass, the declaring pack's own-closure rules ({@link PackRulesets#composedClosure}), over the graph of the
+     * closure. The phase gate is the walker's: the relations gate the edge index, and both gate the own closure, whose
+     * rules then read a merge already found sound (#667). A pack's facts are those the closure was composed with. The
+     * merge is read only when the edge-index phase runs, and the declaring pack's view and descriptor with the write in
+     * place only when the own-closure phase runs, so a refusal to read them never hides a relation or edge-index fault.
      *
-     * @throws IllegalStateException when the composed closure does not hold the declaring pack, which a compose rooted
-     *     at it always does
+     * @throws IllegalStateException when the composed closure does not hold a root, which a compose rooted at it always
+     *     does
      */
-    private static List<ClosureFault> ownClosureFaults(
-            PackIdentifier declaring,
-            PackDescriptor descriptor,
+    private static Ledger closureLedger(
+            ClosureRoots.Roots roots,
             OfferingReadService.ComposedClosure composed,
-            ClosureView own,
-            ProfileReader profiles,
-            Optional<ProfileEnhancementGateway> merge) {
+            Memo<ClosureView> view,
+            Supplier<MergedRelations> merged,
+            Optional<Own> own) {
         List<PackNode> nodes = new ArrayList<>();
         Map<PackIdentifier, PackUnderResolution> members = new LinkedHashMap<>();
         for (PackUnderResolution member : composed.packs()) {
             ConfiguredPack configured = member.configured();
             members.put(configured.id(), member);
-            nodes.add(new PackNode(configured, configured.id().equals(declaring) ? descriptor : member.descriptor()));
+            nodes.add(new PackNode(configured, member.descriptor()));
         }
-        if (!members.containsKey(declaring)) {
-            throw new IllegalStateException(
-                    "the composed closure does not hold its declaring pack " + declaring.value());
-        }
+        roots.ids().stream()
+                .filter(root -> !members.containsKey(root))
+                .findFirst()
+                .ifPresent(root -> {
+                    throw new IllegalStateException("the composed closure does not hold its root " + root.value());
+                });
         PackGraph graph = PackGraph.of(
                 nodes, pack -> composed.factsOf(Objects.requireNonNull(members.get(pack), "a pack of the closure")));
-        return PackRulesets.ownClosure(own, profiles, merge)
-                .run(graph, PackRulesets.ownClosureOf(declaring))
-                .faults();
+        ComposedRelations relations = PackRulesets.relationsOf(composed.packs(), composed::factsOf);
+        if (own.isEmpty()) {
+            return PackRulesets.composedClosure(relations, merged).run(graph, Scope.of(roots.ids()));
+        }
+        Own declaring = own.get();
+        return PackRulesets.composedClosure(
+                        relations, merged, view::get, declaring.descriptor(), declaring.profiles(), declaring.merge())
+                .run(graph, PackRulesets.ownClosureOf(declaring.declaring()));
+    }
+
+    /** Whether the walk was stopped by the own-closure phase, so its faults are the declaring pack's breaches. */
+    private static boolean isOwnClosure(Ledger ledger) {
+        return ledger.gate().filter(PackRulesets.OWN_CLOSURE_PHASE::equals).isPresent();
     }
 
     private static String packsOf(ClosureFault broken) {
@@ -427,16 +502,50 @@ public final class ClosureImpactCheck implements ImpactCheck {
                 ", ", broken.packs().stream().map(pack -> pack.packId().value()).toList());
     }
 
-    /** Every relation fault of a composed closure: the relation rules, then the specialization cycles (#556, FR-003). */
-    private static List<ClosureFault> relationFaults(OfferingReadService.ComposedClosure composed) {
-        List<ClosureFault> faults = new ArrayList<>(ImpactRelations.check(composed));
-        faults.addAll(SpecializationCycleRule.check(composed));
-        return faults;
+    /**
+     * A value worked out once, on first use, and kept: the closure's view, which the edge-index phase reads its merge
+     * from and the own-closure phase judges. A refusal is not kept: it propagates, and the next read tries again.
+     */
+    private static final class Memo<T> {
+        private final Supplier<T> supplier;
+        private @Nullable T value;
+
+        Memo(Supplier<T> supplier) {
+            this.supplier = supplier;
+        }
+
+        T get() {
+            T held = value;
+            if (held == null) {
+                held = Objects.requireNonNull(supplier.get(), "the memo's value");
+                value = held;
+            }
+            return held;
+        }
     }
 
     /**
-     * Logs the census at startup, one warning per finding and one per fault of it (T075, #556 FR-011). A census that cannot run is itself a warning, never a
-     * failure to start.
+     * A refusal of the closure's view or merge, which the edge-index phase met while it read its subject: it is placed
+     * as the compose's refusals are ({@link #settle}), never as an own-closure read failure.
+     */
+    private static final class ViewRefused extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        private final CharterRefusal refusal;
+
+        ViewRefused(CharterRefusal refusal) {
+            super(refusal);
+            this.refusal = refusal;
+        }
+
+        CharterRefusal refusal() {
+            return refusal;
+        }
+    }
+
+    /**
+     * Logs the census at startup, one warning per finding and one per fault of it (T075, #556 FR-011). A census that
+     * cannot run is itself a warning, never a failure to start.
      */
     @EventListener(ApplicationReadyEvent.class)
     public void logCensus() {
@@ -466,55 +575,33 @@ public final class ClosureImpactCheck implements ImpactCheck {
     // ---- the fallback profile (ADR-0068), the role pins (ruling D3) and the profile enhancements (ruling D5) ----
 
     /**
-     * Judges the {@code fallback_profile} and the role pins of every staged pack whose closure holds the written pack,
-     * the write in place (ADR-0068 decisions 2 to 4, rulings D3 and D4): the written pack itself, and each pack that
+     * Places the own-closure verdicts of every staged pack whose closure holds the written pack, after every closure's
+     * compose, relation and edge-index faults (today's order): the {@code fallback_profile} and the role pins, the
+     * write in place (ADR-0068 decisions 2 to 4, rulings D3 and D4), of the written pack itself and each pack that
      * builds on it, whose declared fallback or pinned profile may be held in the written pack and so be removed,
      * unlocked, given a role or a performer by this write, and whose closure may gain a differing pin or an enhancement
-     * that drops part of the profile it enhances (rulings D5, D7). Each is judged over its own closure, the fallback
-     * first, then the pins, then the enhancements ({@link PackRulesets#ownClosure}), every breach (#556, FR-005), and
-     * then the items of its presets ({@link #presetItemFaults}, #629, #632 item 1). A closure that did not compose or
-     * broke a relation has no view, and is not walked.
+     * that drops part of the profile it enhances (rulings D5, D7). Each was judged over its own closure by the one
+     * walker, the fallback first, then the pins, then the enhancements ({@link PackRulesets#ownClosure}), every breach
+     * (#556, FR-005); then the items of its presets ({@link #presetItemFaults}, #629, #632 item 1). A closure that did
+     * not compose or broke a relation or edge-index rule has no verdict. A read failure of a walk is the answer only
+     * when no fault was found yet; otherwise it ends the placing, the faults found standing (D1).
      */
-    private void walkFaults(
-            ClosureRoots.Found found,
-            Replacement replacement,
-            Judged closures,
-            StagedPackViews.View staged,
-            StagedPackViews.Session session) {
-        Map<ClosureRoots.Roots, ActivationImpact.ClosureChange> judged = closures.changes();
+    private static void placeOwnClosureFaults(ClosureRoots.Found found, Judged closures, StagedPackViews.View staged) {
         Faults faults = closures.faults();
-        PackIdentifier written = replacement.configured().id();
-        ProfileReader profiles =
-                (holder, id) -> holder.equals(written) && replacement.pack().isPresent()
-                        ? profileIn(replacement.pack().get(), id)
-                        : profileIn(storeOf(session).load(holder), id);
         for (ClosureRoots.Roots roots : found.closures()) {
-            if (roots.ids().size() != 1 || !judged.containsKey(roots)) {
+            OwnVerdict verdict = closures.own().get(roots);
+            if (verdict == null) {
                 continue;
             }
-            PackIdentifier declaring = roots.ids().getFirst();
-            PackDescriptor descriptor = declaring.equals(written)
-                    ? replacement.descriptor()
-                    : staged.descriptors().get(declaring);
-            ClosureView own = Objects.requireNonNull(judged.get(roots), "a judged closure")
-                    .after();
-            List<ClosureFault> breaches;
-            try {
-                breaches = ownClosureFaults(
-                        declaring,
-                        descriptor,
-                        Objects.requireNonNull(closures.composed().get(roots), "a composed closure"),
-                        own,
-                        profiles,
-                        session.enhancements());
-            } catch (CharterRefusal unreadable) {
+            if (verdict.unreadable().isPresent()) {
                 // A read failure of a later closure's walk never displaces a fault already found (D1).
                 if (faults.isEmpty()) {
-                    throw unreadable;
+                    throw verdict.unreadable().get();
                 }
                 return;
             }
-            breaches.forEach(breach -> faults.add(withinClosure(roots, breach, staged)));
+            PackIdentifier declaring = roots.ids().getFirst();
+            verdict.breaches().forEach(breach -> faults.add(withinClosure(roots, breach, staged)));
             // A preset-item fault carries its violation, so it answers alone as the rule raised it, and is named in
             // its closure only beside other faults, as place() does for a compose fault with violations.
             presetItemFaults(
@@ -567,19 +654,24 @@ public final class ClosureImpactCheck implements ImpactCheck {
     // ---- one closure ---------------------------------------------------------------------------------------------
 
     /**
-     * Composes the closure with the write in place and judges its relations, adding every fault to {@code faults}
-     * (#556, FR-003, FR-009). A closure that does not compose, or breaks a relation, has no view: its notices and its
-     * walk are not judged. Each fault of a compose phase is placed in the closure one by one, never as one refusal
-     * inside another (PR #618 review B1). A refusal that is no closure check's (a pack that cannot be read) propagates
-     * when no fault was found yet, and otherwise halts the walk of the closures, the faults found standing (D1).
+     * Composes the closure with the write in place and judges it, adding every fault to {@code faults} (#556, FR-003,
+     * FR-009; #639): the compose, then the one walker over its relation, edge-index and, for a single-root closure,
+     * own-closure phases ({@link #closureLedger}). A closure that does not compose, or breaks a relation or an
+     * edge-index rule, has no view: its notices and its own closure are not judged. Each fault of a compose phase is
+     * placed in the closure one by one, never as one refusal inside another (PR #618 review B1). A refusal that is no
+     * closure check's (a pack that cannot be read) propagates when no fault was found yet, and otherwise halts the walk
+     * of the closures, the faults found standing (D1). The own-closure phase's breaches, or the read failure that
+     * stopped it, are kept for {@link #placeOwnClosureFaults}, after every closure.
      *
-     * @return the closure's view, which carries its floor and locks; empty when it has a fault
+     * @return the closure's view, which carries its floor and locks, and its own-closure verdict; empty when it has a
+     *     fault
      */
-    private static Optional<ClosureView> judge(
+    private static Optional<Passed> judge(
             ClosureRoots.Roots roots,
             Views views,
             StagedPackViews.View staged,
             Faults faults,
+            Optional<Own> own,
             Consumer<OfferingReadService.ComposedClosure> passed) {
         OfferingReadService.Judged judged;
         try {
@@ -592,23 +684,54 @@ public final class ClosureImpactCheck implements ImpactCheck {
             judged.faults().forEach(fault -> place(roots, fault, staged, faults));
             return Optional.empty();
         }
-        OfferingReadService.ComposedClosure composed = judged.closure().get();
-        List<ClosureFault> broken = relationFaults(composed);
-        if (!broken.isEmpty()) {
-            broken.forEach(fault -> faults.add(withinClosure(roots, fault, staged)));
+        return judgeComposed(roots, views, staged, faults, own, judged.closure().get(), passed);
+    }
+
+    /**
+     * The one walker over a closure that composed ({@link #closureLedger}): its relation and edge-index faults are the
+     * closure's, its view's or merge's refusal is placed as a compose refusal is ({@link #settle}), and its own-closure
+     * breaches, or the read failure that stopped them, are its verdict.
+     */
+    private static Optional<Passed> judgeComposed(
+            ClosureRoots.Roots roots,
+            Views views,
+            StagedPackViews.View staged,
+            Faults faults,
+            Optional<Own> own,
+            OfferingReadService.ComposedClosure composed,
+            Consumer<OfferingReadService.ComposedClosure> passed) {
+        Memo<ClosureView> view = new Memo<>(() -> {
+            try {
+                return views.queries().snapshot(Optional.of(roots.ids()));
+            } catch (CharterRefusal refused) {
+                throw new ViewRefused(refused);
+            }
+        });
+        Supplier<MergedRelations> merged = () -> view.get().mergedRelations();
+        Optional<OwnVerdict> verdict;
+        try {
+            Ledger ledger = closureLedger(roots, composed, view, merged, own);
+            if (!ledger.faults().isEmpty() && !isOwnClosure(ledger)) {
+                ledger.faults().forEach(fault -> faults.add(withinClosure(roots, fault, staged)));
+                return Optional.empty();
+            }
+            verdict = own.map(declaring -> new OwnVerdict(ledger.faults(), Optional.empty()));
+        } catch (ViewRefused refused) {
+            settle(roots, refused.refusal(), staged, faults);
             return Optional.empty();
-        }
-        EdgeIndex.Indexed edges = EdgeIndex.of(composed.packs(), composed.facts());
-        if (edges.index().isEmpty()) {
-            edges.faults().forEach(fault -> place(roots, fault, staged, faults));
-            return Optional.empty();
+        } catch (CharterRefusal unreadable) {
+            // Only the own-closure phase reads a store; a closure with no such phase has no verdict to keep.
+            if (own.isEmpty()) {
+                throw unreadable;
+            }
+            verdict = Optional.of(new OwnVerdict(List.of(), Optional.of(unreadable)));
         }
         try {
-            Optional<ClosureView> view = Optional.of(views.queries().snapshot(Optional.of(roots.ids())));
+            ClosureView now = view.get();
             passed.accept(composed);
-            return view;
-        } catch (CharterRefusal refused) {
-            settle(roots, refused, staged, faults);
+            return Optional.of(new Passed(now, verdict));
+        } catch (ViewRefused refused) {
+            settle(roots, refused.refusal(), staged, faults);
             return Optional.empty();
         }
     }
@@ -706,12 +829,13 @@ public final class ClosureImpactCheck implements ImpactCheck {
         }
     }
 
-    /** A relation fault as the closure names it: its detail in the closure, its packs then the closure's roots. */
+    /**
+     * A relation, edge-index or own-closure fault as the closure names it: its detail in the closure, its packs then
+     * the closure's roots, its rule and its violations kept.
+     */
     private static ClosureFault withinClosure(
             ClosureRoots.Roots roots, ClosureFault broken, StagedPackViews.View staged) {
-        return ClosureFault.of(
-                broken.origin(),
-                broken.code(),
+        return broken.with(
                 "In the closure rooted at " + roots.label() + ": " + broken.detail(),
                 withRoots(broken.packs(), roots, staged));
     }

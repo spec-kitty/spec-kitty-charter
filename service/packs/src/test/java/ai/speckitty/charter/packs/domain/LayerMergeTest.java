@@ -16,6 +16,7 @@ import ai.speckitty.charter.kernel.domain.RefusalCode;
 import ai.speckitty.charter.kernel.domain.RefusalPack;
 import ai.speckitty.charter.kernel.domain.Urn;
 import ai.speckitty.charter.packs.domain.PackCompositionResolver.PackUnderResolution;
+import ai.speckitty.charter.packs.domain.rules.PackRulesets;
 import ai.speckitty.charter.packs.fixtures.CompositionFacts;
 import ai.speckitty.charter.packs.fixtures.FixtureUlids;
 import java.util.ArrayList;
@@ -105,7 +106,13 @@ class LayerMergeTest {
         }
 
         MergedClosure merge() {
-            return LayerMerge.merge(closure(), facts(), new PerPackPolicy(policies));
+            return mergedOrRefused(LayerMerge.attempt(closure(), facts(), new PerPackPolicy(policies)));
+        }
+
+        /** The edge-index faults of the merge ({@link PackRulesets#edgeIndexFaults}), where C21 is judged. */
+        List<ClosureFault> edgeIndexFaults() {
+            return PackRulesets.edgeIndexFaults(MergedRelations.of(
+                    closure(), pack -> List.of(), new PerPackPolicy(policies), merge(), List.of(), List.of()));
         }
 
         /** The floor {@link LayerMerge#floorOf} answers, which the writes read beside {@link #merge()}'s. */
@@ -599,11 +606,18 @@ class LayerMergeTest {
         return MutabilityPolicySource.builder().entry(urn(urn), level).build();
     }
 
+    /**
+     * C21 as ruling Q-B places it: the merge answers the layer override, and the edge-index rules refuse it
+     * {@code override_not_permitted}, on a read and a registration alike.
+     */
     private static void refuses(Fixture fixture, String... mentions) {
-        assertThatThrownBy(fixture::merge).isInstanceOfSatisfying(CharterRefusal.class, refusal -> {
-            assertThat(refusal.code()).isEqualTo(RefusalCode.PACK_UNREADABLE);
-            assertThat(refusal.getMessage()).contains(mentions);
-            assertThat(refusal.packs())
+        assertThat(winner(fixture.merge(), urn("directive:D")).packId())
+                .as("the merge itself judges no level")
+                .isEqualTo(configured("project"));
+        assertThat(fixture.edgeIndexFaults()).singleElement().satisfies(fault -> {
+            assertThat(fault.code()).isEqualTo(RefusalCode.OVERRIDE_NOT_PERMITTED);
+            assertThat(fault.detail()).contains(mentions);
+            assertThat(fault.packs())
                     .as("the winning pack first, then the pack it replaces")
                     .extracting(RefusalPack::name)
                     .containsExactly("project", "org");
@@ -633,23 +647,27 @@ class LayerMergeTest {
     }
 
     private static void c21Open() {
-        MergedClosure merged = new Fixture()
+        Fixture fixture = new Fixture()
                 .pack("org", PackLevel.ORG, "directive:D")
                 .pack("project", PackLevel.PROJECT, "directive:D")
-                .policy("org", level("directive:D", MutabilityLevel.OPEN))
-                .merge();
+                .policy("org", level("directive:D", MutabilityLevel.OPEN));
 
-        assertThat(winner(merged, urn("directive:D")).packId()).isEqualTo(configured("project"));
+        assertThat(winner(fixture.merge(), urn("directive:D")).packId()).isEqualTo(configured("project"));
+        assertThat(fixture.edgeIndexFaults())
+                .as("an open artifact may be replaced")
+                .isEmpty();
     }
 
     private static void c21WinnerExcluded() {
-        MergedClosure merged = new Fixture()
+        Fixture fixture = new Fixture()
                 .pack("org", PackLevel.ORG, "directive:D")
                 .pack("project", PackLevel.PROJECT, "directive:D")
-                .policy("project", level("directive:D", MutabilityLevel.LOCKED))
-                .merge();
+                .policy("project", level("directive:D", MutabilityLevel.LOCKED));
 
-        MergedClosure.Winner winner = winner(merged, urn("directive:D"));
+        assertThat(fixture.edgeIndexFaults())
+                .as("a pack never blocks its own override")
+                .isEmpty();
+        MergedClosure.Winner winner = winner(fixture.merge(), urn("directive:D"));
         assertThat(winner.packId()).isEqualTo(configured("project"));
         assertThat(winner.policy().level())
                 .as("the winner's own lock still shows as its level along the closure")
@@ -802,5 +820,10 @@ class LayerMergeTest {
     @Test
     void anEmptyClosureMergesToNothing() {
         assertThat(new Fixture().merge()).isEqualTo(MergedClosure.EMPTY);
+    }
+
+    /** The merge, or the refusal it met, thrown, as a read meets it. */
+    private static MergedClosure mergedOrRefused(LayerMerge.Attempt attempt) {
+        return attempt.merged().orElseThrow(() -> attempt.refused().orElseThrow());
     }
 }
