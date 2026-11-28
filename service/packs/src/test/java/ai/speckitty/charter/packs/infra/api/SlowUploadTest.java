@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import ai.speckitty.charter.kernel.domain.CharterRefusal;
 import ai.speckitty.charter.kernel.domain.RefusalCode;
+import ai.speckitty.charter.kernel.transport.RetryLaterException;
 import ai.speckitty.charter.packs.application.AuditLog;
 import ai.speckitty.charter.packs.application.ConsistentRead;
 import ai.speckitty.charter.packs.application.PackArchiveReader;
@@ -14,8 +15,10 @@ import ai.speckitty.charter.packs.application.PackRegistrationService.Preconditi
 import ai.speckitty.charter.packs.application.PackSummaryQuery;
 import ai.speckitty.charter.packs.application.RegistrationJobs;
 import ai.speckitty.charter.packs.application.ServiceInfoQuery;
+import ai.speckitty.charter.packs.fixtures.HeldRoom;
 import ai.speckitty.charter.packs.infra.storage.FileStagingArea;
 import ai.speckitty.charter.packs.infra.storage.FileSystemPackSources;
+import ai.speckitty.charter.testfixtures.Await;
 import ai.speckitty.charter.web.RefusalHandler;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
@@ -33,8 +36,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,8 +51,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
  * A slow upload holds no slot of the queue while its body arrives (#418, A4): as many uploads as the queue has slots may
- * be arriving at once (the next is refused at admission), each is accepted when its body is spooled, and a full queue is still answered before a body is
- * read. The design is ADR-0065 D8's note of 2026-11-08: the slot is taken after the body is spooled.
+ * be arriving at once (the next is refused at admission), each is accepted when its body is spooled, and a full queue
+ * is still answered before a body is read. The design is ADR-0065 D8's note of 2026-11-08: the slot is taken after the
+ * body is spooled.
+ *
+ * <p>An upload's place and a job's slot are counted apart, so an upload admitted while the queue had room can find it
+ * full once its body is spooled, and is refused then (D8: the queue is judged again). Ten uploads make ten jobs and
+ * need no wait. The test whose uploads make an eleventh job holds the two jobs that would race it with {@link HeldRoom}
+ * and waits for a free slot with {@link Await}, never for a span of time (#677).
  */
 class SlowUploadTest {
 
@@ -58,6 +69,8 @@ class SlowUploadTest {
     Path staging;
 
     private final AtomicLong requestBytesRead = new AtomicLong();
+    private final AtomicInteger stallsTimedOut = new AtomicInteger();
+    private final HeldRoom room = new HeldRoom(RegistrationJobs.StorageRoom.UNBOUNDED);
     private RegistrationJobs jobs;
     private MockMvc mvc;
     private ExecutorService clients;
@@ -74,7 +87,7 @@ class SlowUploadTest {
                     throw new CharterRefusal(RefusalCode.PACK_NOT_FOUND, "not stored");
                 },
                 (AuditLog) entry -> {},
-                RegistrationJobs.StorageRoom.UNBOUNDED,
+                room,
                 new FileStagingArea(staging)));
         ServiceInfoQuery info =
                 new ServiceInfoQuery("worktree-slow", new ConsistentRead(new FileSystemPackSources(List::of)));
@@ -97,9 +110,18 @@ class SlowUploadTest {
     }
 
     @AfterEach
-    void close() {
+    void close() throws InterruptedException {
         clients.shutdownNow();
+        boolean stopped = clients.awaitTermination(Await.LIMIT.toSeconds(), TimeUnit.SECONDS);
+        room.releaseAll();
         jobs.close();
+        SoftAssertions.assertSoftly(soft -> {
+            soft.assertThat(stopped).as("the client threads stopped").isTrue();
+            soft.assertThatCode(room::requireNoHoldTimedOut).doesNotThrowAnyException();
+            soft.assertThat(stallsTimedOut.get())
+                    .as("a stalled body went on unreleased after %d s", Await.LIMIT.toSeconds())
+                    .isZero();
+        });
     }
 
     @Test
@@ -118,7 +140,7 @@ class SlowUploadTest {
                     .andReturn()
                     .getResponse()));
         }
-        assertThat(arriving.await(20, TimeUnit.SECONDS))
+        assertThat(arriving.await(Await.LIMIT.toSeconds(), TimeUnit.SECONDS))
                 .as("every upload is part way through its body")
                 .isTrue();
 
@@ -132,7 +154,10 @@ class SlowUploadTest {
 
         for (int i = 0; i < uploads; i++) {
             release.get(i).countDown();
-            assertThat(responses.get(i).get(20, TimeUnit.SECONDS).getStatus())
+            assertThat(responses
+                            .get(i)
+                            .get(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)
+                            .getStatus())
                     .as("upload %d, accepted when its body was spooled", i)
                     .isEqualTo(202);
         }
@@ -153,7 +178,7 @@ class SlowUploadTest {
                     .andReturn()
                     .getResponse()));
         }
-        assertThat(arriving.await(20, TimeUnit.SECONDS)).isTrue();
+        assertThat(arriving.await(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)).isTrue();
         long readBefore = requestBytesRead.get();
         int directoriesBefore = staged();
         byte[] body = gzip();
@@ -172,8 +197,15 @@ class SlowUploadTest {
         assertThat(requestBytesRead.get()).as("not a byte of its body was read").isEqualTo(readBefore);
         assertThat(staged()).as("and it staged nothing").isEqualTo(directoriesBefore);
 
+        // The jobs of upload 0 and of the next upload are held running, so no slot frees until
+        // releaseAll: the worst case of #677, on every run.
+        room.hold();
         release.get(0).countDown();
-        assertThat(responses.get(0).get(20, TimeUnit.SECONDS).getStatus()).isEqualTo(202);
+        assertThat(responses
+                        .get(0)
+                        .get(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)
+                        .getStatus())
+                .isEqualTo(202);
         MockHttpServletResponse next = mvc.perform(put("/api/v1/packs/acme")
                         .contentType("application/gzip")
                         .content(body)
@@ -183,11 +215,86 @@ class SlowUploadTest {
         assertThat(next.getStatus())
                 .as("the finished upload's place is free again")
                 .isEqualTo(202);
+        room.awaitHeld(2);
+        room.stopHolding();
 
-        for (int i = 1; i < SLOTS; i++) {
+        for (int i = 1; i < SLOTS - 1; i++) {
             release.get(i).countDown();
-            assertThat(responses.get(i).get(20, TimeUnit.SECONDS).getStatus()).isEqualTo(202);
+            assertThat(responses
+                            .get(i)
+                            .get(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)
+                            .getStatus())
+                    .as("upload %d, accepted when its body was spooled", i)
+                    .isEqualTo(202);
         }
+        assertThat(queueHasRoom())
+                .as("the two held jobs and eight more fill the queue: the last upload would make an eleventh job")
+                .isFalse();
+
+        room.releaseAll();
+        Await.until("a slot of the queue to be free", this::queueHasRoom);
+        release.get(SLOTS - 1).countDown();
+        assertThat(responses
+                        .get(SLOTS - 1)
+                        .get(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)
+                        .getStatus())
+                .as("the last upload, accepted once a job gave its slot back")
+                .isEqualTo(202);
+    }
+
+    /**
+     * The controller's half of the spool-time refusal that {@code RegistrationJobsUploadTest} pins in the application:
+     * an upload admitted while the queue had room, whose body is spooled into a full queue, is refused then with the
+     * {@code 503} of a full queue, makes no job, and the controller discards its spool and gives its place back (#677).
+     */
+    @Test
+    void anUploadSpooledIntoAFullQueueIsRefusedThenAndGivesBackItsSpoolAndItsPlace() throws Exception {
+        CountDownLatch arriving = new CountDownLatch(1);
+        CountDownLatch gate = new CountDownLatch(1);
+        Future<MockHttpServletResponse> late = clients.submit(() -> mvc.perform(put("/api/v1/packs/acme")
+                        .contentType("application/gzip")
+                        .content(gzip())
+                        .with(request -> stalling(request, arriving, gate)))
+                .andReturn()
+                .getResponse());
+        assertThat(arriving.await(Await.LIMIT.toSeconds(), TimeUnit.SECONDS))
+                .as("the late upload was admitted and is part way through its body")
+                .isTrue();
+        room.hold();
+        byte[] body = gzip();
+        for (int i = 0; i < SLOTS; i++) {
+            MockHttpServletResponse accepted = mvc.perform(put("/api/v1/packs/acme")
+                            .contentType("application/gzip")
+                            .content(body)
+                            .with(request -> counting(request, body)))
+                    .andReturn()
+                    .getResponse();
+            assertThat(accepted.getStatus()).as("upload %d fills the queue", i).isEqualTo(202);
+        }
+        room.awaitHeld(RegistrationJobs.RUNNING_LIMIT);
+        assertThat(queueHasRoom()).as("two jobs run and eight wait").isFalse();
+        int retainedBefore = jobs.retained();
+        int stagedBefore = staged();
+        assertThat(jobs.owned())
+                .as("the ten jobs and the late upload hold places")
+                .hasSize(SLOTS + 1);
+        long readBefore = requestBytesRead.get();
+
+        gate.countDown();
+        MockHttpServletResponse refused = late.get(Await.LIMIT.toSeconds(), TimeUnit.SECONDS);
+
+        assertThat(refused.getStatus())
+                .as("the queue is judged again when the body is spooled")
+                .isEqualTo(503);
+        assertThat(refused.getHeader("Retry-After")).isNotNull();
+        assertThat(requestBytesRead.get() - readBefore)
+                .as("the rest of its body was read: the refusal came after the spool, not at admission")
+                .isEqualTo(BODY_BYTES - WatchedBody.ANNOUNCE_AFTER);
+        assertThat(jobs.retained()).as("it made no job").isEqualTo(retainedBefore);
+        assertThat(staged()).as("its spool is gone").isEqualTo(stagedBefore - 1);
+        assertThat(jobs.owned())
+                .as("its place among the open uploads is given back; the ten jobs keep theirs")
+                .hasSize(SLOTS);
     }
 
     @Test
@@ -211,6 +318,16 @@ class SlowUploadTest {
         assertThat(response.getHeader("Retry-After")).isNotNull();
         assertThat(requestBytesRead.get()).as("not a byte of the body was read").isZero();
         assertThat(staged()).isEqualTo(directoriesBefore);
+    }
+
+    /** Whether admission would take a new upload now: the queue has a free slot and the service is open. Takes none. */
+    private boolean queueHasRoom() {
+        try {
+            jobs.precheck("acme", Preconditions.none());
+            return true;
+        } catch (RetryLaterException full) {
+            return false;
+        }
     }
 
     private static RegistrationJobs.Origin origin() {
@@ -237,12 +354,15 @@ class SlowUploadTest {
     }
 
     private MockHttpServletRequest counting(MockHttpServletRequest from, byte[] body) {
-        return replacing(from, new WatchedBody(new ByteArrayInputStream(body), requestBytesRead, null, null));
+        return replacing(
+                from, new WatchedBody(new ByteArrayInputStream(body), requestBytesRead, stallsTimedOut, null, null));
     }
 
     private MockHttpServletRequest stalling(
             MockHttpServletRequest from, CountDownLatch arriving, CountDownLatch release) {
-        return replacing(from, new WatchedBody(new ByteArrayInputStream(gzip()), requestBytesRead, arriving, release));
+        return replacing(
+                from,
+                new WatchedBody(new ByteArrayInputStream(gzip()), requestBytesRead, stallsTimedOut, arriving, release));
     }
 
     private static MockHttpServletRequest replacing(MockHttpServletRequest from, ServletInputStream stream) {
@@ -269,20 +389,31 @@ class SlowUploadTest {
         return request;
     }
 
-    /** A body that counts what is read and, when asked, announces that it is part way and waits to be released. */
+    /**
+     * A body that counts what is read and, when asked, announces that it is part way and waits to be released. A wait
+     * that runs out its {@link Await#LIMIT} unreleased is counted, and the teardown fails on it: the body went on in a
+     * state the test never meant.
+     */
     private static final class WatchedBody extends ServletInputStream {
         private static final int ANNOUNCE_AFTER = 4096;
 
         private final InputStream source;
         private final AtomicLong read;
+        private final AtomicInteger timedOut;
         private final CountDownLatch announce;
         private final CountDownLatch release;
         private long delivered;
         private boolean announced;
 
-        WatchedBody(InputStream source, AtomicLong read, CountDownLatch announce, CountDownLatch release) {
+        WatchedBody(
+                InputStream source,
+                AtomicLong read,
+                AtomicInteger timedOut,
+                CountDownLatch announce,
+                CountDownLatch release) {
             this.source = source;
             this.read = read;
+            this.timedOut = timedOut;
             this.announce = announce;
             this.release = release;
         }
@@ -299,7 +430,9 @@ class SlowUploadTest {
                 announced = true;
                 announce.countDown();
                 try {
-                    release.await(30, TimeUnit.SECONDS);
+                    if (!release.await(Await.LIMIT.toSeconds(), TimeUnit.SECONDS)) {
+                        timedOut.incrementAndGet();
+                    }
                 } catch (InterruptedException interrupted) {
                     Thread.currentThread().interrupt();
                     throw new IOException("interrupted", interrupted);
